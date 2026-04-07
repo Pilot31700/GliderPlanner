@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Glide Planner V13 Mobile</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
+<style>
+  html, body { margin:0; padding:0; height:100%; }
+  #map { width:100%; height:100%; }
+  .control-panel {
+    position:absolute;
+    top:10px;
+    left:10px;
+    z-index:1000;
+    background:rgba(240,240,240,0.95);
+    padding:10px;
+    border-radius:8px;
+    font-family:sans-serif;
+    max-width:300px;
+    overflow:auto;
+    max-height:90vh;
+  }
+  .control-panel input, .control-panel select, .control-panel button { width:100%; margin-bottom:5px; font-size:14px; }
+  .label-div { font-size:12px; font-weight:bold; background:rgba(255,255,255,0.7); padding:1px 3px; border-radius:3px; white-space:nowrap; }
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+<div class="control-panel">
+  <h4>Glide Planner V13 Mobile</h4>
+
+  <label>Finesse par défaut:</label>
+  <input id="finesse" type="number" value="30">
+  
+  <label>Finesse basse:</label>
+  <input id="finesseBasse" type="number" value="10">
+  
+  <label>Seuil finesse basse (m):</label>
+  <input id="seuilFinesseBasse" type="number" value="500">
+  
+  <label>Marge sécurité (m):</label>
+  <input id="marge" type="number" value="250">
+  
+  <button onclick=";">Recalculer</button>
+  <hr>
+
+  <label>Hauteur à visualiser: <span id="hauteurVal">600</span> m</label>
+  <input id="hauteurSlider" type="range" min="400" max="1500" step="100" value="600" oninput=";">
+
+  <input type="checkbox" id="showAll" onchange=";"> Afficher tous les cercles (100m/100m)<br>
+  <input type="checkbox" id="showLabels" checked onchange=";"> Afficher labels
+  <hr>
+
+  <label>Mode hauteur:</label>
+  <select id="modeAlt" onchange=";">
+    <option value="QFE" selected>QFE (relatif au terrain)</option>
+    <option value="QNH">QNH (niveau mer)</option>
+  </select>
+  <hr>
+
+  <label>Terrains à afficher:</label>
+  <div id="terrainCheckboxes"></div>
+  <hr>
+
+  <label>Fond de carte:</label>
+  <select id="mapLayerSelect" onchange=";">
+    <option value="OSM" selected>OSM classique</option>
+    <option value="Positron">CartoDB Positron</option>
+    <option value="Dark">CartoDB Dark Matter</option>
+  </select>
+</div>
+
+
+</body>
+</html>
