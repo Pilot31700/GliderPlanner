@@ -2,77 +2,245 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Glide Planner V13 Mobile</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Glide Planner Mobile</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <style>
-  html, body { margin:0; padding:0; height:100%; }
-  #map { width:100%; height:100%; }
-  .control-panel {
-    position:absolute;
-    top:10px;
-    left:10px;
-    z-index:1000;
-    background:rgba(240,240,240,0.95);
-    padding:10px;
-    border-radius:8px;
-    font-family:sans-serif;
-    max-width:300px;
-    overflow:auto;
-    max-height:90vh;
-  }
-  .control-panel input, .control-panel select, .control-panel button { width:100%; margin-bottom:5px; font-size:14px; }
-  .label-div { font-size:12px; font-weight:bold; background:rgba(255,255,255,0.7); padding:1px 3px; border-radius:3px; white-space:nowrap; }
+html, body {
+  margin:0;
+  padding:0;
+  height:100%;
+}
+
+#map {
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  z-index:0;
+}
+
+/* panneau mobile */
+.control-panel {
+  position:absolute;
+  top:10px;
+  left:10px;
+  z-index:1000;
+  background:rgba(240,240,240,0.95);
+  padding:10px;
+  border-radius:10px;
+  font-family:sans-serif;
+  width:260px;
+  max-height:85vh;
+  overflow:auto;
+}
+
+.control-panel input,
+.control-panel select,
+.control-panel button {
+  width:100%;
+  margin-bottom:6px;
+  font-size:14px;
+}
+
+.label-div {
+  font-size:11px;
+  font-weight:bold;
+  background:rgba(255,255,255,0.8);
+  padding:2px 4px;
+  border-radius:4px;
+}
 </style>
 </head>
+
 <body>
 
 <div id="map"></div>
+
 <div class="control-panel">
-  <h4>Glide Planner V13 Mobile</h4>
+<b>Glide Planner</b><br><br>
 
-  <label>Finesse par défaut:</label>
-  <input id="finesse" type="number" value="30">
-  
-  <label>Finesse basse:</label>
-  <input id="finesseBasse" type="number" value="10">
-  
-  <label>Seuil finesse basse (m):</label>
-  <input id="seuilFinesseBasse" type="number" value="500">
-  
-  <label>Marge sécurité (m):</label>
-  <input id="marge" type="number" value="250">
-  
-  <button onclick=";">Recalculer</button>
-  <hr>
+Finesse:
+<input id="finesse" type="number" value="30">
 
-  <label>Hauteur à visualiser: <span id="hauteurVal">600</span> m</label>
-  <input id="hauteurSlider" type="range" min="400" max="1500" step="100" value="600" oninput=";">
+Finesse basse:
+<input id="finesseBasse" type="number" value="10">
 
-  <input type="checkbox" id="showAll" onchange=";"> Afficher tous les cercles (100m/100m)<br>
-  <input type="checkbox" id="showLabels" checked onchange=";"> Afficher labels
-  <hr>
+Seuil finesse basse (m):
+<input id="seuilFinesseBasse" type="number" value="500">
 
-  <label>Mode hauteur:</label>
-  <select id="modeAlt" onchange=";">
-    <option value="QFE" selected>QFE (relatif au terrain)</option>
-    <option value="QNH">QNH (niveau mer)</option>
-  </select>
-  <hr>
+Marge sécurité:
+<input id="marge" type="number" value="250">
 
-  <label>Terrains à afficher:</label>
-  <div id="terrainCheckboxes"></div>
-  <hr>
+<button onclick="update()">Recalculer</button>
 
-  <label>Fond de carte:</label>
-  <select id="mapLayerSelect" onchange=";">
-    <option value="OSM" selected>OSM classique</option>
-    <option value="Positron">CartoDB Positron</option>
-    <option value="Dark">CartoDB Dark Matter</option>
-  </select>
+<hr>
+
+Hauteur: <span id="hVal">600</span> m
+<input id="slider" type="range" min="400" max="1500" step="100" value="600" oninput="update()">
+
+<input type="checkbox" id="showAll" onchange="update()"> Tous les cercles<br>
+<input type="checkbox" id="labels" checked onchange="update()"> Labels
+
+<hr>
+
+Mode:
+<select id="mode" onchange="update()">
+<option value="QFE">QFE</option>
+<option value="QNH">QNH</option>
+</select>
+
+<hr>
+
+Fond:
+<select id="fond" onchange="changeLayer()">
+<option value="osm">OSM</option>
+<option value="light">Clair</option>
+<option value="dark">Sombre</option>
+</select>
+
+<hr>
+
+<div id="terrains"></div>
+
 </div>
 
+<script>
+
+// --- MAP ---
+var map = L.map('map').setView([43.8,0.1],9);
+
+// fonds
+var layersFond = {
+  osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'),
+  light: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'),
+  dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png')
+};
+
+layersFond.osm.addTo(map);
+
+function changeLayer(){
+  Object.values(layersFond).forEach(l=>map.removeLayer(l));
+  layersFond[document.getElementById("fond").value].addTo(map);
+}
+
+// --- terrains ---
+let terrains = [
+  {id:"LFDA",lat:43.709,lon:-0.249,alt:80},
+  {id:"LFID",lat:43.955,lon:0.373,alt:130},
+  {id:"LFCN",lat:43.762,lon:-0.036,alt:100},
+  {id:"LFDH",lat:43.646,lon:0.601,alt:130}
+];
+
+function refreshTerrains(){
+  let div=document.getElementById("terrains");
+  div.innerHTML="";
+  terrains.forEach(t=>{
+    let c=document.createElement("input");
+    c.type="checkbox";
+    c.checked=true;
+    c.id="chk"+t.id;
+    c.onchange=update;
+    div.appendChild(c);
+    div.appendChild(document.createTextNode(" "+t.id));
+    div.appendChild(document.createElement("br"));
+  });
+}
+refreshTerrains();
+
+// --- utils ---
+function color(h){
+  let r=Math.round(255*(1-(h-400)/1100));
+  let g=Math.round(255*((h-400)/1100));
+  return "rgb("+r+","+g+",0)";
+}
+
+// --- draw ---
+let objs=[];
+
+function update(){
+  objs.forEach(o=>map.removeLayer(o));
+  objs=[];
+
+  let h=parseInt(slider.value);
+  hVal.innerText=h;
+
+  let finesse=parseFloat(finesse.value);
+  let fb=parseFloat(finesseBasse.value);
+  let seuil=parseFloat(seuilFinesseBasse.value);
+  let modeVal=mode.value;
+  let showAllVal=showAll.checked;
+  let showLabelsVal=labels.checked;
+
+  terrains.forEach(t=>{
+    if(!document.getElementById("chk"+t.id).checked) return;
+
+    let hMin=showAllVal?400:h;
+    let hMax=showAllVal?1500:h;
+
+    for(let hh=hMin;hh<=hMax;hh+=100){
+
+      let h_rel = (modeVal=="QFE") ? hh - t.alt : hh;
+      if(h_rel<=0) continue;
+
+      let f = (hh<=seuil)?fb:finesse;
+      let d = h_rel * f;
+
+      let c=L.circle([t.lat,t.lon],{
+        radius:d,
+        color:color(hh),
+        weight:2,
+        fill:false
+      }).addTo(map);
+
+      objs.push(c);
+
+      // labels
+      if(showLabelsVal){
+        [0,180].forEach(a=>{
+          let rad=a*Math.PI/180;
+
+          let latOff=(d/111000)*Math.cos(rad);
+          let lonOff=(d/(111000*Math.cos(t.lat*Math.PI/180)))*Math.sin(rad);
+
+          let lab=L.marker([t.lat+latOff,t.lon+lonOff],{
+            icon:L.divIcon({
+              className:'label-div',
+              html:hh+"m-F"+Math.round(f)+"-"+t.id
+            })
+          }).addTo(map);
+
+          objs.push(lab);
+        });
+      }
+    }
+
+    let m=L.marker([t.lat,t.lon]).addTo(map);
+    objs.push(m);
+  });
+}
+
+update();
+
+// --- ajout terrain ---
+map.on('click', function(e){
+  let nom=prompt("Nom terrain ?");
+  if(!nom) return;
+
+  let alt=parseFloat(prompt("Altitude m ?"));
+  if(isNaN(alt)) return;
+
+  terrains.push({id:nom,lat:e.latlng.lat,lon:e.latlng.lng,alt:alt});
+  refreshTerrains();
+  update();
+});
+
+</script>
 
 </body>
 </html>
