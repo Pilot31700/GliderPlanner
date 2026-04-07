@@ -6,8 +6,8 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
 html, body {
@@ -22,33 +22,42 @@ html, body {
   left:0;
   width:100%;
   height:100%;
-  z-index:0;
 }
 
-/* panneau mobile */
-.control-panel {
+/* panneau */
+.panel {
   position:absolute;
   top:10px;
   left:10px;
-  z-index:1000;
+  width:260px;
   background:rgba(240,240,240,0.95);
   padding:10px;
   border-radius:10px;
   font-family:sans-serif;
-  width:260px;
+  z-index:1000;
   max-height:85vh;
   overflow:auto;
 }
 
-.control-panel input,
-.control-panel select,
-.control-panel button {
-  width:100%;
-  margin-bottom:6px;
-  font-size:14px;
+.hidden {
+  display:none;
 }
 
-.label-div {
+/* bouton toggle */
+.toggleBtn {
+  position:absolute;
+  top:10px;
+  right:10px;
+  z-index:1100;
+  background:black;
+  color:white;
+  padding:8px 10px;
+  border-radius:8px;
+  font-size:16px;
+}
+
+/* labels */
+.label {
   font-size:11px;
   font-weight:bold;
   background:rgba(255,255,255,0.8);
@@ -62,19 +71,22 @@ html, body {
 
 <div id="map"></div>
 
-<div class="control-panel">
+<button class="toggleBtn" onclick="togglePanel()">⚙</button>
+
+<div id="panel" class="panel">
+
 <b>Glide Planner</b><br><br>
 
 Finesse:
 <input id="finesse" type="number" value="30">
 
 Finesse basse:
-<input id="finesseBasse" type="number" value="10">
+<input id="fb" type="number" value="10">
 
-Seuil finesse basse (m):
-<input id="seuilFinesseBasse" type="number" value="500">
+Seuil finesse basse:
+<input id="seuil" type="number" value="500">
 
-Marge sécurité:
+Marge:
 <input id="marge" type="number" value="250">
 
 <button onclick="update()">Recalculer</button>
@@ -84,7 +96,7 @@ Marge sécurité:
 Hauteur: <span id="hVal">600</span> m
 <input id="slider" type="range" min="400" max="1500" step="100" value="600" oninput="update()">
 
-<input type="checkbox" id="showAll" onchange="update()"> Tous les cercles<br>
+<input type="checkbox" id="all" onchange="update()"> Tous les cercles<br>
 <input type="checkbox" id="labels" checked onchange="update()"> Labels
 
 <hr>
@@ -116,20 +128,24 @@ Fond:
 var map = L.map('map').setView([43.8,0.1],9);
 
 // fonds
-var layersFond = {
+var fonds = {
   osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'),
   light: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'),
   dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png')
 };
-
-layersFond.osm.addTo(map);
+fonds.osm.addTo(map);
 
 function changeLayer(){
-  Object.values(layersFond).forEach(l=>map.removeLayer(l));
-  layersFond[document.getElementById("fond").value].addTo(map);
+  Object.values(fonds).forEach(l=>map.removeLayer(l));
+  fonds[fond.value].addTo(map);
 }
 
-// --- terrains ---
+// toggle panel
+function togglePanel(){
+  panel.classList.toggle("hidden");
+}
+
+// terrains
 let terrains = [
   {id:"LFDA",lat:43.709,lon:-0.249,alt:80},
   {id:"LFID",lat:43.955,lon:0.373,alt:130},
@@ -138,70 +154,76 @@ let terrains = [
 ];
 
 function refreshTerrains(){
-  let div=document.getElementById("terrains");
-  div.innerHTML="";
+  terrainsDiv.innerHTML="";
   terrains.forEach(t=>{
     let c=document.createElement("input");
     c.type="checkbox";
     c.checked=true;
     c.id="chk"+t.id;
     c.onchange=update;
-    div.appendChild(c);
-    div.appendChild(document.createTextNode(" "+t.id));
-    div.appendChild(document.createElement("br"));
+    terrainsDiv.appendChild(c);
+    terrainsDiv.appendChild(document.createTextNode(" "+t.id));
+    terrainsDiv.appendChild(document.createElement("br"));
   });
 }
+
+let terrainsDiv = document.getElementById("terrains");
 refreshTerrains();
 
-// --- utils ---
+// couleurs
 function color(h){
   let r=Math.round(255*(1-(h-400)/1100));
   let g=Math.round(255*((h-400)/1100));
   return "rgb("+r+","+g+",0)";
 }
 
-// --- draw ---
+// objets carte
 let objs=[];
 
 function update(){
+
   objs.forEach(o=>map.removeLayer(o));
   objs=[];
 
   let h=parseInt(slider.value);
   hVal.innerText=h;
 
-  let finesse=parseFloat(finesse.value);
-  let fb=parseFloat(finesseBasse.value);
-  let seuil=parseFloat(seuilFinesseBasse.value);
+  let f=parseFloat(finesse.value);
+  let fbVal=parseFloat(fb.value);
+  let seuilVal=parseFloat(seuil.value);
+  let margeVal=parseFloat(marge.value);
   let modeVal=mode.value;
-  let showAllVal=showAll.checked;
-  let showLabelsVal=labels.checked;
+  let allVal=all.checked;
+  let showLabels=labels.checked;
 
   terrains.forEach(t=>{
+
     if(!document.getElementById("chk"+t.id).checked) return;
 
-    let hMin=showAllVal?400:h;
-    let hMax=showAllVal?1500:h;
+    let hMin=allVal?400:h;
+    let hMax=allVal?1500:h;
 
     for(let hh=hMin;hh<=hMax;hh+=100){
 
       let h_rel = (modeVal=="QFE") ? hh - t.alt : hh;
-      if(h_rel<=0) continue;
+      let h_util = h_rel - margeVal;
 
-      let f = (hh<=seuil)?fb:finesse;
-      let d = h_rel * f;
+      if(h_util <= 0) continue;
 
-      let c=L.circle([t.lat,t.lon],{
+      let finesseUse = (hh <= seuilVal) ? fbVal : f;
+
+      let d = h_util * finesseUse;
+
+      let circle=L.circle([t.lat,t.lon],{
         radius:d,
         color:color(hh),
         weight:2,
         fill:false
       }).addTo(map);
 
-      objs.push(c);
+      objs.push(circle);
 
-      // labels
-      if(showLabelsVal){
+      if(showLabels){
         [0,180].forEach(a=>{
           let rad=a*Math.PI/180;
 
@@ -210,8 +232,8 @@ function update(){
 
           let lab=L.marker([t.lat+latOff,t.lon+lonOff],{
             icon:L.divIcon({
-              className:'label-div',
-              html:hh+"m-F"+Math.round(f)+"-"+t.id
+              className:'label',
+              html:hh+"m-F"+Math.round(finesseUse)+"-"+t.id
             })
           }).addTo(map);
 
@@ -227,7 +249,7 @@ function update(){
 
 update();
 
-// --- ajout terrain ---
+// ajout terrain
 map.on('click', function(e){
   let nom=prompt("Nom terrain ?");
   if(!nom) return;
