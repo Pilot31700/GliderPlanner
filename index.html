@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
-  <title>PlanneurMob V21 - Zones atteignables réalistes</title>
+  <title>PlanneurMob V20 - Zones atteignables réalistes</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -398,7 +398,6 @@
     // --- UI events ---
     slider.addEventListener('input', () => {
       hVal.innerText = slider.value;
-      // don't call update on every tiny move if performance is an issue; here it's fine
       update();
     });
 
@@ -418,88 +417,55 @@
       menuVent.style.display = (menuVent.style.display === 'none' || menuVent.style.display === '') ? 'block' : 'none';
     });
 
-    // make panels draggable
+    // make panels draggable but ignore drags started on form controls
     function makeDraggable(el) {
-  let dragging = false;
-  let offsetX = 0;
-  let offsetY = 0;
+      let dragging = false;
+      let offsetX = 0;
+      let offsetY = 0;
 
-  // helper : retourne true si l'élément cible doit empêcher le drag
-  function isFormControl(target) {
-    if (!target) return false;
-    // ignore si on clique dans un input/select/textarea/button/label ou un élément marqué .no-drag
-    return !!target.closest('input, select, textarea, button, label, [role="slider"], .no-drag');
-  }
+      function isFormControl(target) {
+        if (!target) return false;
+        return !!target.closest('input, select, textarea, button, label, [role="slider"], .no-drag');
+      }
 
-  // pointerdown couvre mouse/touch/stylus
-  el.addEventListener('pointerdown', function (e) {
-    // n'intercepte que le bouton principal
-    if (e.button && e.button !== 0) return;
+      el.addEventListener('pointerdown', function (e) {
+        // only left button
+        if (e.button && e.button !== 0) return;
 
-    // si on a cliqué sur un contrôle de formulaire, ne pas démarrer le drag
-    if (isFormControl(e.target)) return;
+        // if clicked on a form control, don't start dragging
+        if (isFormControl(e.target)) return;
 
-    // commencer le drag
-    dragging = true;
-    // capture du pointeur pour recevoir les events même si la souris sort du panneau
-    el.setPointerCapture(e.pointerId);
-
-    offsetX = e.clientX - el.offsetLeft;
-    offsetY = e.clientY - el.offsetTop;
-    el.style.cursor = 'grabbing';
-    e.preventDefault();
-  });
-
-  el.addEventListener('pointermove', function (e) {
-    if (!dragging) return;
-    let left = e.clientX - offsetX;
-    let top = e.clientY - offsetY;
-    // garder dans la fenêtre
-    left = Math.max(0, Math.min(window.innerWidth - el.offsetWidth, left));
-    top = Math.max(0, Math.min(window.innerHeight - el.offsetHeight, top));
-    el.style.left = left + 'px';
-    el.style.top = top + 'px';
-  });
-
-  el.addEventListener('pointerup', function (e) {
-    if (!dragging) return;
-    dragging = false;
-    try { el.releasePointerCapture(e.pointerId); } catch (err) {}
-    el.style.cursor = 'default';
-  });
-
-  // si le pointeur est annulé (ex: appel système), arrêter proprement
-  el.addEventListener('pointercancel', function () {
-    dragging = false;
-    el.style.cursor = 'default';
-  });
-
-  // support pour clics tactiles rapides sur inputs : si on commence sur un élément non-form,
-  // mais que le pointeur passe sur un input, on laisse l'interaction normale (pointer events gèrent ça).
-}
-
-      // touch support
-      el.addEventListener('touchstart', function (e) {
-        const t = e.touches[0];
         dragging = true;
-        offsetX = t.clientX - el.offsetLeft;
-        offsetY = t.clientY - el.offsetTop;
-      }, { passive: true });
+        el.setPointerCapture(e.pointerId);
+        offsetX = e.clientX - el.offsetLeft;
+        offsetY = e.clientY - el.offsetTop;
+        el.style.cursor = 'grabbing';
+        e.preventDefault();
+      });
 
-      document.addEventListener('touchmove', function (e) {
+      el.addEventListener('pointermove', function (e) {
         if (!dragging) return;
-        const t = e.touches[0];
-        let left = t.clientX - offsetX;
-        let top = t.clientY - offsetY;
+        let left = e.clientX - offsetX;
+        let top = e.clientY - offsetY;
         left = Math.max(0, Math.min(window.innerWidth - el.offsetWidth, left));
         top = Math.max(0, Math.min(window.innerHeight - el.offsetHeight, top));
         el.style.left = left + 'px';
         el.style.top = top + 'px';
-      }, { passive: true });
-
-      document.addEventListener('touchend', function () {
-        dragging = false;
       });
+
+      el.addEventListener('pointerup', function (e) {
+        if (!dragging) return;
+        dragging = false;
+        try { el.releasePointerCapture(e.pointerId); } catch (err) {}
+        el.style.cursor = 'default';
+      });
+
+      el.addEventListener('pointercancel', function () {
+        dragging = false;
+        el.style.cursor = 'default';
+      });
+
+      // touch fallback handled by pointer events
     }
 
     makeDraggable(panel);
