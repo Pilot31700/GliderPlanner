@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>PlanneurMob - Zones atteignables</title>
+<title>PlanneurMob V14 - Zones atteignables</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -54,7 +54,7 @@ html, body { margin:0; height:100%; }
 
 <div id="panel" class="panel">
 
-<b>Glide Planner</b><br><br>
+<b>Glide Planner V14</b><br><br>
 
 Finesse: <input id="finesse" type="number" value="30"><br>
 Finesse basse: <input id="fb" type="number" value="10"><br>
@@ -66,8 +66,9 @@ Marge: <input id="marge" type="number" value="250"><br>
 Hauteur: <span id="hVal">600</span><br>
 <input id="slider" type="range" min="400" max="1500" step="100" value="600" oninput="update()"><br>
 
-<input type="checkbox" id="all" onchange="update()"> Tous cercles<br>
+<input type="checkbox" id="all" onchange="update()"> Tous cercles 100m<br>
 <input type="checkbox" id="labels" checked onchange="update()"> Labels<br>
+<input type="checkbox" id="showConn" checked onchange="update()"> Afficher zones atteignables<br>
 <hr>
 
 Mode:
@@ -198,6 +199,7 @@ function update(){
   let modeVal=mode.value;
   let showLabels=labels.checked;
   let allVal=all.checked;
+  let showConn = document.getElementById("showConn").checked;
 
   let ref = terrainsAll.find(t => t.id === refSelect.value);
   let refAlt = ref?ref.alt:0;
@@ -246,21 +248,23 @@ function update(){
   });
 
   // connections zones
-  let conns = computeConnections(terrains,h,modeVal,margeVal,seuilVal,f,fbVal,refAlt);
-  conns.forEach(c=>{
-    let line=L.polyline([[c.A.lat,c.A.lon],[c.B.lat,c.B.lon]],{
-      color:"blue",weight:3,dashArray:"5,5"
-    }).addTo(map);
-    objs.push(line);
+  if(showConn){
+    let conns = computeConnections(terrains,h,modeVal,margeVal,seuilVal,f,fbVal,refAlt);
+    conns.forEach(c=>{
+      let line=L.polyline([[c.A.lat,c.A.lon],[c.B.lat,c.B.lon]],{
+        color:"blue",weight:3,dashArray:"5,5"
+      }).addTo(map);
+      objs.push(line);
 
-    let hMin = computeMinAltitude(c.A,c.B,modeVal,margeVal,f);
-    let midLat = (c.A.lat+c.B.lat)/2;
-    let midLon = (c.A.lon+c.B.lon)/2;
-    let label=L.marker([midLat,midLon],{
-      icon:L.divIcon({className:'label',html:"Min: "+Math.round(hMin)+"m"})
-    }).addTo(map);
-    objs.push(label);
-  });
+      let hMin = computeMinAltitude(c.A,c.B,modeVal,margeVal,f);
+      let midLat = (c.A.lat+c.B.lat)/2;
+      let midLon = (c.A.lon+c.B.lon)/2;
+      let label=L.marker([midLat,midLon],{
+        icon:L.divIcon({className:'label',html:"Min: "+Math.round(hMin)+"m"})
+      }).addTo(map);
+      objs.push(label);
+    });
+  }
 }
 
 update();
