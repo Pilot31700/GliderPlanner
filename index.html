@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
-  <title>Glide Planner V20 - Carte floutée Home/Manuel</title>
+  <title>Glide Planner V20 - Fix interactions</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -76,6 +76,8 @@
       cursor:pointer;
       box-shadow: 0 6px 18px rgba(10,10,10,0.18);
       transition: transform .12s ease, box-shadow .12s ease;
+      pointer-events:auto;
+      touch-action: manipulation;
     }
     .menuBtn:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(10,10,10,0.22); }
 
@@ -93,6 +95,8 @@
       font-weight:600;
       cursor:pointer;
       box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+      pointer-events:auto;
+      touch-action: manipulation;
     }
 
     /* Panels */
@@ -107,7 +111,8 @@
       max-height:78vh;
       overflow:auto;
       border:1px solid rgba(20,20,20,0.04);
-      touch-action: none;
+      touch-action: none; /* allow dragging panels without triggering map gestures */
+      pointer-events:auto;
     }
 
     .panel h4 { margin:0 0 8px 0; font-size:15px; }
@@ -131,6 +136,8 @@
       justify-content:center;
       cursor:pointer;
       box-shadow: 0 8px 20px rgba(31,111,235,0.18);
+      pointer-events:auto;
+      touch-action: manipulation;
     }
     .toggleBtn.top { top:12px; }
     .toggleBtn.second { top:72px; }
@@ -171,6 +178,7 @@
       z-index:45;
     }
 
+    /* small responsive */
     @media (max-width:720px){
       .panel { width:90%; left:5% !important; right:5% !important; top:12px !important; }
       .menuBtn { min-width:160px; }
@@ -184,7 +192,7 @@
   <div id="map" aria-hidden="true"></div>
 
   <!-- HOME (voile centré au-dessus de la carte) -->
-  <div id="homeScreen" aria-label="Accueil">
+  <div id="homeScreen" class="screen" aria-hidden="false">
     <div id="homeInner">
       <h2 id="homeTitle">Glide Planner</h2>
       <p id="homeSubtitle">Prépare tes vols, visualise les zones atteignables et pilote en toute confiance.</p>
@@ -198,7 +206,7 @@
   </div>
 
   <!-- PREPARATION -->
-  <div id="prepScreen" aria-label="Préparation">
+  <div id="prepScreen" class="screen" aria-hidden="true">
     <button class="backBtn" id="backFromPrep">← Menu</button>
 
     <button id="btnPanel" class="toggleBtn top" title="Paramètres">⚙</button>
@@ -252,14 +260,14 @@
   </div>
 
   <!-- MODE VOL (carte interactive) -->
-  <div id="volScreen" class="screen" aria-label="Mode Vol">
+  <div id="volScreen" class="screen" aria-hidden="true">
     <button class="backBtn" id="backFromVol">← Menu</button>
     <h2 style="margin-top:60px; text-align:center;">Mode Vol</h2>
     <p style="text-align:center; max-width:900px; margin:12px auto; color:#333;">Mode Vol : carte interactive, affichage simplifié pour cockpit.</p>
   </div>
 
   <!-- MANUEL (carte floutée + non interactive) -->
-  <div id="manuelScreen" class="screen" aria-label="Manuel">
+  <div id="manuelScreen" class="screen" aria-hidden="true">
     <button class="backBtn" id="backFromManuel">← Menu</button>
 
     <div id="manuelCard">
@@ -276,7 +284,7 @@
   </div>
 
   <script>
-    /* Helpers pour activer/désactiver interactions Leaflet */
+    /* Helpers pour activer/désactiver interactions Leaflet (robuste multi-navigateurs) */
     function enableMapInteractions(map) {
       try {
         if (!map) return;
@@ -313,39 +321,32 @@
       } catch (e) { console.warn('disableMapInteractions', e); }
     }
 
-    /* goTo : gestion des écrans + flou + interactions */
+    /* goTo : gestion des écrans + flou + interactions + aria-hidden correct */
     function goTo(screenId){
-      const home = document.getElementById('homeScreen');
-      const prep = document.getElementById('prepScreen');
-      const vol = document.getElementById('volScreen');
-      const manuel = document.getElementById('manuelScreen');
+      const screens = ['homeScreen','prepScreen','volScreen','manuelScreen'];
       const mapEl = document.getElementById('map');
 
-      // hide all screens
-      if(home) { home.style.display = 'none'; home.setAttribute('aria-hidden','true'); }
-      if(prep) { prep.style.display = 'none'; prep.setAttribute('aria-hidden','true'); }
-      if(vol) { vol.style.display = 'none'; vol.setAttribute('aria-hidden','true'); }
-      if(manuel) { manuel.style.display = 'none'; manuel.setAttribute('aria-hidden','true'); }
-
-      // show requested screen
-      const target = document.getElementById(screenId);
-      if(!target) return;
-      if(screenId === 'homeScreen') {
-        target.style.display = 'flex';
-        target.setAttribute('aria-hidden','false');
-      } else {
-        target.style.display = 'block';
-        target.setAttribute('aria-hidden','false');
-      }
+      // hide all screens and mark aria-hidden
+      screens.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (id === screenId) {
+          el.style.display = (id === 'homeScreen') ? 'flex' : 'block';
+          el.removeAttribute('aria-hidden');
+        } else {
+          el.style.display = 'none';
+          el.setAttribute('aria-hidden','true');
+        }
+      });
 
       // map visual state and interactions
-      if(mapEl){
-        if(screenId === 'homeScreen' || screenId === 'manuelScreen'){
+      if (mapEl) {
+        if (screenId === 'homeScreen' || screenId === 'manuelScreen') {
           mapEl.classList.add('map-blurred');
-          if(window._glide_map) disableMapInteractions(window._glide_map);
+          if (window._glide_map) disableMapInteractions(window._glide_map);
         } else {
           mapEl.classList.remove('map-blurred');
-          if(window._glide_map) {
+          if (window._glide_map) {
             enableMapInteractions(window._glide_map);
             setTimeout(()=> window._glide_map.invalidateSize(), 120);
           }
@@ -353,7 +354,7 @@
       }
     }
 
-    /* Attacher listeners aux boutons */
+    /* Attacher listeners aux boutons (après DOM ready) */
     document.addEventListener('DOMContentLoaded', function(){
       const btnGoPrep = document.getElementById('btnGoPrep');
       const btnGoVol = document.getElementById('btnGoVol');
@@ -378,7 +379,7 @@
   <!-- Script complet intégré (carte, contrôles, calculs) -->
   <script>
   document.addEventListener('DOMContentLoaded', function () {
-    // DOM elements
+    // DOM elements (guarded)
     const panel = document.getElementById('panel');
     const menuVent = document.getElementById('menuVent');
     const btnPanel = document.getElementById('btnPanel');
@@ -443,6 +444,7 @@
     let terrains = [];
 
     function populateRef() {
+      if (!refSelect) return;
       refSelect.innerHTML = "";
       terrainsAll.forEach(t => {
         const opt = document.createElement("option");
@@ -472,6 +474,7 @@
 
     function initWindMenu() {
       const container = document.getElementById('windControls');
+      if (!container) return;
       container.innerHTML = '';
       windLayers.forEach(w => {
         const block = document.createElement('div');
@@ -486,7 +489,7 @@
 
         const slider = block.querySelector(`#${w.v}`);
         const label = block.querySelector(`#${w.v}_label`);
-        slider.addEventListener('input', () => { label.innerText = slider.value + ' km/h'; });
+        if (slider && label) slider.addEventListener('input', () => { label.innerText = slider.value + ' km/h'; });
       });
     }
     initWindMenu();
@@ -511,23 +514,23 @@
     function update() {
       clearObjs();
 
-      const range = parseFloat(rangeKm.value) || 100;
+      const range = (rangeKm && rangeKm.value) ? parseFloat(rangeKm.value) : 100;
       terrains = terrainsAll.filter(t => distanceKm(userPos, t) <= range);
 
-      const h = parseInt(slider.value, 10) || 0;
-      hVal.innerText = h;
+      const h = (slider && slider.value) ? parseInt(slider.value, 10) : 0;
+      if (hVal) hVal.innerText = h;
 
-      const f = parseFloat(finesse.value) || 30;
-      const fbVal = parseFloat(fb.value) || 10;
-      const seuilVal = parseFloat(seuil.value) || 500;
-      const margeVal = parseFloat(marge.value) || 250;
-      const vCruise = parseFloat(vCruiseInput.value) || 100;
-      const modeVal = mode.value;
-      const showLabels = labels.checked;
-      const allVal = all.checked;
-      const useWind = applyWind.checked;
+      const f = (finesse && finesse.value) ? parseFloat(finesse.value) : 30;
+      const fbVal = (fb && fb.value) ? parseFloat(fb.value) : 10;
+      const seuilVal = (seuil && seuil.value) ? parseFloat(seuil.value) : 500;
+      const margeVal = (marge && marge.value) ? parseFloat(marge.value) : 250;
+      const vCruise = (vCruiseInput && vCruiseInput.value) ? parseFloat(vCruiseInput.value) : 100;
+      const modeVal = (mode && mode.value) ? mode.value : 'QFE';
+      const showLabels = (labels && labels.checked) ? true : false;
+      const allVal = (all && all.checked) ? true : false;
+      const useWind = (applyWind && applyWind.checked) ? true : false;
 
-      const ref = terrainsAll.find(t => t.id === refSelect.value);
+      const ref = terrainsAll.find(t => refSelect && t.id === refSelect.value);
       const refAlt = ref ? ref.alt : 0;
 
       terrains.forEach(t => {
@@ -621,29 +624,31 @@
       update();
     });
 
-    // UI events
-    slider.addEventListener('input', () => {
-      hVal.innerText = slider.value;
-      update();
-    });
+    // UI events (guarded)
+    if (slider) slider.addEventListener('input', () => { if (hVal) hVal.innerText = slider.value; update(); });
+    if (btnRecalc) btnRecalc.addEventListener('click', (e) => { e.preventDefault(); update(); });
+    if (btnRecalcWind) btnRecalcWind.addEventListener('click', (e) => { e.preventDefault(); update(); });
 
-    btnRecalc.addEventListener('click', update);
-    btnRecalcWind.addEventListener('click', update);
-
-    [finesse, fb, seuil, marge, vCruiseInput, mode, labels, all, rangeKm, refSelect, applyWind].forEach(el => {
+    [
+      finesse, fb, seuil, marge, vCruiseInput, mode, labels, all, rangeKm, refSelect, applyWind
+    ].forEach(el => {
+      if (!el) return;
       el.addEventListener('change', update);
     });
 
     // toggle panels (hidden par défaut)
-    btnPanel.addEventListener('click', () => {
+    if (btnPanel) btnPanel.addEventListener('click', () => {
+      if (!panel) return;
       panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none';
     });
-    btnVent.addEventListener('click', () => {
+    if (btnVent) btnVent.addEventListener('click', () => {
+      if (!menuVent) return;
       menuVent.style.display = (menuVent.style.display === 'none' || menuVent.style.display === '') ? 'block' : 'none';
     });
 
     // make panels draggable but ignore drags started on form controls
     function makeDraggable(el) {
+      if (!el) return;
       let dragging = false;
       let offsetX = 0;
       let offsetY = 0;
