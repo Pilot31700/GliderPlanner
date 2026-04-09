@@ -2,15 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
-  <title>Glide Planner v22</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="utf-8" />
-  <title>Glide Planner v22</title>
+  <title>Glide Planner v40 - Fix z-index</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -42,7 +34,7 @@
     .map-blocker {
       position:fixed;
       inset:0;
-      z-index:20;
+      z-index:25;
       background:transparent;
       pointer-events:auto; /* bloque les interactions vers la carte */
       display:none;
@@ -52,7 +44,7 @@
     #homeScreen {
       position:fixed;
       inset:0;
-      z-index:40;
+      z-index:30; /* inférieur à prep/vol pour éviter d'obstruer si on oublie de cacher */
       display:flex;
       align-items:center;
       justify-content:center;
@@ -89,7 +81,7 @@
     .menuBtn:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(10,10,10,0.22); }
 
     /* PREP SCREEN (map + panels) */
-    #prepScreen { position:fixed; inset:0; display:none; z-index:30; background:transparent; }
+    #prepScreen { position:fixed; inset:0; display:none; z-index:40; background:transparent; }
     .backBtn {
       position: absolute;
       top:12px; left:12px;
@@ -162,7 +154,7 @@
       position:fixed;
       inset:0;
       display:none;
-      z-index:40;
+      z-index:40; /* same as prep so they appear above home */
       background: transparent;
       overflow:auto;
       padding:28px;
@@ -203,22 +195,22 @@
       <p id="homeSubtitle">Prépare tes vols, visualise les zones atteignables et pilote en toute confiance.</p>
 
       <div class="menuGrid">
-        <button class="menuBtn" onclick="goTo('prepScreen')">Préparation</button>
-        <button class="menuBtn" onclick="goTo('volScreen')">Mode Vol</button>
-        <button class="menuBtn" onclick="goTo('manuelScreen')">Manuel</button>
+        <button id="btnGoPrep" class="menuBtn">Préparation</button>
+        <button id="btnGoVol" class="menuBtn">Mode Vol</button>
+        <button id="btnGoManuel" class="menuBtn">Manuel</button>
       </div>
     </div>
   </div>
 
   <!-- PREPARATION -->
   <div id="prepScreen" aria-label="Préparation">
-    <button class="backBtn" onclick="goTo('homeScreen')">← Menu</button>
+    <button class="backBtn" id="backFromPrep">← Menu</button>
 
     <button id="btnPanel" class="toggleBtn top" title="Paramètres">⚙</button>
     <button id="btnVent" class="toggleBtn second" title="Vent">🌬</button>
 
     <div id="panel" class="panel" style="left:12px; top:72px; display:none;">
-      <h4>Glide Planner v22</h4>
+      <h4>Glide Planner v40</h4>
 
       <div class="field">Finesse: <input id="finesse" type="number" value="30"></div>
       <div class="field">Finesse basse: <input id="fb" type="number" value="10"></div>
@@ -266,14 +258,14 @@
 
   <!-- MODE VOL (carte interactive) -->
   <div id="volScreen" class="screen" aria-label="Mode Vol">
-    <button class="backBtn" onclick="goTo('homeScreen')">← Menu</button>
+    <button class="backBtn" id="backFromVol">← Menu</button>
     <h2 style="margin-top:60px; text-align:center;">Mode Vol</h2>
     <p style="text-align:center; max-width:900px; margin:12px auto; color:#333;">Mode Vol : carte interactive, affichage simplifié pour cockpit.</p>
   </div>
 
   <!-- MANUEL (carte floutée + non interactive) -->
   <div id="manuelScreen" class="screen" aria-label="Manuel">
-    <button class="backBtn" onclick="goTo('homeScreen')">← Menu</button>
+    <button class="backBtn" id="backFromManuel">← Menu</button>
 
     <div id="manuelCard">
       <h2>Manuel</h2>
@@ -293,13 +285,10 @@
      * goTo(screenId)
      * - gère l'affichage des écrans
      * - active/désactive le flou visuel et les blockers (Home / Manuel)
-     * - invalide la taille de la carte quand on affiche Prep ou Vol
      *
-     * Comportement demandé :
-     * - Home : carte floutée + mapBlockerHome visible (bloque interactions)
-     * - Prep  : carte nette + interactive (pas de blocker)
-     * - Vol   : carte nette + interactive
-     * - Manuel: carte floutée + mapBlockerManual visible (bloque interactions)
+     * Important fix:
+     * - prep/vol/manuel ont z-index >= 40 so they appear above home if home wasn't hidden
+     * - we explicitly hide homeScreen when switching to another screen to avoid leftover overlay
      */
     function goTo(screenId){
       const home = document.getElementById('homeScreen');
@@ -310,11 +299,11 @@
       const blockerHome = document.getElementById('mapBlockerHome');
       const blockerManual = document.getElementById('mapBlockerManual');
 
-      // hide all screens
-      if(home) home.style.display = 'none';
-      if(prep) prep.style.display = 'none';
-      if(vol) vol.style.display = 'none';
-      if(manuel) manuel.style.display = 'none';
+      // hide all screens first
+      if(home) { home.style.display = 'none'; home.setAttribute('aria-hidden','true'); }
+      if(prep) { prep.style.display = 'none'; prep.setAttribute('aria-hidden','true'); }
+      if(vol) { vol.style.display = 'none'; vol.setAttribute('aria-hidden','true'); }
+      if(manuel) { manuel.style.display = 'none'; manuel.setAttribute('aria-hidden','true'); }
 
       // hide blockers by default
       if(blockerHome) blockerHome.style.display = 'none';
@@ -325,8 +314,10 @@
       if(!target) return;
       if(screenId === 'homeScreen') {
         target.style.display = 'flex';
+        target.setAttribute('aria-hidden','false');
       } else {
         target.style.display = 'block';
+        target.setAttribute('aria-hidden','false');
       }
 
       // map visual state and blockers
@@ -342,14 +333,32 @@
         }
       }
 
-      // if map exists, invalidate size when showing prep or vol to ensure proper rendering
+      // ensure map renders correctly when showing prep or vol
       if(window._glide_map && (screenId === 'prepScreen' || screenId === 'volScreen')){
         setTimeout(()=> window._glide_map.invalidateSize(), 120);
       }
     }
 
-    // show home by default
-    document.addEventListener('DOMContentLoaded', ()=> goTo('homeScreen'));
+    // Attach event listeners to buttons (avoid inline onclick issues)
+    document.addEventListener('DOMContentLoaded', function(){
+      const btnGoPrep = document.getElementById('btnGoPrep');
+      const btnGoVol = document.getElementById('btnGoVol');
+      const btnGoManuel = document.getElementById('btnGoManuel');
+      const backFromPrep = document.getElementById('backFromPrep');
+      const backFromVol = document.getElementById('backFromVol');
+      const backFromManuel = document.getElementById('backFromManuel');
+
+      if(btnGoPrep) btnGoPrep.addEventListener('click', (e) => { e.preventDefault(); goTo('prepScreen'); });
+      if(btnGoVol) btnGoVol.addEventListener('click', (e) => { e.preventDefault(); goTo('volScreen'); });
+      if(btnGoManuel) btnGoManuel.addEventListener('click', (e) => { e.preventDefault(); goTo('manuelScreen'); });
+
+      if(backFromPrep) backFromPrep.addEventListener('click', (e) => { e.preventDefault(); goTo('homeScreen'); });
+      if(backFromVol) backFromVol.addEventListener('click', (e) => { e.preventDefault(); goTo('homeScreen'); });
+      if(backFromManuel) backFromManuel.addEventListener('click', (e) => { e.preventDefault(); goTo('homeScreen'); });
+
+      // show home by default
+      goTo('homeScreen');
+    });
   </script>
 
   <!-- Script complet intégré (carte, contrôles, calculs) -->
@@ -609,653 +618,6 @@
     });
 
     // toggle panels (hidden par défaut)
-    btnPanel.addEventListener('click', () => {
-      panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none';
-    });
-    btnVent.addEventListener('click', () => {
-      menuVent.style.display = (menuVent.style.display === 'none' || menuVent.style.display === '') ? 'block' : 'none';
-    });
-
-    // make panels draggable but ignore drags started on form controls
-    function makeDraggable(el) {
-      let dragging = false;
-      let offsetX = 0;
-      let offsetY = 0;
-
-      function isFormControl(target) {
-        if (!target) return false;
-        return !!target.closest('input, select, textarea, button, label, [role="slider"], .no-drag');
-      }
-
-      el.addEventListener('pointerdown', function (e) {
-        if (e.button && e.button !== 0) return;
-        if (isFormControl(e.target)) return;
-
-        dragging = true;
-        try { el.setPointerCapture(e.pointerId); } catch (err) {}
-        offsetX = e.clientX - el.offsetLeft;
-        offsetY = e.clientY - el.offsetTop;
-        el.style.cursor = 'grabbing';
-        e.preventDefault();
-      });
-
-      el.addEventListener('pointermove', function (e) {
-        if (!dragging) return;
-        let left = e.clientX - offsetX;
-        let top = e.clientY - offsetY;
-        left = Math.max(0, Math.min(window.innerWidth - el.offsetWidth, left));
-        top = Math.max(0, Math.min(window.innerHeight - el.offsetHeight, top));
-        el.style.left = left + 'px';
-        el.style.top = top + 'px';
-      });
-
-      el.addEventListener('pointerup', function (e) {
-        if (!dragging) return;
-        dragging = false;
-        try { el.releasePointerCapture(e.pointerId); } catch (err) {}
-        el.style.cursor = 'default';
-      });
-
-      el.addEventListener('pointercancel', function () {
-        dragging = false;
-        el.style.cursor = 'default';
-      });
-    }
-
-    makeDraggable(panel);
-    makeDraggable(menuVent);
-
-    // initialize wind labels
-    windLayers.forEach(w => {
-      const s = document.getElementById(w.v);
-      const lbl = document.getElementById(w.v + '_label');
-      if (s && lbl) lbl.innerText = s.value + ' km/h';
-    });
-
-    // expose update and map for debugging
-    window._glide_update = update;
-    window._glide_map = map;
-  });
-  </script>
-
-</body>
-</html>
-
-  <style>
-    :root{
-      --accent:#1f6feb;
-      --panel-bg: rgba(250,250,250,0.96);
-      --panel-shadow: 0 6px 18px rgba(20,20,20,0.18);
-    }
-
-    html, body { margin:0; height:100%; font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
-
-    /* MAP (always present) */
-    #map {
-      position:fixed;
-      inset:0;
-      z-index:1;
-      transition: filter 220ms ease;
-    }
-    /* blurred map state for home screen (visual only) */
-    #map.blurred {
-      filter: blur(6px) brightness(0.6) saturate(0.9);
-    }
-
-    /* HOME */
-    #homeScreen {
-      position:fixed;
-      inset:0;
-      z-index:40;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      color:white;
-      text-align:center;
-      pointer-events:auto;
-    }
-    /* semi-transparent card centered over blurred map */
-    #homeInner {
-      width: min(720px, 92%);
-      padding: 36px;
-      border-radius: 14px;
-      background: rgba(8,10,15,0.45);
-      box-shadow: 0 10px 40px rgba(0,0,0,0.45);
-      border: 1px solid rgba(255,255,255,0.04);
-      backdrop-filter: blur(4px);
-    }
-    #homeTitle { font-size:34px; margin:0 0 8px 0; letter-spacing:0.2px; }
-    #homeSubtitle { margin:0 0 18px 0; color:#dfe7ff; font-size:14px; }
-
-    .menuGrid { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin-top:8px; }
-    .menuBtn {
-      min-width:200px;
-      padding:14px 18px;
-      border-radius:12px;
-      border: none;
-      background: #ffffff;
-      color: #0b1220;
-      font-weight:700;
-      font-size:16px;
-      cursor:pointer;
-      box-shadow: 0 6px 18px rgba(10,10,10,0.18);
-      transition: transform .12s ease, box-shadow .12s ease;
-    }
-    .menuBtn:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(10,10,10,0.22); }
-
-    /* PREP SCREEN (map + panels) */
-    #prepScreen { position:fixed; inset:0; display:none; z-index:10; background:transparent; }
-    .backBtn {
-      position: absolute;
-      top:12px; left:12px;
-      z-index:2200;
-      background: rgba(0,0,0,0.7);
-      color:white;
-      border:none;
-      padding:10px 14px;
-      border-radius:10px;
-      font-weight:600;
-      cursor:pointer;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.25);
-    }
-
-    /* Panels */
-    .panel {
-      position:absolute;
-      width:320px;
-      background: var(--panel-bg);
-      border-radius:12px;
-      padding:12px;
-      box-shadow: var(--panel-shadow);
-      z-index:2000;
-      max-height:78vh;
-      overflow:auto;
-      border:1px solid rgba(20,20,20,0.04);
-    }
-
-    .panel h4 { margin:0 0 8px 0; font-size:15px; }
-    .panel .field { margin-bottom:10px; font-size:13px; color:#222; }
-    .panel input[type="number"], .panel select { width:110px; padding:6px; border-radius:6px; border:1px solid #ddd; }
-    .panel input[type="range"] { width:100%; }
-
-    .toggleBtn {
-      position:absolute;
-      right:12px;
-      z-index:2100;
-      background:var(--accent);
-      color:white;
-      padding:10px;
-      border-radius:10px;
-      border:none;
-      width:48px;
-      height:48px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      cursor:pointer;
-      box-shadow: 0 8px 20px rgba(31,111,235,0.18);
-    }
-    .toggleBtn.top { top:12px; }
-    .toggleBtn.second { top:72px; }
-
-    .label {
-      font-size:11px;
-      font-weight:700;
-      background:rgba(255,255,255,0.95);
-      padding:4px 6px;
-      border-radius:6px;
-      border:1px solid rgba(0,0,0,0.06);
-      display:inline-block;
-    }
-
-    /* Wind panel smaller controls */
-    .wind-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
-    .wind-row input[type="number"] { width:70px; }
-
-    /* OTHER SCREENS */
-    .screen {
-      position:fixed;
-      inset:0;
-      display:none;
-      z-index:30;
-      background: #fff;
-      overflow:auto;
-      padding:28px;
-    }
-
-    /* small responsive */
-    @media (max-width:720px){
-      .panel { width:90%; left:5% !important; right:5% !important; top:12px !important; }
-      .menuBtn { min-width:160px; }
-      #homeTitle { font-size:28px; }
-    }
-  </style>
-</head>
-<body>
-
-  <!-- MAP (always present) -->
-  <div id="map" class="blurred" aria-hidden="true"></div>
-
-  <!-- HOME (overlay over blurred map) -->
-  <div id="homeScreen" aria-label="Accueil">
-    <div id="homeInner">
-      <h2 id="homeTitle">Glide Planner</h2>
-      <p id="homeSubtitle">Prépare tes vols, visualise les zones atteignables et pilote en toute confiance.</p>
-
-      <div class="menuGrid">
-        <button class="menuBtn" onclick="goTo('prepScreen')">Préparation</button>
-        <button class="menuBtn" onclick="goTo('volScreen')">Mode Vol</button>
-        <button class="menuBtn" onclick="goTo('manuelScreen')">Manuel</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- PREPARATION -->
-  <div id="prepScreen" aria-label="Préparation">
-    <button class="backBtn" onclick="goTo('homeScreen')">← Menu</button>
-
-    <button id="btnPanel" class="toggleBtn top" title="Paramètres">⚙</button>
-    <button id="btnVent" class="toggleBtn second" title="Vent">🌬</button>
-
-    <div id="panel" class="panel" style="left:12px; top:72px; display:none;">
-      <h4>Glide Planner v22</h4>
-
-      <div class="field">Finesse: <input id="finesse" type="number" value="30"></div>
-      <div class="field">Finesse basse: <input id="fb" type="number" value="10"></div>
-      <div class="field">Seuil finesse basse (m): <input id="seuil" type="number" value="500"></div>
-      <div class="field">Marge (m): <input id="marge" type="number" value="250"></div>
-      <div class="field">Vitesse de croisière (km/h): <input id="vCruise" type="number" value="100"></div>
-
-      <div class="field"><button id="btnRecalc" style="width:100%; padding:10px; border-radius:8px; border:none; background:var(--accent); color:white; font-weight:700;">Recalculer</button></div>
-
-      <hr>
-
-      <div class="field">Hauteur: <span id="hVal">600</span> m</div>
-      <div class="field"><input id="slider" type="range" min="0" max="3000" step="100" value="600"></div>
-
-      <div class="field"><label><input type="checkbox" id="all"> Tous cercles 100m</label></div>
-      <div class="field"><label><input type="checkbox" id="labels" checked> Labels</label></div>
-      <div class="field"><label><input type="checkbox" id="showConn" checked> Afficher zones atteignables</label></div>
-
-      <hr>
-
-      <div class="field">Mode<br>
-        <select id="mode">
-          <option value="QFE">QFE (terrain)</option>
-          <option value="QNH">QNH</option>
-          <option value="QFE_REF">QFE référence</option>
-        </select>
-      </div>
-
-      <div class="field">Terrain référence<br>
-        <select id="refSelect"></select>
-      </div>
-
-      <hr>
-
-      <div class="field">Distance filtre (km): <input id="rangeKm" type="number" value="100"></div>
-    </div>
-
-    <div id="menuVent" class="panel" style="left:352px; top:72px; display:none;">
-      <h4>Vent</h4>
-      <div class="field"><label><input type="checkbox" id="applyWind"> Prendre en compte le vent</label></div>
-      <div id="windControls" style="margin-top:6px;"></div>
-      <div class="field"><button id="btnRecalcWind" style="width:100%; padding:8px; border-radius:8px; border:none; background:#333; color:white;">Recalculer tout</button></div>
-    </div>
-  </div>
-
-  <!-- MODE VOL -->
-  <div id="volScreen" class="screen" aria-label="Mode Vol">
-    <button class="backBtn" onclick="goTo('homeScreen')">← Menu</button>
-    <h2>Mode Vol</h2>
-    <p style="max-width:900px; margin:18px auto; color:#333;">Mode Vol à définir : position GPS, affichage simplifié, mode nuit, centrage automatique, etc.</p>
-  </div>
-
-  <!-- MANUEL -->
-  <div id="manuelScreen" class="screen" aria-label="Manuel">
-    <button class="backBtn" onclick="goTo('homeScreen')">← Menu</button>
-    <h2>Manuel</h2>
-    <p style="max-width:900px; margin:18px auto; color:#333;">Documentation et explications sur les paramètres et le modèle.</p>
-  </div>
-
-  <script>
-    // Navigation helper (safe to call before map exists)
-    function goTo(screenId){
-      const home = document.getElementById('homeScreen');
-      const prep = document.getElementById('prepScreen');
-      const vol = document.getElementById('volScreen');
-      const manuel = document.getElementById('manuelScreen');
-      const mapEl = document.getElementById('map');
-
-      // hide all
-      if(home) home.style.display = 'none';
-      if(prep) prep.style.display = 'none';
-      if(vol) vol.style.display = 'none';
-      if(manuel) manuel.style.display = 'none';
-
-      // show requested
-      const target = document.getElementById(screenId);
-      if(!target) return;
-      if(screenId === 'homeScreen') {
-        target.style.display = 'flex';
-      } else {
-        target.style.display = 'block';
-      }
-
-      // visual blur only
-      if(mapEl){
-        if(screenId === 'homeScreen'){
-          mapEl.classList.add('blurred');
-          mapEl.setAttribute('aria-hidden', 'true');
-        } else {
-          mapEl.classList.remove('blurred');
-          mapEl.setAttribute('aria-hidden', 'false');
-        }
-      }
-
-      // when showing prep, ensure map is interactive and resized
-      if(screenId === 'prepScreen' && window._glide_map){
-        enableMapInteraction(true);
-        setTimeout(()=> window._glide_map.invalidateSize(), 120);
-      }
-
-      // when showing home or other screens, optionally disable map interactions
-      if(screenId !== 'prepScreen' && window._glide_map){
-        enableMapInteraction(false);
-      }
-    }
-
-    // helper to enable/disable map interactions (works only if map exists)
-    function enableMapInteraction(enable){
-      const m = window._glide_map;
-      if(!m) return;
-      try {
-        if(enable){
-          if(m.dragging && m.dragging.disable) m.dragging.enable();
-          if(m.scrollWheelZoom && m.scrollWheelZoom.enable) m.scrollWheelZoom.enable();
-          if(m.doubleClickZoom && m.doubleClickZoom.enable) m.doubleClickZoom.enable();
-          if(m.boxZoom && m.boxZoom.enable) m.boxZoom.enable();
-          if(m.keyboard && m.keyboard.enable) m.keyboard.enable();
-          if(m.touchZoom && m.touchZoom.enable) m.touchZoom.enable();
-          if(m.tap && m.tap.enable) m.tap.enable();
-        } else {
-          if(m.dragging && m.dragging.disable) m.dragging.disable();
-          if(m.scrollWheelZoom && m.scrollWheelZoom.disable) m.scrollWheelZoom.disable();
-          if(m.doubleClickZoom && m.doubleClickZoom.disable) m.doubleClickZoom.disable();
-          if(m.boxZoom && m.boxZoom.disable) m.boxZoom.disable();
-          if(m.keyboard && m.keyboard.disable) m.keyboard.disable();
-          if(m.touchZoom && m.touchZoom.disable) m.touchZoom.disable();
-          if(m.tap && m.tap.disable) m.tap.disable();
-        }
-      } catch (e) {
-        console.warn('enableMapInteraction error', e);
-      }
-    }
-
-    // show home by default (map will be blurred and non-interactive until prep)
-    document.addEventListener('DOMContentLoaded', ()=> goTo('homeScreen'));
-  </script>
-
-  <!-- Full integrated script (map, controls, calculations) -->
-  <script>
-  document.addEventListener('DOMContentLoaded', function () {
-    // DOM elements
-    const panel = document.getElementById('panel');
-    const menuVent = document.getElementById('menuVent');
-    const btnPanel = document.getElementById('btnPanel');
-    const btnVent = document.getElementById('btnVent');
-    const btnRecalc = document.getElementById('btnRecalc');
-    const btnRecalcWind = document.getElementById('btnRecalcWind');
-
-    const hVal = document.getElementById('hVal');
-    const slider = document.getElementById('slider');
-    const finesse = document.getElementById('finesse');
-    const fb = document.getElementById('fb');
-    const seuil = document.getElementById('seuil');
-    const marge = document.getElementById('marge');
-    const vCruiseInput = document.getElementById('vCruise');
-    const mode = document.getElementById('mode');
-    const labels = document.getElementById('labels');
-    const all = document.getElementById('all');
-    const refSelect = document.getElementById('refSelect');
-    const rangeKm = document.getElementById('rangeKm');
-    const applyWind = document.getElementById('applyWind');
-
-    // --- MAP ---
-    const map = L.map('map', { preferCanvas: true }).setView([43.8, 0.1], 9);
-    window._glide_map = map;
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
-
-    // ensure map interactions disabled initially (home)
-    enableMapInteraction(false);
-
-    // --- POSITION ---
-    let userPos = { lat: 43.8, lon: 0.1 };
-    map.on('moveend', () => {
-      const c = map.getCenter();
-      userPos = { lat: c.lat, lon: c.lng };
-      update();
-    });
-
-    // --- DISTANCE ---
-    function distanceKm(a, b) {
-      const R = 6371;
-      const dLat = (b.lat - a.lat) * Math.PI / 180;
-      const dLon = (b.lon - a.lon) * Math.PI / 180;
-      const x = Math.sin(dLat / 2) ** 2 +
-        Math.cos(a.lat * Math.PI / 180) *
-        Math.cos(b.lat * Math.PI / 180) *
-        Math.sin(dLon / 2) ** 2;
-      return 2 * R * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
-    }
-
-    // --- TERRAINS ---
-    let terrainsAll = [
-      { id: "LFDA", lat: 43.709, lon: -0.249, alt: 80 },
-      { id: "LFID", lat: 43.955, lon: 0.373, alt: 130 },
-      { id: "LFCN", lat: 43.762, lon: -0.036, alt: 100 },
-      { id: "LFDH", lat: 43.646, lon: 0.601, alt: 130 },
-      { id: "LFBM", lat: 43.911, lon: -0.507, alt: 52 },
-      { id: "LFCL", lat: 43.586, lon: 1.499, alt: 152 }
-    ];
-    let terrains = [];
-
-    function populateRef() {
-      refSelect.innerHTML = "";
-      terrainsAll.forEach(t => {
-        const opt = document.createElement("option");
-        opt.value = t.id;
-        opt.innerText = t.id;
-        refSelect.appendChild(opt);
-      });
-    }
-    populateRef();
-
-    // couleur selon hauteur
-    function color(h) {
-      const r = Math.round(255 * (1 - (h / 3000)));
-      const g = Math.round(255 * (h / 3000));
-      return "rgb(" + r + "," + g + ",0)";
-    }
-
-    // --- WIND MENU GENERATION ---
-    const windLayers = [
-      { label: "0-500", v: "v0", d: "d0" },
-      { label: "500-1000", v: "v1", d: "d1" },
-      { label: "1000-1500", v: "v2", d: "d2" },
-      { label: "1500-2000", v: "v3", d: "d3" },
-      { label: "2000-2500", v: "v4", d: "d4" },
-      { label: "2500-3000", v: "v5", d: "d5" }
-    ];
-
-    function initWindMenu() {
-      const container = document.getElementById('windControls');
-      container.innerHTML = '';
-      windLayers.forEach(w => {
-        const block = document.createElement('div');
-        block.className = 'wind-row';
-        block.innerHTML = `
-          <div style="min-width:80px;"><b style="font-size:12px;">${w.label} m</b></div>
-          <input type="range" id="${w.v}" min="0" max="50" value="0" style="flex:1;">
-          <span id="${w.v}_label" style="width:60px;text-align:right;font-size:12px;">0 km/h</span>
-          <input type="number" id="${w.d}" value="0" style="width:70px;">
-        `;
-        container.appendChild(block);
-
-        const slider = block.querySelector(`#${w.v}`);
-        const label = block.querySelector(`#${w.v}_label`);
-        slider.addEventListener('input', () => { label.innerText = slider.value + ' km/h'; });
-      });
-    }
-    initWindMenu();
-
-    function getWindForLayer(idx) {
-      const layer = windLayers[Math.max(0, Math.min(windLayers.length - 1, idx))];
-      const vEl = document.getElementById(layer.v);
-      const dEl = document.getElementById(layer.d);
-      const v = vEl ? parseFloat(vEl.value) : 0;
-      const d = dEl ? parseFloat(dEl.value) : 0;
-      return { v: isNaN(v) ? 0 : v, d: isNaN(d) ? 0 : d };
-    }
-
-    // --- UPDATE ---
-    let objs = [];
-
-    function clearObjs() {
-      objs.forEach(o => map.removeLayer(o));
-      objs = [];
-    }
-
-    function update() {
-      clearObjs();
-
-      const range = parseFloat(rangeKm.value) || 100;
-      terrains = terrainsAll.filter(t => distanceKm(userPos, t) <= range);
-
-      const h = parseInt(slider.value, 10) || 0;
-      hVal.innerText = h;
-
-      const f = parseFloat(finesse.value) || 30;
-      const fbVal = parseFloat(fb.value) || 10;
-      const seuilVal = parseFloat(seuil.value) || 500;
-      const margeVal = parseFloat(marge.value) || 250;
-      const vCruise = parseFloat(vCruiseInput.value) || 100;
-      const modeVal = mode.value;
-      const showLabels = labels.checked;
-      const allVal = all.checked;
-      const useWind = applyWind.checked;
-
-      const ref = terrainsAll.find(t => t.id === refSelect.value);
-      const refAlt = ref ? ref.alt : 0;
-
-      terrains.forEach(t => {
-        const hMin = allVal ? 0 : h;
-        const hMax = allVal ? 3000 : h;
-
-        for (let hh = hMin; hh <= hMax; hh += 100) {
-          let h_rel;
-          if (modeVal === "QFE") h_rel = hh;
-          else if (modeVal === "QNH") h_rel = hh - t.alt;
-          else h_rel = hh - (t.alt - refAlt);
-
-          if (h_rel <= 0) continue;
-          const finesseUse = (h_rel <= seuilVal) ? fbVal : f;
-          const h_util = h_rel - margeVal;
-          if (h_util <= 0) continue;
-
-          const d = h_util * finesseUse; // portée sans vent (m)
-
-          if (!useWind) {
-            const circle = L.circle([t.lat, t.lon], { radius: d, color: color(hh), weight: 2, fill: false }).addTo(map);
-            objs.push(circle);
-
-            if (showLabels) {
-              [0, 180].forEach(a => {
-                const rad = a * Math.PI / 180;
-                const latOff = (d / 111000) * Math.cos(rad);
-                const lonOff = (d / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(rad);
-                objs.push(L.marker([t.lat + latOff, t.lon + lonOff], {
-                  icon: L.divIcon({ className: 'label', html: hh + "m-F" + Math.round(finesseUse) + "-" + t.id })
-                }).addTo(map));
-              });
-            }
-          } else {
-            const polyPts = [];
-            const step = 6;
-            for (let a = 0; a < 360; a += step) {
-              const alphaRad = a * Math.PI / 180;
-
-              let layerIdx = Math.floor(hh / 500);
-              if (layerIdx > windLayers.length - 1) layerIdx = windLayers.length - 1;
-              const wind = getWindForLayer(layerIdx);
-              const W = wind.v;
-              const dir = wind.d;
-              const dirRad = (dir + 180) * Math.PI / 180;
-
-              const projWind = W * Math.cos(alphaRad - dirRad);
-
-              let denom = vCruise - projWind;
-              if (denom < 5) denom = 5;
-
-              const effDist = d * (vCruise / denom);
-
-              const latOff = (effDist / 111000) * Math.cos(alphaRad);
-              const lonOff = (effDist / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(alphaRad);
-
-              polyPts.push([t.lat + latOff, t.lon + lonOff]);
-            }
-
-            const poly = L.polygon(polyPts, { color: color(hh), weight: 2, fill: false }).addTo(map);
-            objs.push(poly);
-
-            if (showLabels) {
-              [0, 180].forEach(a => {
-                const rad = a * Math.PI / 180;
-                const latOff = (d / 111000) * Math.cos(rad);
-                const lonOff = (d / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(rad);
-                objs.push(L.marker([t.lat + latOff, t.lon + lonOff], {
-                  icon: L.divIcon({ className: 'label', html: hh + "m-F" + Math.round(finesseUse) + "-" + t.id })
-                }).addTo(map));
-              });
-            }
-          }
-        }
-        objs.push(L.marker([t.lat, t.lon]).addTo(map));
-      });
-    }
-
-    // initial update
-    update();
-
-    // ajout terrain
-    map.on('click', function (e) {
-      const nom = prompt("Nom terrain ?");
-      if (!nom) return;
-      const altStr = prompt("Altitude m ?");
-      const alt = parseFloat(altStr);
-      if (isNaN(alt)) return;
-      terrainsAll.push({ id: nom, lat: e.latlng.lat, lon: e.latlng.lng, alt: alt });
-      populateRef();
-      update();
-    });
-
-    // UI events
-    slider.addEventListener('input', () => {
-      hVal.innerText = slider.value;
-      update();
-    });
-
-    btnRecalc.addEventListener('click', update);
-    btnRecalcWind.addEventListener('click', update);
-
-    [finesse, fb, seuil, marge, vCruiseInput, mode, labels, all, rangeKm, refSelect, applyWind].forEach(el => {
-      el.addEventListener('change', update);
-    });
-
-    // toggle panels (hidden by default)
     btnPanel.addEventListener('click', () => {
       panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none';
     });
