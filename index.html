@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>PlanneurMob V21 - Zones atteignables avec vent</title>
+<title>PlanneurMob V22 - Zones atteignables avec vent</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -49,13 +49,11 @@ html, body { margin:0; height:100%; }
 
 <div id="map"></div>
 
-<!-- boutons -->
 <button class="toggleBtn" style="top:10px;" onclick="panel.style.display = panel.style.display==='none'?'block':'none'">⚙</button>
 <button class="toggleBtn" style="top:60px;" onclick="toggleVent()">⚡</button>
 
-<!-- MENU PARAM -->
 <div id="panel" class="panel">
-<b>Glide Planner V21</b><br><br>
+<b>Glide Planner V22</b><br><br>
 
 Finesse: <input id="finesse" type="number" value="30"><br>
 Finesse basse: <input id="fb" type="number" value="10"><br>
@@ -88,7 +86,6 @@ Distance filtre (km):
 <input id="rangeKm" type="number" value="100" onchange="update()">
 </div>
 
-<!-- MENU VENT -->
 <div id="menuVent" class="panel" style="left:320px; display:none;">
 <b>Vent</b><br><br>
 <label>
@@ -102,15 +99,12 @@ Distance filtre (km):
 </div>
 
 <script>
-// --- CARTES ---
 var map = L.map('map').setView([43.8,0.1],9);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-// --- POS ---
 let userPos = {lat:43.8, lon:0.1};
 map.on('moveend zoomend', update);
 
-// --- DISTANCE ---
 function distanceKm(a,b){
   let R=6371;
   let dLat=(b.lat-a.lat)*Math.PI/180;
@@ -122,7 +116,6 @@ function distanceKm(a,b){
   return 2*R*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
 }
 
-// --- TERRAINS ---
 let terrainsAll = [
   {id:"LFDA",lat:43.709,lon:-0.249,alt:80},
   {id:"LFID",lat:43.955,lon:0.373,alt:130},
@@ -134,7 +127,6 @@ let terrainsAll = [
 
 let terrains=[];
 
-// select ref
 function populateRef(){
   refSelect.innerHTML="";
   terrainsAll.forEach(t=>{
@@ -146,14 +138,12 @@ function populateRef(){
 }
 populateRef();
 
-// --- COULEUR ---
 function color(h){
   let r=Math.round(255*(1-(h-400)/2600));
   let g=Math.round(255*((h-400)/2600));
   return "rgb("+r+","+g+",0)";
 }
 
-// --- VENT ---
 let ventLayers = [
   {min:0,max:500},
   {min:500,max:1000},
@@ -176,7 +166,6 @@ function createWindInputs(){
 }
 createWindInputs();
 
-// slider labels
 function updateWindLabel(id){
   document.getElementById(id+"_label").innerText=document.getElementById(id).value+" km/h";
 }
@@ -187,7 +176,6 @@ function toggleVent(){
   m.style.display = (m.style.display === "none") ? "block" : "none";
 }
 
-// --- DRAW ---
 let objs=[];
 
 function update(){
@@ -223,30 +211,27 @@ function update(){
       if(modeVal==="QFE"){ h_rel = hh; }
       else if(modeVal==="QNH"){ h_rel = hh - t.alt; }
       else if(modeVal==="QFE_REF"){ h_rel = hh - (t.alt - refAlt); }
-
       if(h_rel<=0) continue;
+
       let finesseUse = (h_rel<=seuilVal)? fbVal : f;
       let h_util = h_rel - margeVal;
       if(h_util<=0) continue;
 
       let d = h_util*finesseUse;
 
-      // -- Vent --
       if(applyWind){
         let points=[];
-        let nPoints=60; // pour “patatoïde”
+        let nPoints=200;
         for(let j=0;j<nPoints;j++){
           let angleRad=j*2*Math.PI/nPoints;
           let latOff = (d/111000)*Math.cos(angleRad);
           let lonOff = (d/(111000*Math.cos(t.lat*Math.PI/180)))*Math.sin(angleRad);
 
-          // déterminer couche
           let couche=ventLayers.findIndex(v=>hh>=v.min && hh<v.max);
           if(couche>=0){
             let vWind=parseFloat(document.getElementById("v"+couche).value);
             let dWind=parseFloat(document.getElementById("d"+couche).value);
-            // conversion aéronautique -> math
-            let dirRad = (360 - dWind + 180)*Math.PI/180; 
+            let dirRad = (360 - dWind + 180)*Math.PI/180;
             let proj = vWind * Math.cos(angleRad - dirRad);
             let facteur = Math.max((vitesseVal-proj)/vitesseVal,0);
             latOff*=facteur;
@@ -299,7 +284,6 @@ function update(){
   });
 }
 
-// --- Ajout terrain ---
 map.on('click', function(e){
   let nom=prompt("Nom terrain ?");
   if(!nom) return;
