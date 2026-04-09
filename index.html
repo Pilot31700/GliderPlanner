@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Glide Planner Mobile</title>
+<title>Glide Planner Pro</title>
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -10,21 +10,9 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
-html, body {
-  margin:0;
-  padding:0;
-  height:100%;
-}
+html, body { margin:0; height:100%; }
+#map { position:fixed; width:100%; height:100%; }
 
-#map {
-  position:fixed;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-}
-
-/* panneau */
 .panel {
   position:absolute;
   top:10px;
@@ -39,11 +27,8 @@ html, body {
   overflow:auto;
 }
 
-.hidden {
-  display:none;
-}
+.hidden { display:none; }
 
-/* bouton toggle */
 .toggleBtn {
   position:absolute;
   top:10px;
@@ -51,12 +36,10 @@ html, body {
   z-index:1100;
   background:black;
   color:white;
-  padding:8px 10px;
+  padding:8px;
   border-radius:8px;
-  font-size:16px;
 }
 
-/* labels */
 .label {
   font-size:11px;
   font-weight:bold;
@@ -71,7 +54,7 @@ html, body {
 
 <div id="map"></div>
 
-<button class="toggleBtn" onclick="togglePanel()">⚙</button>
+<button class="toggleBtn" onclick="panel.classList.toggle('hidden')">⚙</button>
 
 <div id="panel" class="panel">
 
@@ -93,10 +76,10 @@ Marge:
 
 <hr>
 
-Hauteur: <span id="hVal">600</span> m
+Hauteur: <span id="hVal">600</span>
 <input id="slider" type="range" min="400" max="1500" step="100" value="600" oninput="update()">
 
-<input type="checkbox" id="all" onchange="update()"> Tous les cercles<br>
+<input type="checkbox" id="all" onchange="update()"> Tous cercles<br>
 <input type="checkbox" id="labels" checked onchange="update()"> Labels
 
 <hr>
@@ -140,18 +123,12 @@ function changeLayer(){
   fonds[fond.value].addTo(map);
 }
 
-// toggle panel
-function togglePanel(){
-  panel.classList.toggle("hidden");
-}
-
-// terrains
+// --- terrains ---
 let terrains = [
-  {id:"LFDA",lat:43.709,lon:-0.249,alt:80},
-  {id:"LFID",lat:43.955,lon:0.373,alt:130},
-  {id:"LFCN",lat:43.762,lon:-0.036,alt:100},
-  {id:"LFDH",lat:43.646,lon:0.601,alt:130}
+  {id:"LFDA",lat:43.709,lon:-0.249,alt:80}
 ];
+
+let terrainsDiv = document.getElementById("terrains");
 
 function refreshTerrains(){
   terrainsDiv.innerHTML="";
@@ -167,17 +144,14 @@ function refreshTerrains(){
   });
 }
 
-let terrainsDiv = document.getElementById("terrains");
-refreshTerrains();
-
-// couleurs
+// --- couleurs ---
 function color(h){
   let r=Math.round(255*(1-(h-400)/1100));
   let g=Math.round(255*((h-400)/1100));
   return "rgb("+r+","+g+",0)";
 }
 
-// objets carte
+// --- affichage ---
 let objs=[];
 
 function update(){
@@ -205,12 +179,18 @@ function update(){
 
     for(let hh=hMin;hh<=hMax;hh+=100){
 
-      let h_rel = (modeVal=="QFE") ? hh - t.alt : hh;
+      // QFE / QNH
+      let h_rel = (modeVal=="QNH") ? hh - t.alt : hh;
+
+      if(h_rel <= 0) continue;
+
+      // finesse basse sur hauteur réelle
+      let finesseUse = (h_rel <= seuilVal) ? fbVal : f;
+
+      // marge
       let h_util = h_rel - margeVal;
 
       if(h_util <= 0) continue;
-
-      let finesseUse = (hh <= seuilVal) ? fbVal : f;
 
       let d = h_util * finesseUse;
 
@@ -247,9 +227,7 @@ function update(){
   });
 }
 
-update();
-
-// ajout terrain
+// --- ajout terrain manuel ---
 map.on('click', function(e){
   let nom=prompt("Nom terrain ?");
   if(!nom) return;
@@ -261,6 +239,43 @@ map.on('click', function(e){
   refreshTerrains();
   update();
 });
+
+// --- chargement auto OpenAIP ---
+async function loadAirfields(){
+
+  try{
+    const url="https://raw.githubusercontent.com/openAIP/openaip/master/data/airports/FR_airports.json";
+
+    let res=await fetch(url);
+    let data=await res.json();
+
+    data.features.forEach(f=>{
+      let c=f.geometry.coordinates;
+      let p=f.properties;
+
+      // filtre zone (sud ouest)
+      if(Math.abs(c[1]-43.8)<2 && Math.abs(c[0]-0.1)<2){
+
+        terrains.push({
+          id:p.icao || p.name,
+          lat:c[1],
+          lon:c[0],
+          alt:p.elevation?.value || 0
+        });
+      }
+    });
+
+    refreshTerrains();
+    update();
+
+  }catch(e){
+    console.log("OpenAIP indisponible");
+  }
+}
+
+refreshTerrains();
+update();
+loadAirfields();
 
 </script>
 
