@@ -241,36 +241,23 @@ map.on('click', function(e){
 });
 
 // --- chargement auto OpenAIP ---
-async function loadAirfields(){
+async function loadTerrains(){
 
   try{
-    const url="https://raw.githubusercontent.com/openAIP/openaip/master/data/airports/FR_airports.json";
+    let res = await fetch("terrains.json");
+    let data = await res.json();
 
-    let res=await fetch(url);
-    let data=await res.json();
-
-    data.features.forEach(f=>{
-      let c=f.geometry.coordinates;
-      let p=f.properties;
-
-      // filtre zone (sud ouest)
-      if(Math.abs(c[1]-43.8)<2 && Math.abs(c[0]-0.1)<2){
-
-        terrains.push({
-          id:p.icao || p.name,
-          lat:c[1],
-          lon:c[0],
-          alt:p.elevation?.value || 0
-        });
-      }
-    });
+    terrains = terrains.concat(data);
 
     refreshTerrains();
     update();
 
-  }catch(e){
-    console.log("OpenAIP indisponible");
+  } catch(e){
+    console.log("Erreur chargement terrains :", e);
   }
+}
+
+loadTerrains();
 }
 
 refreshTerrains();
