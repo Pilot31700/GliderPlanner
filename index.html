@@ -27,8 +27,6 @@ html, body { margin:0; height:100%; }
   overflow:auto;
 }
 
-.hidden { display:none; }
-
 .toggleBtn {
   position:absolute;
   top:10px;
@@ -54,7 +52,7 @@ html, body { margin:0; height:100%; }
 
 <div id="map"></div>
 
-<button class="toggleBtn" onclick="panel.classList.toggle('hidden')">⚙</button>
+<button class="toggleBtn" onclick="panel.style.display = panel.style.display==='none'?'block':'none'">⚙</button>
 
 <div id="panel" class="panel">
 
@@ -84,24 +82,16 @@ Hauteur: <span id="hVal">600</span>
 
 <hr>
 
+Distance filtre (km):
+<input id="rangeKm" type="number" value="100" onchange="update()">
+
+<hr>
+
 Mode:
 <select id="mode" onchange="update()">
 <option value="QFE">QFE</option>
 <option value="QNH">QNH</option>
 </select>
-
-<hr>
-
-Fond:
-<select id="fond" onchange="changeLayer()">
-<option value="osm">OSM</option>
-<option value="light">Clair</option>
-<option value="dark">Sombre</option>
-</select>
-
-<hr>
-
-<div id="terrains"></div>
 
 </div>
 
@@ -110,54 +100,64 @@ Fond:
 // --- MAP ---
 var map = L.map('map').setView([43.8,0.1],9);
 
-// fonds
-var fonds = {
-  osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'),
-  light: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'),
-  dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png')
-};
-fonds.osm.addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-function changeLayer(){
-  Object.values(fonds).forEach(l=>map.removeLayer(l));
-  fonds[fond.value].addTo(map);
+// --- POSITION ---
+let userPos = {lat:43.8, lon:0.1};
+
+map.on('moveend', ()=>{
+  let c = map.getCenter();
+  userPos = {lat:c.lat, lon:c.lng};
+  update();
+});
+
+// --- DISTANCE ---
+function distanceKm(a,b){
+  let R=6371;
+  let dLat=(b.lat-a.lat)*Math.PI/180;
+  let dLon=(b.lon-a.lon)*Math.PI/180;
+
+  let x = Math.sin(dLat/2)**2 +
+          Math.cos(a.lat*Math.PI/180) *
+          Math.cos(b.lat*Math.PI/180) *
+          Math.sin(dLon/2)**2;
+
+  return 2*R*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
 }
 
-// --- terrains ---
-let terrains = [
-  {id:"LFDA",lat:43.709,lon:-0.249,alt:80}
-];
+// --- DATA ---
+let terrains=[];
+let terrainsAll=[];
 
-let terrainsDiv = document.getElementById("terrains");
-
-function refreshTerrains(){
-  terrainsDiv.innerHTML="";
-  terrains.forEach(t=>{
-    let c=document.createElement("input");
-    c.type="checkbox";
-    c.checked=true;
-    c.id="chk"+t.id;
-    c.onchange=update;
-    terrainsDiv.appendChild(c);
-    terrainsDiv.appendChild(document.createTextNode(" "+t.id));
-    terrainsDiv.appendChild(document.createElement("br"));
-  });
+// charger base
+async function loadTerrains(){
+  let res = await fetch("terrains.json");
+  terrainsAll = await res.json();
+  update();
 }
+loadTerrains();
 
-// --- couleurs ---
+// --- COULEUR ---
 function color(h){
   let r=Math.round(255*(1-(h-400)/1100));
   let g=Math.round(255*((h-400)/1100));
   return "rgb("+r+","+g+",0)";
 }
 
-// --- affichage ---
+// --- DRAW ---
 let objs=[];
 
 function update(){
 
   objs.forEach(o=>map.removeLayer(o));
   objs=[];
+
+  let range = parseFloat(rangeKm.value);
+
+  // filtre distance
+  terrains = terrainsAll.filter(t=>{
+    return distanceKm(userPos, t) <= range;
+  });
 
   let h=parseInt(slider.value);
   hVal.innerText=h;
@@ -172,25 +172,17 @@ function update(){
 
   terrains.forEach(t=>{
 
-    if(!document.getElementById("chk"+t.id).checked) return;
-
     let hMin=allVal?400:h;
     let hMax=allVal?1500:h;
 
     for(let hh=hMin;hh<=hMax;hh+=100){
 
-      // QFE / QNH
       let h_rel = (modeVal=="QNH") ? hh - t.alt : hh;
+      if(h_rel<=0) continue;
 
-      if(h_rel <= 0) continue;
-
-      // finesse basse sur hauteur réelle
       let finesseUse = (h_rel <= seuilVal) ? fbVal : f;
-
-      // marge
       let h_util = h_rel - margeVal;
-
-      if(h_util <= 0) continue;
+      if(h_util<=0) continue;
 
       let d = h_util * finesseUse;
 
@@ -206,7 +198,6 @@ function update(){
       if(showLabels){
         [0,180].forEach(a=>{
           let rad=a*Math.PI/180;
-
           let latOff=(d/111000)*Math.cos(rad);
           let lonOff=(d/(111000*Math.cos(t.lat*Math.PI/180)))*Math.sin(rad);
 
@@ -226,43 +217,6 @@ function update(){
     objs.push(m);
   });
 }
-
-// --- ajout terrain manuel ---
-map.on('click', function(e){
-  let nom=prompt("Nom terrain ?");
-  if(!nom) return;
-
-  let alt=parseFloat(prompt("Altitude m ?"));
-  if(isNaN(alt)) return;
-
-  terrains.push({id:nom,lat:e.latlng.lat,lon:e.latlng.lng,alt:alt});
-  refreshTerrains();
-  update();
-});
-
-// --- chargement auto OpenAIP ---
-async function loadTerrains(){
-
-  try{
-    let res = await fetch("terrains.json");
-    let data = await res.json();
-
-    terrains = terrains.concat(data);
-
-    refreshTerrains();
-    update();
-
-  } catch(e){
-    console.log("Erreur chargement terrains :", e);
-  }
-}
-
-loadTerrains();
-}
-
-refreshTerrains();
-update();
-loadAirfields();
 
 </script>
 
