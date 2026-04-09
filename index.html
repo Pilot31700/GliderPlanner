@@ -82,16 +82,20 @@ Hauteur: <span id="hVal">600</span>
 
 <hr>
 
-Distance filtre (km):
-<input id="rangeKm" type="number" value="100" onchange="update()">
-
-<hr>
-
 Mode:
 <select id="mode" onchange="update()">
 <option value="QFE">QFE</option>
 <option value="QNH">QNH</option>
+<option value="QFE_REF">QFE référence</option>
 </select>
+
+Terrain référence:
+<select id="refSelect" onchange="update()"></select>
+
+<hr>
+
+Distance filtre (km):
+<input id="rangeKm" type="number" value="100" onchange="update()">
 
 </div>
 
@@ -125,17 +129,29 @@ function distanceKm(a,b){
   return 2*R*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
 }
 
-// --- DATA ---
-let terrains=[];
-let terrainsAll=[];
+// --- BASE TERRAINS ---
+let terrainsAll = [
+  {id:"LFDA",lat:43.709,lon:-0.249,alt:80},
+  {id:"LFID",lat:43.955,lon:0.373,alt:130},
+  {id:"LFCN",lat:43.762,lon:-0.036,alt:100},
+  {id:"LFDH",lat:43.646,lon:0.601,alt:130},
+  {id:"LFBM",lat:43.911,lon:-0.507,alt:52},
+  {id:"LFCL",lat:43.586,lon:1.499,alt:152}
+];
 
-// charger base
-async function loadTerrains(){
-  let res = await fetch("terrains.json");
-  terrainsAll = await res.json();
-  update();
+let terrains=[];
+
+// remplir select référence
+function populateRef(){
+  refSelect.innerHTML="";
+  terrainsAll.forEach(t=>{
+    let opt=document.createElement("option");
+    opt.value=t.id;
+    opt.innerText=t.id;
+    refSelect.appendChild(opt);
+  });
 }
-loadTerrains();
+populateRef();
 
 // --- COULEUR ---
 function color(h){
@@ -154,7 +170,6 @@ function update(){
 
   let range = parseFloat(rangeKm.value);
 
-  // filtre distance
   terrains = terrainsAll.filter(t=>{
     return distanceKm(userPos, t) <= range;
   });
@@ -167,8 +182,11 @@ function update(){
   let seuilVal=parseFloat(seuil.value);
   let margeVal=parseFloat(marge.value);
   let modeVal=mode.value;
-  let allVal=all.checked;
   let showLabels=labels.checked;
+  let allVal=all.checked;
+
+  let ref = terrainsAll.find(t => t.id === refSelect.value);
+  let refAlt = ref ? ref.alt : 0;
 
   terrains.forEach(t=>{
 
@@ -177,12 +195,25 @@ function update(){
 
     for(let hh=hMin;hh<=hMax;hh+=100){
 
-      let h_rel = (modeVal=="QNH") ? hh - t.alt : hh;
-      if(h_rel<=0) continue;
+      let h_rel;
+
+      if(modeVal==="QFE"){
+        h_rel = hh;
+
+      } else if(modeVal==="QNH"){
+        h_rel = hh - t.alt;
+
+      } else if(modeVal==="QFE_REF"){
+        h_rel = hh - (t.alt - refAlt);
+      }
+
+      if(h_rel <= 0) continue;
 
       let finesseUse = (h_rel <= seuilVal) ? fbVal : f;
+
       let h_util = h_rel - margeVal;
-      if(h_util<=0) continue;
+
+      if(h_util <= 0) continue;
 
       let d = h_util * finesseUse;
 
@@ -198,6 +229,7 @@ function update(){
       if(showLabels){
         [0,180].forEach(a=>{
           let rad=a*Math.PI/180;
+
           let latOff=(d/111000)*Math.cos(rad);
           let lonOff=(d/(111000*Math.cos(t.lat*Math.PI/180)))*Math.sin(rad);
 
@@ -217,6 +249,21 @@ function update(){
     objs.push(m);
   });
 }
+
+update();
+
+// --- ajout terrain ---
+map.on('click', function(e){
+  let nom=prompt("Nom terrain ?");
+  if(!nom) return;
+
+  let alt=parseFloat(prompt("Altitude m ?"));
+  if(isNaN(alt)) return;
+
+  terrainsAll.push({id:nom,lat:e.latlng.lat,lon:e.latlng.lng,alt:alt});
+  populateRef();
+  update();
+});
 
 </script>
 
