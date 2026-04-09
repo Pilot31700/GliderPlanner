@@ -248,7 +248,7 @@
   </div>
 
   <script>
-    // Global navigation function (safe to call before DOMContentLoaded)
+    // Global navigation function
     function goTo(screenId){
       const home = document.getElementById('homeScreen');
       const prep = document.getElementById('prepScreen');
@@ -264,14 +264,21 @@
 
       // show requested
       const target = document.getElementById(screenId);
-      if(target) target.style.display = (screenId === 'homeScreen') ? 'flex' : 'block';
+      if(!target) return;
+      if(screenId === 'homeScreen') {
+        target.style.display = 'flex';
+      } else {
+        target.style.display = 'block';
+      }
 
       // map visual state: blurred on home, interactive otherwise
       if(mapEl){
         if(screenId === 'homeScreen'){
           mapEl.classList.add('blurred');
+          mapEl.setAttribute('aria-hidden', 'true');
         } else {
           mapEl.classList.remove('blurred');
+          mapEl.setAttribute('aria-hidden', 'false');
         }
       }
 
@@ -280,10 +287,6 @@
         setTimeout(()=> window._glide_map.invalidateSize(), 120);
       }
     }
-    // start on home (map will be blurred until prep)
-    // actual map initialization happens in DOMContentLoaded below
-    // ensure home visible by default
-    document.documentElement.style.background = '#000';
   </script>
 
   <!-- Full integrated script (map, controls, calculations) -->
@@ -319,7 +322,7 @@
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    // ensure home shows with blurred map initially
+    // show home initially (map blurred)
     goTo('homeScreen');
 
     // --- POSITION ---
