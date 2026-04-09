@@ -248,7 +248,7 @@
   </div>
 
   <script>
-    // Global navigation function
+    // Global navigation function (safe before map exists)
     function goTo(screenId){
       const home = document.getElementById('homeScreen');
       const prep = document.getElementById('prepScreen');
@@ -282,9 +282,45 @@
         }
       }
 
-      // if map object exists, invalidate size when showing prep
-      if(screenId === 'prepScreen' && window._glide_map){
-        setTimeout(()=> window._glide_map.invalidateSize(), 120);
+      // if map object exists, adjust interactivity and size when showing prep
+      if(window._glide_map){
+        if(screenId === 'prepScreen'){
+          enableMapInteraction(true);
+          // small delay to allow layout; then invalidate size
+          setTimeout(()=> window._glide_map.invalidateSize(), 120);
+        } else {
+          // when not in prep, keep map non-interactive to avoid accidental pans
+          enableMapInteraction(false);
+        }
+      }
+    }
+
+    // helper to enable/disable map interactions safely
+    function enableMapInteraction(enable){
+      const m = window._glide_map;
+      if(!m) return;
+      try {
+        if(enable){
+          if(m.dragging) m.dragging.enable();
+          if(m.scrollWheelZoom) m.scrollWheelZoom.enable();
+          if(m.doubleClickZoom) m.doubleClickZoom.enable();
+          if(m.boxZoom) m.boxZoom.enable();
+          if(m.keyboard) m.keyboard.enable();
+          if(m.touchZoom) m.touchZoom.enable();
+          // allow tap on mobile
+          if(m.tap) m.tap.enable();
+        } else {
+          if(m.dragging) m.dragging.disable();
+          if(m.scrollWheelZoom) m.scrollWheelZoom.disable();
+          if(m.doubleClickZoom) m.doubleClickZoom.disable();
+          if(m.boxZoom) m.boxZoom.disable();
+          if(m.keyboard) m.keyboard.disable();
+          if(m.touchZoom) m.touchZoom.disable();
+          if(m.tap) m.tap.disable();
+        }
+      } catch (e) {
+        // ignore if some handlers not present
+        console.warn('enableMapInteraction:', e);
       }
     }
   </script>
@@ -322,8 +358,11 @@
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    // show home initially (map blurred)
+    // start on home (map blurred and non-interactive)
     goTo('homeScreen');
+
+    // ensure map interactions disabled initially
+    enableMapInteraction(false);
 
     // --- POSITION ---
     let userPos = { lat: 43.8, lon: 0.1 };
