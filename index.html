@@ -2,8 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Glide Planner Pro</title>
-
+<title>PlanneurMob - Zones atteignables</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -17,7 +16,7 @@ html, body { margin:0; height:100%; }
   position:absolute;
   top:10px;
   left:10px;
-  width:260px;
+  width:280px;
   background:rgba(240,240,240,0.95);
   padding:10px;
   border-radius:10px;
@@ -47,7 +46,6 @@ html, body { margin:0; height:100%; }
 }
 </style>
 </head>
-
 <body>
 
 <div id="map"></div>
@@ -58,40 +56,29 @@ html, body { margin:0; height:100%; }
 
 <b>Glide Planner</b><br><br>
 
-Finesse:
-<input id="finesse" type="number" value="30">
-
-Finesse basse:
-<input id="fb" type="number" value="10">
-
-Seuil finesse basse:
-<input id="seuil" type="number" value="500">
-
-Marge:
-<input id="marge" type="number" value="250">
-
+Finesse: <input id="finesse" type="number" value="30"><br>
+Finesse basse: <input id="fb" type="number" value="10"><br>
+Seuil finesse basse: <input id="seuil" type="number" value="500"><br>
+Marge: <input id="marge" type="number" value="250"><br>
 <button onclick="update()">Recalculer</button>
-
 <hr>
 
-Hauteur: <span id="hVal">600</span>
-<input id="slider" type="range" min="400" max="1500" step="100" value="600" oninput="update()">
+Hauteur: <span id="hVal">600</span><br>
+<input id="slider" type="range" min="400" max="1500" step="100" value="600" oninput="update()"><br>
 
 <input type="checkbox" id="all" onchange="update()"> Tous cercles<br>
-<input type="checkbox" id="labels" checked onchange="update()"> Labels
-
+<input type="checkbox" id="labels" checked onchange="update()"> Labels<br>
 <hr>
 
 Mode:
 <select id="mode" onchange="update()">
-<option value="QFE">QFE</option>
+<option value="QFE">QFE (terrain)</option>
 <option value="QNH">QNH</option>
 <option value="QFE_REF">QFE référence</option>
-</select>
+</select><br>
 
 Terrain référence:
-<select id="refSelect" onchange="update()"></select>
-
+<select id="refSelect" onchange="update()"></select><br>
 <hr>
 
 Distance filtre (km):
@@ -100,15 +87,12 @@ Distance filtre (km):
 </div>
 
 <script>
-
 // --- MAP ---
 var map = L.map('map').setView([43.8,0.1],9);
-
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
 // --- POSITION ---
 let userPos = {lat:43.8, lon:0.1};
-
 map.on('moveend', ()=>{
   let c = map.getCenter();
   userPos = {lat:c.lat, lon:c.lng};
@@ -120,12 +104,10 @@ function distanceKm(a,b){
   let R=6371;
   let dLat=(b.lat-a.lat)*Math.PI/180;
   let dLon=(b.lon-a.lon)*Math.PI/180;
-
   let x = Math.sin(dLat/2)**2 +
           Math.cos(a.lat*Math.PI/180) *
           Math.cos(b.lat*Math.PI/180) *
           Math.sin(dLon/2)**2;
-
   return 2*R*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
 }
 
@@ -163,16 +145,48 @@ function color(h){
 // --- DRAW ---
 let objs=[];
 
-function update(){
+// calcul intersections / zones atteignables
+function computeConnections(terrains, h, modeVal, margeVal, seuilVal, f, fbVal, refAlt){
+  let connections = [];
+  for(let i=0;i<terrains.length;i++){
+    for(let j=i+1;j<terrains.length;j++){
+      let A = terrains[i], B=terrains[j];
+      let dAB = distanceKm(A,B)*1000;
 
+      function computeReach(t){
+        let h_rel;
+        if(modeVal==="QFE"){ h_rel = h; }
+        else if(modeVal==="QNH"){ h_rel = h - t.alt; }
+        else if(modeVal==="QFE_REF"){ h_rel = h - (t.alt - refAlt);}
+        if(h_rel<=0) return 0;
+        let finesseUse = (h_rel<=seuilVal)? fbVal : f;
+        let h_util = h_rel - margeVal;
+        if(h_util<=0) return 0;
+        return h_util*finesseUse;
+      }
+
+      let dA = computeReach(A);
+      let dB = computeReach(B);
+      if(dA+dB>=dAB){ connections.push({A,B,dAB}); }
+    }
+  }
+  return connections;
+}
+
+// altitude minimale pour relier A->B
+function computeMinAltitude(A,B,modeVal,margeVal,f){
+  let dAB = distanceKm(A,B)*1000;
+  let h_needed = (dAB/f)+margeVal;
+  if(modeVal==="QNH") return h_needed + A.alt;
+  return h_needed;
+}
+
+function update(){
   objs.forEach(o=>map.removeLayer(o));
   objs=[];
-
   let range = parseFloat(rangeKm.value);
 
-  terrains = terrainsAll.filter(t=>{
-    return distanceKm(userPos, t) <= range;
-  });
+  terrains = terrainsAll.filter(t=>distanceKm(userPos,t)<=range);
 
   let h=parseInt(slider.value);
   hVal.innerText=h;
@@ -186,36 +200,22 @@ function update(){
   let allVal=all.checked;
 
   let ref = terrainsAll.find(t => t.id === refSelect.value);
-  let refAlt = ref ? ref.alt : 0;
+  let refAlt = ref?ref.alt:0;
 
+  // cercles
   terrains.forEach(t=>{
-
     let hMin=allVal?400:h;
     let hMax=allVal?1500:h;
-
     for(let hh=hMin;hh<=hMax;hh+=100){
-
       let h_rel;
-
-      if(modeVal==="QFE"){
-        h_rel = hh;
-
-      } else if(modeVal==="QNH"){
-        h_rel = hh - t.alt;
-
-      } else if(modeVal==="QFE_REF"){
-        h_rel = hh - (t.alt - refAlt);
-      }
-
-      if(h_rel <= 0) continue;
-
-      let finesseUse = (h_rel <= seuilVal) ? fbVal : f;
-
+      if(modeVal==="QFE"){ h_rel = hh; }
+      else if(modeVal==="QNH"){ h_rel = hh - t.alt; }
+      else if(modeVal==="QFE_REF"){ h_rel = hh - (t.alt - refAlt); }
+      if(h_rel<=0) continue;
+      let finesseUse = (h_rel<=seuilVal)? fbVal : f;
       let h_util = h_rel - margeVal;
-
-      if(h_util <= 0) continue;
-
-      let d = h_util * finesseUse;
+      if(h_util<=0) continue;
+      let d = h_util*finesseUse;
 
       let circle=L.circle([t.lat,t.lon],{
         radius:d,
@@ -223,23 +223,19 @@ function update(){
         weight:2,
         fill:false
       }).addTo(map);
-
       objs.push(circle);
 
       if(showLabels){
         [0,180].forEach(a=>{
           let rad=a*Math.PI/180;
-
           let latOff=(d/111000)*Math.cos(rad);
           let lonOff=(d/(111000*Math.cos(t.lat*Math.PI/180)))*Math.sin(rad);
-
           let lab=L.marker([t.lat+latOff,t.lon+lonOff],{
             icon:L.divIcon({
               className:'label',
               html:hh+"m-F"+Math.round(finesseUse)+"-"+t.id
             })
           }).addTo(map);
-
           objs.push(lab);
         });
       }
@@ -247,6 +243,23 @@ function update(){
 
     let m=L.marker([t.lat,t.lon]).addTo(map);
     objs.push(m);
+  });
+
+  // connections zones
+  let conns = computeConnections(terrains,h,modeVal,margeVal,seuilVal,f,fbVal,refAlt);
+  conns.forEach(c=>{
+    let line=L.polyline([[c.A.lat,c.A.lon],[c.B.lat,c.B.lon]],{
+      color:"blue",weight:3,dashArray:"5,5"
+    }).addTo(map);
+    objs.push(line);
+
+    let hMin = computeMinAltitude(c.A,c.B,modeVal,margeVal,f);
+    let midLat = (c.A.lat+c.B.lat)/2;
+    let midLon = (c.A.lon+c.B.lon)/2;
+    let label=L.marker([midLat,midLon],{
+      icon:L.divIcon({className:'label',html:"Min: "+Math.round(hMin)+"m"})
+    }).addTo(map);
+    objs.push(label);
   });
 }
 
@@ -256,15 +269,12 @@ update();
 map.on('click', function(e){
   let nom=prompt("Nom terrain ?");
   if(!nom) return;
-
   let alt=parseFloat(prompt("Altitude m ?"));
   if(isNaN(alt)) return;
-
   terrainsAll.push({id:nom,lat:e.latlng.lat,lon:e.latlng.lng,alt:alt});
   populateRef();
   update();
 });
-
 </script>
 
 </body>
