@@ -1,281 +1,496 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-<meta charset="utf-8">
-<title>PlanneurMob V20 - Zones atteignables réalistes</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8" />
+  <title>PlanneurMob V20 - Zones atteignables réalistes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-<style>
-html, body { margin:0; height:100%; }
-#map { position:fixed; width:100%; height:100%; }
-.panel {
-  position:absolute;
-  top:10px;
-  left:10px;
-  width:300px;
-  background:rgba(240,240,240,0.95);
-  padding:10px;
-  border-radius:10px;
-  font-family:sans-serif;
-  z-index:1000;
-  max-height:85vh;
-  overflow:auto;
-}
-.toggleBtn {
-  position:absolute;
-  right:10px; z-index:1100;
-  background:black; color:white;
-  padding:8px; border-radius:8px;
-}
-.label {
-  font-size:11px; font-weight:bold;
-  background:rgba(255,255,255,0.8);
-  padding:2px 4px; border-radius:4px;
-}
-</style>
+  <style>
+    html, body { margin:0; height:100%; }
+    #map { position:fixed; width:100%; height:100%; }
+
+    .panel {
+      position:absolute;
+      top:10px;
+      left:10px;
+      width:300px;
+      background:rgba(240,240,240,0.95);
+      padding:10px;
+      border-radius:10px;
+      font-family:sans-serif;
+      z-index:1000;
+      max-height:85vh;
+      overflow:auto;
+      box-shadow:0 2px 8px rgba(0,0,0,0.15);
+      cursor: default;
+    }
+
+    .toggleBtn {
+      position:absolute;
+      right:10px;
+      z-index:1100;
+      background:black;
+      color:white;
+      padding:8px;
+      border-radius:8px;
+      border:none;
+      width:44px;
+      height:44px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+    }
+
+    .toggleBtn.top { top:10px; }
+    .toggleBtn.second { top:64px; }
+
+    .label {
+      font-size:11px;
+      font-weight:bold;
+      background:rgba(255,255,255,0.9);
+      padding:2px 4px;
+      border-radius:4px;
+      border:1px solid rgba(0,0,0,0.08);
+    }
+
+    input[type="number"] { width:90px; }
+    .field { margin-bottom:8px; }
+    .panel h3 { margin:0 0 8px 0; font-size:16px; }
+    .small { font-size:12px; color:#333; }
+  </style>
 </head>
 <body>
 
-<div id="map"></div>
+  <div id="map" role="application" aria-label="Carte"></div>
 
-<button class="toggleBtn" style="top:10px;" onclick="panel.style.display = panel.style.display==='none'?'block':'none'">⚙</button>
-<button class="toggleBtn" style="top:60px;" onclick="toggleVent()">⚡</button>
+  <button id="btnPanel" class="toggleBtn top" title="Paramètres">⚙</button>
+  <button id="btnVent" class="toggleBtn second" title="Vent">⚡</button>
 
-<div id="panel" class="panel">
-<b>Glide Planner V20</b><br><br>
+  <aside id="panel" class="panel" role="region" aria-label="Contrôles">
+    <h3>Glide Planner V20</h3>
 
-Finesse: <input id="finesse" type="number" value="30"><br>
-Finesse basse: <input id="fb" type="number" value="10"><br>
-Seuil finesse basse: <input id="seuil" type="number" value="500"><br>
-Marge: <input id="marge" type="number" value="250"><br>
-Vitesse de croisière: <input id="vCruise" type="number" value="100"> km/h<br>
-<button onclick="update()">Recalculer</button>
-<hr>
-
-Hauteur: <span id="hVal">600</span><br>
-<input id="slider" type="range" min="400" max="3000" step="100" value="600" oninput="update()"><br>
-
-<input type="checkbox" id="all" onchange="update()"> Tous cercles 100m<br>
-<input type="checkbox" id="labels" checked onchange="update()"> Labels<br>
-<input type="checkbox" id="showConn" checked onchange="update()"> Afficher zones atteignables<br>
-<hr>
-
-Mode:
-<select id="mode" onchange="update()">
-<option value="QFE">QFE (terrain)</option>
-<option value="QNH">QNH</option>
-<option value="QFE_REF">QFE référence</option>
-</select><br>
-
-Terrain référence:
-<select id="refSelect" onchange="update()"></select><br>
-<hr>
-
-Distance filtre (km):
-<input id="rangeKm" type="number" value="100" onchange="update()">
-</div>
-
-<div id="menuVent" class="panel" style="left:320px; display:none;">
-<b>Vent</b><br><br>
-
-<label><input type="checkbox" id="applyWind" onchange="update()"> Prendre en compte le vent</label><hr>
-
-<script>
-const windLayers = [
-  {label:"0-500", v:"v0", d:"d0"},
-  {label:"500-1000", v:"v1", d:"d1"},
-  {label:"1000-1500", v:"v2", d:"d2"},
-  {label:"1500-2000", v:"v3", d:"d3"},
-  {label:"2000-2500", v:"v4", d:"d4"},
-  {label:"2500-3000", v:"v5", d:"d5"},
-];
-
-windLayers.forEach(w => {
-  document.write(`
-    <b>${w.label} m</b><br>
-    <div style="display:flex;align-items:center;">
-      <input type="range" id="${w.v}" min="0" max="50" value="0" oninput="updateWindLabel('${w.v}')">
-      <span id="${w.v}_label" style="margin-left:8px;">0 km/h</span>
+    <div class="field">
+      <label>Finesse: <input id="finesse" type="number" value="30" step="1"></label>
     </div>
-    Direction: <input type="number" id="${w.d}" value="0" style="width:60px;"> °<hr>
-  `);
-});
-document.write('<button onclick="update()" style="width:100%">Recalculer tout</button>');
 
-function toggleVent(){
-  let m = document.getElementById("menuVent");
-  m.style.display = (m.style.display === "none") ? "block" : "none";
-}
+    <div class="field">
+      <label>Finesse basse: <input id="fb" type="number" value="10" step="1"></label>
+    </div>
 
-function updateWindLabel(id){
-  document.getElementById(id+"_label").innerText = document.getElementById(id).value + " km/h";
-}
-["v0","v1","v2","v3","v4","v5"].forEach(updateWindLabel);
-</script>
+    <div class="field">
+      <label>Seuil finesse basse (m): <input id="seuil" type="number" value="500" step="10"></label>
+    </div>
 
-<script>
-// --- MAP ---
-var map = L.map('map').setView([43.8,0.1],9);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    <div class="field">
+      <label>Marge (m): <input id="marge" type="number" value="250" step="10"></label>
+    </div>
 
-let userPos = {lat:43.8, lon:0.1};
-map.on('moveend', ()=>{ userPos = map.getCenter(); update(); });
+    <div class="field">
+      <label>Vitesse de croisière (km/h): <input id="vCruise" type="number" value="100" step="1"></label>
+    </div>
 
-// --- DISTANCE ---
-function distanceKm(a,b){
-  let R=6371;
-  let dLat=(b.lat-a.lat)*Math.PI/180;
-  let dLon=(b.lon-a.lon)*Math.PI/180;
-  let x=Math.sin(dLat/2)**2 + Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLon/2)**2;
-  return 2*R*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
-}
+    <div class="field">
+      <button id="btnRecalc" style="width:100%;">Recalculer</button>
+    </div>
 
-// --- TERRAINS ---
-let terrainsAll = [
-  {id:"LFDA",lat:43.709,lon:-0.249,alt:80},
-  {id:"LFID",lat:43.955,lon:0.373,alt:130},
-  {id:"LFCN",lat:43.762,lon:-0.036,alt:100},
-  {id:"LFDH",lat:43.646,lon:0.601,alt:130},
-  {id:"LFBM",lat:43.911,lon:-0.507,alt:52},
-  {id:"LFCL",lat:43.586,lon:1.499,alt:152}
-];
-let terrains=[];
-function populateRef(){
-  refSelect.innerHTML="";
-  terrainsAll.forEach(t=>{
-    let opt=document.createElement("option");
-    opt.value=t.id; opt.innerText=t.id;
-    refSelect.appendChild(opt);
-  });
-}
-populateRef();
+    <hr>
 
-// couleur selon hauteur
-function color(h){
-  let r=Math.round(255*(1-(h/3000)));
-  let g=Math.round(255*(h/3000));
-  return "rgb("+r+","+g+",0)";
-}
+    <div class="field">
+      <label>Hauteur: <span id="hVal">600</span> m</label><br>
+      <input id="slider" type="range" min="0" max="3000" step="100" value="600">
+    </div>
 
-// --- UPDATE ---
-let objs=[];
+    <div class="field">
+      <label><input type="checkbox" id="all"> Tous cercles 100m</label><br>
+      <label><input type="checkbox" id="labels" checked> Labels</label><br>
+      <label><input type="checkbox" id="showConn" checked> Afficher zones atteignables</label>
+    </div>
 
-function update(){
-  objs.forEach(o=>map.removeLayer(o));
-  objs=[];
+    <hr>
 
-  let range=parseFloat(rangeKm.value);
-  terrains = terrainsAll.filter(t => distanceKm(userPos, t) <= range);
+    <div class="field">
+      <label>Mode</label><br>
+      <select id="mode">
+        <option value="QFE">QFE (terrain)</option>
+        <option value="QNH">QNH</option>
+        <option value="QFE_REF">QFE référence</option>
+      </select>
+    </div>
 
-  let h = parseInt(slider.value);
-  hVal.innerText = h;
+    <div class="field">
+      <label>Terrain référence</label><br>
+      <select id="refSelect"></select>
+    </div>
 
-  let f = parseFloat(finesse.value);
-  let fbVal = parseFloat(fb.value);
-  let seuilVal = parseFloat(seuil.value);
-  let margeVal = parseFloat(marge.value);
-  let vCruise = parseFloat(document.getElementById("vCruise").value);
-  let modeVal = mode.value;
-  let showLabels = labels.checked;
-  let allVal = all.checked;
-  let applyWind = document.getElementById("applyWind").checked;
+    <hr>
 
-  let ref = terrainsAll.find(t => t.id === refSelect.value);
-  let refAlt = ref ? ref.alt : 0;
+    <div class="field">
+      <label>Distance filtre (km): <input id="rangeKm" type="number" value="100" step="1"></label>
+    </div>
+  </aside>
 
-  terrains.forEach(t => {
-    let hMin = allVal ? 400 : h;
-    let hMax = allVal ? 1500 : h;
+  <aside id="menuVent" class="panel" style="left:320px; display:none;" role="region" aria-label="Vent">
+    <h3>Vent</h3>
+    <label><input type="checkbox" id="applyWind"> Prendre en compte le vent</label>
+    <div id="windControls" style="margin-top:8px;"></div>
+    <div style="margin-top:8px;">
+      <button id="btnRecalcWind" style="width:100%;">Recalculer tout</button>
+    </div>
+  </aside>
 
-    for(let hh = hMin; hh <= hMax; hh += 100){
-      let h_rel;
-      if(modeVal==="QFE") h_rel=hh;
-      else if(modeVal==="QNH") h_rel = hh - t.alt;
-      else h_rel = hh - (t.alt - refAlt);
+  <script>
+  document.addEventListener('DOMContentLoaded', function () {
+    // DOM éléments
+    const panel = document.getElementById('panel');
+    const menuVent = document.getElementById('menuVent');
+    const btnPanel = document.getElementById('btnPanel');
+    const btnVent = document.getElementById('btnVent');
+    const btnRecalc = document.getElementById('btnRecalc');
+    const btnRecalcWind = document.getElementById('btnRecalcWind');
 
-      if(h_rel <= 0) continue;
-      let finesseUse = (h_rel <= seuilVal) ? fbVal : f;
-      let h_util = h_rel - margeVal;
-      if(h_util <= 0) continue;
+    const hVal = document.getElementById('hVal');
+    const slider = document.getElementById('slider');
+    const finesse = document.getElementById('finesse');
+    const fb = document.getElementById('fb');
+    const seuil = document.getElementById('seuil');
+    const marge = document.getElementById('marge');
+    const vCruiseInput = document.getElementById('vCruise');
+    const mode = document.getElementById('mode');
+    const labels = document.getElementById('labels');
+    const all = document.getElementById('all');
+    const refSelect = document.getElementById('refSelect');
+    const rangeKm = document.getElementById('rangeKm');
+    const applyWind = document.getElementById('applyWind');
 
-      let d = h_util * finesseUse; // portée sans vent (m)
+    // --- MAP ---
+    const map = L.map('map').setView([43.8, 0.1], 9);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-      if(!applyWind){
-        // cercle classique
-        let circle = L.circle([t.lat,t.lon],{radius:d,color:color(hh),weight:2,fill:false}).addTo(map);
-        objs.push(circle);
+    // --- POSITION ---
+    let userPos = { lat: 43.8, lon: 0.1 };
+    map.on('moveend', () => {
+      const c = map.getCenter();
+      userPos = { lat: c.lat, lon: c.lng };
+      update();
+    });
 
-        if(showLabels){
-          [0,180].forEach(a=>{
-            let rad=a*Math.PI/180;
-            let latOff=(d/111000)*Math.cos(rad);
-            let lonOff=(d/(111000*Math.cos(t.lat*Math.PI/180)))*Math.sin(rad);
-            objs.push(L.marker([t.lat+latOff,t.lon+lonOff],{
-              icon:L.divIcon({className:'label', html:hh+"m-F"+Math.round(finesseUse)+"-"+t.id})
-            }).addTo(map));
-          });
-        }
-      } else {
-        // polygone patatoïde
-        let polyPts=[];
-
-        for(let a=0; a<360; a+=5){
-          let alphaRad = a*Math.PI/180;
-
-          // projection du vent sur cette direction
-          let layerIdx = Math.floor(hh/500);
-          if(layerIdx>5) layerIdx=5;
-          let W = parseFloat(document.getElementById("v"+layerIdx).value);       // vent km/h
-          let dir = parseFloat(document.getElementById("d"+layerIdx).value);    // direction aéronautique
-          let dirRad = (dir + 180)*Math.PI/180; // d'où vient => vers où pousse
-
-          // composante vent dans la direction alphaRad
-          let projWind = W * Math.cos(alphaRad - dirRad);
-
-          // facteur de vent sur portée
-          let effDist = d * (vCruise / Math.max(1, vCruise - projWind));
-
-          // conversion x/y en lat/lon
-          let latOff = (effDist/111000)*Math.sin(alphaRad);
-          let lonOff = (effDist/(111000*Math.cos(t.lat*Math.PI/180)))*Math.cos(alphaRad);
-
-          polyPts.push([t.lat + latOff, t.lon + lonOff]);
-        }
-
-        let poly = L.polygon(polyPts,{color:color(hh),weight:2,fill:false}).addTo(map);
-        objs.push(poly);
-
-        if(showLabels){
-          [0,180].forEach(a=>{
-            let rad=a*Math.PI/180;
-            let latOff=(d/111000)*Math.cos(rad);
-            let lonOff=(d/(111000*Math.cos(t.lat*Math.PI/180)))*Math.sin(rad);
-            objs.push(L.marker([t.lat+latOff,t.lon+lonOff],{
-              icon:L.divIcon({className:'label',html:hh+"m-F"+Math.round(finesseUse)+"-"+t.id})
-            }).addTo(map));
-          });
-        }
-      }
+    // --- DISTANCE ---
+    function distanceKm(a, b) {
+      const R = 6371;
+      const dLat = (b.lat - a.lat) * Math.PI / 180;
+      const dLon = (b.lon - a.lon) * Math.PI / 180;
+      const x = Math.sin(dLat / 2) ** 2 +
+        Math.cos(a.lat * Math.PI / 180) *
+        Math.cos(b.lat * Math.PI / 180) *
+        Math.sin(dLon / 2) ** 2;
+      return 2 * R * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
     }
-    objs.push(L.marker([t.lat,t.lon]).addTo(map));
+
+    // --- TERRAINS ---
+    let terrainsAll = [
+      { id: "LFDA", lat: 43.709, lon: -0.249, alt: 80 },
+      { id: "LFID", lat: 43.955, lon: 0.373, alt: 130 },
+      { id: "LFCN", lat: 43.762, lon: -0.036, alt: 100 },
+      { id: "LFDH", lat: 43.646, lon: 0.601, alt: 130 },
+      { id: "LFBM", lat: 43.911, lon: -0.507, alt: 52 },
+      { id: "LFCL", lat: 43.586, lon: 1.499, alt: 152 }
+    ];
+    let terrains = [];
+
+    function populateRef() {
+      refSelect.innerHTML = "";
+      terrainsAll.forEach(t => {
+        const opt = document.createElement("option");
+        opt.value = t.id;
+        opt.innerText = t.id;
+        refSelect.appendChild(opt);
+      });
+    }
+    populateRef();
+
+    // couleur selon hauteur
+    function color(h) {
+      const r = Math.round(255 * (1 - (h / 3000)));
+      const g = Math.round(255 * (h / 3000));
+      return "rgb(" + r + "," + g + ",0)";
+    }
+
+    // --- WIND MENU GENERATION (sans document.write) ---
+    const windLayers = [
+      { label: "0-500", v: "v0", d: "d0" },
+      { label: "500-1000", v: "v1", d: "d1" },
+      { label: "1000-1500", v: "v2", d: "d2" },
+      { label: "1500-2000", v: "v3", d: "d3" },
+      { label: "2000-2500", v: "v4", d: "d4" },
+      { label: "2500-3000", v: "v5", d: "d5" }
+    ];
+
+    function initWindMenu() {
+      const container = document.getElementById('windControls');
+      container.innerHTML = '';
+      windLayers.forEach(w => {
+        const block = document.createElement('div');
+        block.style.marginBottom = '6px';
+        block.innerHTML = `
+          <b>${w.label} m</b><br>
+          <div style="display:flex;align-items:center;">
+            <input type="range" id="${w.v}" min="0" max="50" value="0" style="flex:1;">
+            <span id="${w.v}_label" style="margin-left:8px;width:60px;text-align:right;">0 km/h</span>
+          </div>
+          Direction: <input type="number" id="${w.d}" value="0" style="width:80px;"> °
+          <hr>
+        `;
+        container.appendChild(block);
+
+        // events
+        const slider = block.querySelector(`#${w.v}`);
+        const label = block.querySelector(`#${w.v}_label`);
+        slider.addEventListener('input', () => { label.innerText = slider.value + ' km/h'; });
+      });
+    }
+    initWindMenu();
+
+    // helper to read wind values safely
+    function getWindForLayer(idx) {
+      const layer = windLayers[Math.max(0, Math.min(windLayers.length - 1, idx))];
+      const vEl = document.getElementById(layer.v);
+      const dEl = document.getElementById(layer.d);
+      const v = vEl ? parseFloat(vEl.value) : 0;
+      const d = dEl ? parseFloat(dEl.value) : 0;
+      return { v: isNaN(v) ? 0 : v, d: isNaN(d) ? 0 : d };
+    }
+
+    // --- UPDATE ---
+    let objs = [];
+
+    function clearObjs() {
+      objs.forEach(o => map.removeLayer(o));
+      objs = [];
+    }
+
+    function update() {
+      clearObjs();
+
+      const range = parseFloat(rangeKm.value) || 100;
+      terrains = terrainsAll.filter(t => distanceKm(userPos, t) <= range);
+
+      const h = parseInt(slider.value, 10) || 0;
+      hVal.innerText = h;
+
+      const f = parseFloat(finesse.value) || 30;
+      const fbVal = parseFloat(fb.value) || 10;
+      const seuilVal = parseFloat(seuil.value) || 500;
+      const margeVal = parseFloat(marge.value) || 250;
+      const vCruise = parseFloat(vCruiseInput.value) || 100;
+      const modeVal = mode.value;
+      const showLabels = labels.checked;
+      const allVal = all.checked;
+      const useWind = applyWind.checked;
+
+      const ref = terrainsAll.find(t => t.id === refSelect.value);
+      const refAlt = ref ? ref.alt : 0;
+
+      terrains.forEach(t => {
+        const hMin = allVal ? 0 : h;
+        const hMax = allVal ? 3000 : h;
+
+        for (let hh = hMin; hh <= hMax; hh += 100) {
+          let h_rel;
+          if (modeVal === "QFE") h_rel = hh;
+          else if (modeVal === "QNH") h_rel = hh - t.alt;
+          else h_rel = hh - (t.alt - refAlt);
+
+          if (h_rel <= 0) continue;
+          const finesseUse = (h_rel <= seuilVal) ? fbVal : f;
+          const h_util = h_rel - margeVal;
+          if (h_util <= 0) continue;
+
+          const d = h_util * finesseUse; // portée sans vent (m)
+
+          if (!useWind) {
+            // cercle classique
+            const circle = L.circle([t.lat, t.lon], { radius: d, color: color(hh), weight: 2, fill: false }).addTo(map);
+            objs.push(circle);
+
+            if (showLabels) {
+              [0, 180].forEach(a => {
+                const rad = a * Math.PI / 180;
+                const latOff = (d / 111000) * Math.cos(rad);
+                const lonOff = (d / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(rad);
+                objs.push(L.marker([t.lat + latOff, t.lon + lonOff], {
+                  icon: L.divIcon({ className: 'label', html: hh + "m-F" + Math.round(finesseUse) + "-" + t.id })
+                }).addTo(map));
+              });
+            }
+          } else {
+            // polygone venté
+            const polyPts = [];
+            // choose step to balance performance/quality
+            const step = 6; // degrees
+            for (let a = 0; a < 360; a += step) {
+              const alphaRad = a * Math.PI / 180;
+
+              // wind layer index by altitude hh
+              let layerIdx = Math.floor(hh / 500);
+              if (layerIdx > windLayers.length - 1) layerIdx = windLayers.length - 1;
+              const wind = getWindForLayer(layerIdx);
+              const W = wind.v; // km/h
+              const dir = wind.d; // degrees (meteorological)
+              const dirRad = (dir + 180) * Math.PI / 180; // convert to vector direction (where wind pushes)
+
+              // projection of wind on heading alphaRad
+              // positive projWind means tailwind (helps), negative means headwind (reduces)
+              const projWind = W * Math.cos(alphaRad - dirRad);
+
+              // avoid division by zero or negative denom too small
+              let denom = vCruise - projWind;
+              if (denom < 5) denom = 5; // safety floor (km/h)
+
+              // effDist in meters
+              const effDist = d * (vCruise / denom);
+
+              // convert to lat/lon offsets (approx)
+              const latOff = (effDist / 111000) * Math.cos(alphaRad);
+              const lonOff = (effDist / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(alphaRad);
+
+              polyPts.push([t.lat + latOff, t.lon + lonOff]);
+            }
+
+            const poly = L.polygon(polyPts, { color: color(hh), weight: 2, fill: false }).addTo(map);
+            objs.push(poly);
+
+            if (showLabels) {
+              [0, 180].forEach(a => {
+                const rad = a * Math.PI / 180;
+                const latOff = (d / 111000) * Math.cos(rad);
+                const lonOff = (d / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(rad);
+                objs.push(L.marker([t.lat + latOff, t.lon + lonOff], {
+                  icon: L.divIcon({ className: 'label', html: hh + "m-F" + Math.round(finesseUse) + "-" + t.id })
+                }).addTo(map));
+              });
+            }
+          }
+        }
+        // marker terrain
+        objs.push(L.marker([t.lat, t.lon]).addTo(map));
+      });
+    }
+
+    // initial update
+    update();
+
+    // ajout terrain au clic
+    map.on('click', function (e) {
+      const nom = prompt("Nom terrain ?");
+      if (!nom) return;
+      const altStr = prompt("Altitude m ?");
+      const alt = parseFloat(altStr);
+      if (isNaN(alt)) return;
+      terrainsAll.push({ id: nom, lat: e.latlng.lat, lon: e.latlng.lng, alt: alt });
+      populateRef();
+      update();
+    });
+
+    // --- UI events ---
+    slider.addEventListener('input', () => {
+      hVal.innerText = slider.value;
+      // don't call update on every tiny move if performance is an issue; here it's fine
+      update();
+    });
+
+    btnRecalc.addEventListener('click', update);
+    btnRecalcWind.addEventListener('click', update);
+
+    // reactive changes
+    [finesse, fb, seuil, marge, vCruiseInput, mode, labels, all, rangeKm, refSelect, applyWind].forEach(el => {
+      el.addEventListener('change', update);
+    });
+
+    // toggle panels
+    btnPanel.addEventListener('click', () => {
+      panel.style.display = (panel.style.display === 'none') ? 'block' : 'none';
+    });
+    btnVent.addEventListener('click', () => {
+      menuVent.style.display = (menuVent.style.display === 'none' || menuVent.style.display === '') ? 'block' : 'none';
+    });
+
+    // make panels draggable
+    function makeDraggable(el) {
+      let dragging = false;
+      let offsetX = 0;
+      let offsetY = 0;
+
+      // create a handle area (the whole panel header area)
+      el.style.userSelect = 'none';
+
+      el.addEventListener('mousedown', function (e) {
+        // only start drag if left button
+        if (e.button !== 0) return;
+        dragging = true;
+        offsetX = e.clientX - el.offsetLeft;
+        offsetY = e.clientY - el.offsetTop;
+        el.style.cursor = 'grabbing';
+      });
+
+      document.addEventListener('mousemove', function (e) {
+        if (!dragging) return;
+        let left = e.clientX - offsetX;
+        let top = e.clientY - offsetY;
+        // keep within viewport
+        left = Math.max(0, Math.min(window.innerWidth - el.offsetWidth, left));
+        top = Math.max(0, Math.min(window.innerHeight - el.offsetHeight, top));
+        el.style.left = left + 'px';
+        el.style.top = top + 'px';
+      });
+
+      document.addEventListener('mouseup', function () {
+        if (!dragging) return;
+        dragging = false;
+        el.style.cursor = 'default';
+      });
+
+      // touch support
+      el.addEventListener('touchstart', function (e) {
+        const t = e.touches[0];
+        dragging = true;
+        offsetX = t.clientX - el.offsetLeft;
+        offsetY = t.clientY - el.offsetTop;
+      }, { passive: true });
+
+      document.addEventListener('touchmove', function (e) {
+        if (!dragging) return;
+        const t = e.touches[0];
+        let left = t.clientX - offsetX;
+        let top = t.clientY - offsetY;
+        left = Math.max(0, Math.min(window.innerWidth - el.offsetWidth, left));
+        top = Math.max(0, Math.min(window.innerHeight - el.offsetHeight, top));
+        el.style.left = left + 'px';
+        el.style.top = top + 'px';
+      }, { passive: true });
+
+      document.addEventListener('touchend', function () {
+        dragging = false;
+      });
+    }
+
+    makeDraggable(panel);
+    makeDraggable(menuVent);
+
+    // initialize wind labels
+    windLayers.forEach(w => {
+      const s = document.getElementById(w.v);
+      const lbl = document.getElementById(w.v + '_label');
+      if (s && lbl) lbl.innerText = s.value + ' km/h';
+    });
+
+    // expose update to console for debugging if needed
+    window._glide_update = update;
   });
-}
-
-update();
-
-// ajout terrain
-map.on('click', function(e){
-  let nom=prompt("Nom terrain ?");
-  if(!nom) return;
-  let alt=parseFloat(prompt("Altitude m ?"));
-  if(isNaN(alt)) return;
-  terrainsAll.push({id:nom,lat:e.latlng.lat,lon:e.latlng.lng,alt:alt});
-  populateRef(); update();
-});
-</script>
+  </script>
 
 </body>
 </html>
