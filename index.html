@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
-  <title>Glide Planner V20 - Fix interactions</title>
+  <title>Glide Planner V20 - Fix position toggle</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -18,12 +18,12 @@
 
     html, body { margin:0; height:100%; font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial; }
 
-    /* MAP (toujours présente) */
+    /* MAP (par défaut fixed) */
     #map {
       position:fixed;
       inset:0;
       z-index:1;
-      transition: filter 220ms ease;
+      transition: filter 220ms ease, position 120ms ease;
       pointer-events:auto;
       touch-action: pan-x pan-y pinch-zoom;
       -webkit-user-select: none;
@@ -31,6 +31,12 @@
       user-select: none;
       -webkit-tap-highlight-color: transparent;
       background:#eaeaea;
+    }
+
+    /* Quand on veut que la carte soit "libre" (préparation), on passe en absolute */
+    #map.map-absolute {
+      position:absolute;
+      inset:0;
     }
 
     /* flou visuel sur Home / Manuel */
@@ -111,7 +117,7 @@
       max-height:78vh;
       overflow:auto;
       border:1px solid rgba(20,20,20,0.04);
-      touch-action: none; /* allow dragging panels without triggering map gestures */
+      touch-action: none;
       pointer-events:auto;
     }
 
@@ -178,7 +184,6 @@
       z-index:45;
     }
 
-    /* small responsive */
     @media (max-width:720px){
       .panel { width:90%; left:5% !important; right:5% !important; top:12px !important; }
       .menuBtn { min-width:160px; }
@@ -188,10 +193,10 @@
 </head>
 <body>
 
-  <!-- MAP (toujours présente) -->
+  <!-- MAP -->
   <div id="map" aria-hidden="true"></div>
 
-  <!-- HOME (voile centré au-dessus de la carte) -->
+  <!-- HOME -->
   <div id="homeScreen" class="screen" aria-hidden="false">
     <div id="homeInner">
       <h2 id="homeTitle">Glide Planner</h2>
@@ -259,14 +264,14 @@
     </div>
   </div>
 
-  <!-- MODE VOL (carte interactive) -->
+  <!-- MODE VOL -->
   <div id="volScreen" class="screen" aria-hidden="true">
     <button class="backBtn" id="backFromVol">← Menu</button>
     <h2 style="margin-top:60px; text-align:center;">Mode Vol</h2>
     <p style="text-align:center; max-width:900px; margin:12px auto; color:#333;">Mode Vol : carte interactive, affichage simplifié pour cockpit.</p>
   </div>
 
-  <!-- MANUEL (carte floutée + non interactive) -->
+  <!-- MANUEL -->
   <div id="manuelScreen" class="screen" aria-hidden="true">
     <button class="backBtn" id="backFromManuel">← Menu</button>
 
@@ -284,7 +289,7 @@
   </div>
 
   <script>
-    /* Helpers pour activer/désactiver interactions Leaflet (robuste multi-navigateurs) */
+    /* Helpers pour activer/désactiver interactions Leaflet */
     function enableMapInteractions(map) {
       try {
         if (!map) return;
@@ -321,12 +326,12 @@
       } catch (e) { console.warn('disableMapInteractions', e); }
     }
 
-    /* goTo : gestion des écrans + flou + interactions + aria-hidden correct */
+    /* goTo : gestion des écrans + flou + interactions + toggle position */
     function goTo(screenId){
       const screens = ['homeScreen','prepScreen','volScreen','manuelScreen'];
       const mapEl = document.getElementById('map');
 
-      // hide all screens and mark aria-hidden
+      // hide all screens and set aria-hidden
       screens.forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
@@ -339,22 +344,27 @@
         }
       });
 
-      // map visual state and interactions
+      // If we are on prepScreen, make the map absolute (so it can be panned on mobile)
       if (mapEl) {
-        if (screenId === 'homeScreen' || screenId === 'manuelScreen') {
-          mapEl.classList.add('map-blurred');
-          if (window._glide_map) disableMapInteractions(window._glide_map);
-        } else {
+        if (screenId === 'prepScreen' || screenId === 'volScreen') {
+          // remove blur, enable interactions, and set map to absolute so touch gestures work reliably
           mapEl.classList.remove('map-blurred');
+          mapEl.classList.add('map-absolute');
           if (window._glide_map) {
             enableMapInteractions(window._glide_map);
+            // small delay to allow layout change then invalidate size
             setTimeout(()=> window._glide_map.invalidateSize(), 120);
           }
+        } else {
+          // home or manuel: blur and disable interactions, restore fixed positioning
+          mapEl.classList.add('map-blurred');
+          mapEl.classList.remove('map-absolute');
+          if (window._glide_map) disableMapInteractions(window._glide_map);
         }
       }
     }
 
-    /* Attacher listeners aux boutons (après DOM ready) */
+    /* Attacher listeners aux boutons */
     document.addEventListener('DOMContentLoaded', function(){
       const btnGoPrep = document.getElementById('btnGoPrep');
       const btnGoVol = document.getElementById('btnGoVol');
@@ -379,7 +389,7 @@
   <!-- Script complet intégré (carte, contrôles, calculs) -->
   <script>
   document.addEventListener('DOMContentLoaded', function () {
-    // DOM elements (guarded)
+    // DOM elements
     const panel = document.getElementById('panel');
     const menuVent = document.getElementById('menuVent');
     const btnPanel = document.getElementById('btnPanel');
@@ -636,7 +646,7 @@
       el.addEventListener('change', update);
     });
 
-    // toggle panels (hidden par défaut)
+    // toggle panels (hidden by default)
     if (btnPanel) btnPanel.addEventListener('click', () => {
       if (!panel) return;
       panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none';
