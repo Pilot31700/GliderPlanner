@@ -2,372 +2,269 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
-  <title>PlanneurMob V20 - Zones atteignables réalistes</title>
+  <title>Glide Planner V20</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
-    html, body { margin:0; height:100%; }
-    #map { position:fixed; width:100%; height:100%; z-index:1; }
+    :root{
+      --accent:#1f6feb;
+      --panel-bg: rgba(250,250,250,0.96);
+      --panel-shadow: 0 6px 18px rgba(20,20,20,0.18);
+      --glass: rgba(0,0,0,0.45);
+    }
 
-    /* HOME SCREEN */
-    .overlay {
+    html, body { margin:0; height:100%; font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
+
+    /* HOME */
+    #homeScreen {
       position:fixed;
-      top:0; left:0;
-      width:100%; height:100%;
-      background:rgba(0,0,0,0.55);
-      z-index:2;
+      inset:0;
+      background: linear-gradient(180deg, rgba(10,10,10,0.45), rgba(10,10,10,0.55));
+      z-index:40;
       display:flex;
-      flex-direction:column;
-      justify-content:center;
       align-items:center;
-      text-align:center;
+      justify-content:center;
       color:white;
-      backdrop-filter: blur(3px);
+      text-align:center;
+      backdrop-filter: blur(4px);
     }
-
-    .overlay h1 {
-      font-size:40px;
-      margin-bottom:30px;
-      text-shadow:0 0 10px black;
+    #homeInner {
+      width: min(720px, 92%);
+      padding: 36px;
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+      box-shadow: 0 10px 40px rgba(0,0,0,0.45);
+      border: 1px solid rgba(255,255,255,0.06);
     }
+    #homeTitle { font-size:34px; margin:0 0 18px 0; letter-spacing:0.2px; }
+    #homeSubtitle { margin:0 0 22px 0; color:#ddd; font-size:14px; }
 
+    .menuGrid { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
     .menuBtn {
-      width:220px;
-      padding:15px;
-      margin:10px;
-      font-size:20px;
-      border:none;
-      border-radius:10px;
-      background:#ffffffcc;
-      color:#000;
+      min-width:200px;
+      padding:14px 18px;
+      border-radius:12px;
+      border: none;
+      background: white;
+      color: #0b1220;
+      font-weight:700;
+      font-size:16px;
       cursor:pointer;
-      font-weight:bold;
-      box-shadow:0 2px 6px rgba(0,0,0,0.3);
+      box-shadow: 0 6px 18px rgba(10,10,10,0.18);
+      transition: transform .12s ease, box-shadow .12s ease;
     }
+    .menuBtn:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(10,10,10,0.22); }
 
-    .menuBtn:hover { background:white; }
-
-    /* INTERNAL SCREENS */
-    .screen {
-      position:fixed;
-      top:0; left:0;
-      width:100%; height:100%;
-      background:rgba(255,255,255,0.95);
-      z-index:3;
-      overflow:auto;
-      display:none;
-    }
+    /* PREP SCREEN (map + panels) */
+    #prepScreen { position:fixed; inset:0; display:none; z-index:10; background:#f6f7f9; }
+    #map { position:absolute; inset:0; z-index:1; }
 
     .backBtn {
-      position:absolute;
-      top:10px; left:10px;
-      padding:10px 15px;
-      font-size:18px;
-      border:none;
-      border-radius:8px;
-      background:#333;
+      position: absolute;
+      top:12px; left:12px;
+      z-index:2200;
+      background: rgba(0,0,0,0.7);
       color:white;
+      border:none;
+      padding:10px 14px;
+      border-radius:10px;
+      font-weight:600;
       cursor:pointer;
-      z-index:4;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.25);
     }
 
-    /* PANELS FROM YOUR TOOL */
+    /* Panels */
     .panel {
       position:absolute;
-      top:10px;
-      left:10px;
-      width:300px;
-      background:rgba(240,240,240,0.95);
-      padding:10px;
-      border-radius:10px;
-      font-family:sans-serif;
-      z-index:1000;
-      max-height:85vh;
+      width:320px;
+      background: var(--panel-bg);
+      border-radius:12px;
+      padding:12px;
+      box-shadow: var(--panel-shadow);
+      z-index:2000;
+      max-height:78vh;
       overflow:auto;
-      box-shadow:0 2px 8px rgba(0,0,0,0.15);
-      cursor: default;
+      border:1px solid rgba(20,20,20,0.04);
     }
+
+    .panel h4 { margin:0 0 8px 0; font-size:15px; }
+    .panel .field { margin-bottom:10px; font-size:13px; color:#222; }
+    .panel input[type="number"], .panel select { width:110px; padding:6px; border-radius:6px; border:1px solid #ddd; }
+    .panel input[type="range"] { width:100%; }
 
     .toggleBtn {
       position:absolute;
-      right:10px;
-      z-index:1100;
-      background:black;
+      right:12px;
+      z-index:2100;
+      background:var(--accent);
       color:white;
-      padding:8px;
-      border-radius:8px;
+      padding:10px;
+      border-radius:10px;
       border:none;
-      width:44px;
-      height:44px;
+      width:48px;
+      height:48px;
       display:flex;
       align-items:center;
       justify-content:center;
       cursor:pointer;
+      box-shadow: 0 8px 20px rgba(31,111,235,0.18);
     }
-
-    .toggleBtn.top { top:10px; }
-    .toggleBtn.second { top:64px; }
+    .toggleBtn.top { top:12px; }
+    .toggleBtn.second { top:72px; }
 
     .label {
       font-size:11px;
-      font-weight:bold;
-      background:rgba(255,255,255,0.9);
-      padding:2px 4px;
-      border-radius:4px;
-      border:1px solid rgba(0,0,0,0.08);
+      font-weight:700;
+      background:rgba(255,255,255,0.95);
+      padding:4px 6px;
+      border-radius:6px;
+      border:1px solid rgba(0,0,0,0.06);
+      display:inline-block;
+    }
+
+    /* Wind panel smaller controls */
+    .wind-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+    .wind-row input[type="number"] { width:70px; }
+
+    /* OTHER SCREENS */
+    .screen {
+      position:fixed;
+      inset:0;
+      display:none;
+      z-index:30;
+      background: #fff;
+      overflow:auto;
+      padding:28px;
+    }
+
+    /* small responsive */
+    @media (max-width:720px){
+      .panel { width:90%; left:5% !important; right:5% !important; top:12px !important; }
+      .menuBtn { min-width:160px; }
+      #homeTitle { font-size:28px; }
     }
   </style>
 </head>
 <body>
 
-  <!-- Carte en fond -->
-  <div id="map"></div>
+  <!-- HOME (carte is not visible here) -->
+  <div id="homeScreen" aria-label="Accueil">
+    <div id="homeInner">
+      <h2 id="homeTitle">Glide Planner</h2>
+      <p id="homeSubtitle">Prépare tes vols, visualise les zones atteignables et pilote en toute confiance.</p>
 
-  <!-- HOME SCREEN -->
-  <div id="homeScreen" class="overlay">
-    <h1>Glide Planner</h1>
-
-    <button class="menuBtn" onclick="goTo('prepScreen')">Préparation</button>
-    <button class="menuBtn" onclick="goTo('volScreen')">Mode Vol</button>
-    <button class="menuBtn" onclick="goTo('manuelScreen')">Manuel</button>
+      <div class="menuGrid">
+        <button class="menuBtn" onclick="goTo('prepScreen')">Préparation</button>
+        <button class="menuBtn" onclick="goTo('volScreen')">Mode Vol</button>
+        <button class="menuBtn" onclick="goTo('manuelScreen')">Manuel</button>
+      </div>
+    </div>
   </div>
 
-  <!-- PREPARATION SCREEN -->
-  <div id="prepScreen" class="screen">
-    <button class="backBtn" onclick="goTo('homeScreen')">← Retour</button>
+  <!-- PREPARATION -->
+  <div id="prepScreen" aria-label="Préparation">
+    <button class="backBtn" onclick="goTo('homeScreen')">← Menu</button>
 
-    <!-- TON OUTIL COMPLET ICI -->
-    <div id="prepContent">
+    <div id="map" aria-hidden="false"></div>
 
-      <!-- === PANNEAUX ET BOUTONS DE TON OUTIL === -->
+    <button id="btnPanel" class="toggleBtn top" title="Paramètres">⚙</button>
+    <button id="btnVent" class="toggleBtn second" title="Vent">🌬</button>
 
-      <button id="btnPanel" class="toggleBtn top">⚙</button>
-      <button id="btnVent" class="toggleBtn second">⚡</button>
+    <div id="panel" class="panel" style="left:12px; top:72px; display:none;">
+      <h4>Glide Planner V20</h4>
 
-      <div id="panel" class="panel">
-        <b>Glide Planner V20</b><br><br>
+      <div class="field">Finesse: <input id="finesse" type="number" value="30"></div>
+      <div class="field">Finesse basse: <input id="fb" type="number" value="10"></div>
+      <div class="field">Seuil finesse basse (m): <input id="seuil" type="number" value="500"></div>
+      <div class="field">Marge (m): <input id="marge" type="number" value="250"></div>
+      <div class="field">Vitesse de croisière (km/h): <input id="vCruise" type="number" value="100"></div>
 
-        Finesse: <input id="finesse" type="number" value="30"><br>
-        Finesse basse: <input id="fb" type="number" value="10"><br>
-        Seuil finesse basse: <input id="seuil" type="number" value="500"><br>
-        Marge: <input id="marge" type="number" value="250"><br>
-        Vitesse de croisière: <input id="vCruise" type="number" value="100"> km/h<br>
-        <button onclick="update()">Recalculer</button>
-        <hr>
+      <div class="field"><button id="btnRecalc" style="width:100%; padding:10px; border-radius:8px; border:none; background:var(--accent); color:white; font-weight:700;">Recalculer</button></div>
 
-        Hauteur: <span id="hVal">600</span><br>
-        <input id="slider" type="range" min="400" max="3000" step="100" value="600" oninput="update()"><br>
+      <hr>
 
-        <input type="checkbox" id="all" onchange="update()"> Tous cercles 100m<br>
-        <input type="checkbox" id="labels" checked onchange="update()"> Labels<br>
-        <input type="checkbox" id="showConn" checked onchange="update()"> Afficher zones atteignables<br>
-        <hr>
+      <div class="field">Hauteur: <span id="hVal">600</span> m</div>
+      <div class="field"><input id="slider" type="range" min="0" max="3000" step="100" value="600"></div>
 
-        Mode:
-        <select id="mode" onchange="update()">
+      <div class="field"><label><input type="checkbox" id="all"> Tous cercles 100m</label></div>
+      <div class="field"><label><input type="checkbox" id="labels" checked> Labels</label></div>
+      <div class="field"><label><input type="checkbox" id="showConn" checked> Afficher zones atteignables</label></div>
+
+      <hr>
+
+      <div class="field">Mode<br>
+        <select id="mode">
           <option value="QFE">QFE (terrain)</option>
           <option value="QNH">QNH</option>
           <option value="QFE_REF">QFE référence</option>
-        </select><br>
-
-        Terrain référence:
-        <select id="refSelect" onchange="update()"></select><br>
-        <hr>
-
-        Distance filtre (km):
-        <input id="rangeKm" type="number" value="100" onchange="update()">
+        </select>
       </div>
 
-      <div id="menuVent" class="panel" style="left:320px; display:none;">
-        <b>Vent</b><br><br>
-        <label><input type="checkbox" id="applyWind" onchange="update()"> Prendre en compte le vent</label>
-        <hr>
-        <div id="windControls"></div>
-        <button onclick="update()" style="width:100%">Recalculer tout</button>
+      <div class="field">Terrain référence<br>
+        <select id="refSelect"></select>
       </div>
 
+      <hr>
+
+      <div class="field">Distance filtre (km): <input id="rangeKm" type="number" value="100"></div>
+    </div>
+
+    <div id="menuVent" class="panel" style="left:352px; top:72px; display:none;">
+      <h4>Vent</h4>
+      <div class="field"><label><input type="checkbox" id="applyWind"> Prendre en compte le vent</label></div>
+      <div id="windControls" style="margin-top:6px;"></div>
+      <div class="field"><button id="btnRecalcWind" style="width:100%; padding:8px; border-radius:8px; border:none; background:#333; color:white;">Recalculer tout</button></div>
     </div>
   </div>
 
   <!-- MODE VOL -->
-  <div id="volScreen" class="screen">
-    <button class="backBtn" onclick="goTo('homeScreen')">← Retour</button>
-    <h2 style="margin-top:60px; text-align:center;">Mode Vol</h2>
-    <p style="text-align:center;">À définir ensemble.</p>
+  <div id="volScreen" class="screen" aria-label="Mode Vol">
+    <button class="backBtn" onclick="goTo('homeScreen')">← Menu</button>
+    <h2>Mode Vol</h2>
+    <p style="max-width:900px; margin:18px auto; color:#333;">Mode Vol à définir : position GPS, affichage simplifié, mode nuit, centrage automatique, etc.</p>
   </div>
 
   <!-- MANUEL -->
-  <div id="manuelScreen" class="screen">
-    <button class="backBtn" onclick="goTo('homeScreen')">← Retour</button>
-    <h2 style="margin-top:60px; text-align:center;">Manuel</h2>
-    <p style="text-align:center;">Documentation à venir.</p>
+  <div id="manuelScreen" class="screen" aria-label="Manuel">
+    <button class="backBtn" onclick="goTo('homeScreen')">← Menu</button>
+    <h2>Manuel</h2>
+    <p style="max-width:900px; margin:18px auto; color:#333;">Documentation et explications sur les paramètres et le modèle.</p>
   </div>
 
-  <!-- === TON SCRIPT COMPLET (inchangé) === -->
   <script>
-    /* NAVIGATION */
-    function goTo(screenId){
-      document.getElementById("homeScreen").style.display = "none";
-      document.getElementById("prepScreen").style.display = "none";
-      document.getElementById("volScreen").style.display = "none";
-      document.getElementById("manuelScreen").style.display = "none";
+  // Navigation helper
+  function goTo(screenId){
+    // hide all
+    document.getElementById('homeScreen').style.display = 'none';
+    document.getElementById('prepScreen').style.display = 'none';
+    document.getElementById('volScreen').style.display = 'none';
+    document.getElementById('manuelScreen').style.display = 'none';
 
-      document.getElementById(screenId).style.display = "block";
+    // show requested
+    document.getElementById(screenId).style.display = 'block';
+
+    // if we show prep, ensure map resizes correctly and panels hidden by default
+    if(screenId === 'prepScreen'){
+      // small delay to allow DOM paint
+      setTimeout(()=> {
+        if(window._glide_map) {
+          window._glide_map.invalidateSize();
+        }
+      }, 120);
     }
+  }
+
+  // Start on home
+  goTo('homeScreen');
   </script>
 
-  <!-- TON SCRIPT DE CALCUL COMPLET ICI (inchangé) -->
-  <script>
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="utf-8" />
-  <title>PlanneurMob V20 - Zones atteignables réalistes</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-  <style>
-    html, body { margin:0; height:100%; }
-    #map { position:fixed; width:100%; height:100%; }
-
-    .panel {
-      position:absolute;
-      top:10px;
-      left:10px;
-      width:300px;
-      background:rgba(240,240,240,0.95);
-      padding:10px;
-      border-radius:10px;
-      font-family:sans-serif;
-      z-index:1000;
-      max-height:85vh;
-      overflow:auto;
-      box-shadow:0 2px 8px rgba(0,0,0,0.15);
-      cursor: default;
-    }
-
-    .toggleBtn {
-      position:absolute;
-      right:10px;
-      z-index:1100;
-      background:black;
-      color:white;
-      padding:8px;
-      border-radius:8px;
-      border:none;
-      width:44px;
-      height:44px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      cursor:pointer;
-    }
-
-    .toggleBtn.top { top:10px; }
-    .toggleBtn.second { top:64px; }
-
-    .label {
-      font-size:11px;
-      font-weight:bold;
-      background:rgba(255,255,255,0.9);
-      padding:2px 4px;
-      border-radius:4px;
-      border:1px solid rgba(0,0,0,0.08);
-    }
-
-    input[type="number"] { width:90px; }
-    .field { margin-bottom:8px; }
-    .panel h3 { margin:0 0 8px 0; font-size:16px; }
-    .small { font-size:12px; color:#333; }
-  </style>
-</head>
-<body>
-
-  <div id="map" role="application" aria-label="Carte"></div>
-
-  <button id="btnPanel" class="toggleBtn top" title="Paramètres">⚙</button>
-  <button id="btnVent" class="toggleBtn second" title="Vent">⚡</button>
-
-  <aside id="panel" class="panel" role="region" aria-label="Contrôles">
-    <h3>Glide Planner V20</h3>
-
-    <div class="field">
-      <label>Finesse: <input id="finesse" type="number" value="30" step="1"></label>
-    </div>
-
-    <div class="field">
-      <label>Finesse basse: <input id="fb" type="number" value="10" step="1"></label>
-    </div>
-
-    <div class="field">
-      <label>Seuil finesse basse (m): <input id="seuil" type="number" value="500" step="10"></label>
-    </div>
-
-    <div class="field">
-      <label>Marge (m): <input id="marge" type="number" value="250" step="10"></label>
-    </div>
-
-    <div class="field">
-      <label>Vitesse de croisière (km/h): <input id="vCruise" type="number" value="100" step="1"></label>
-    </div>
-
-    <div class="field">
-      <button id="btnRecalc" style="width:100%;">Recalculer</button>
-    </div>
-
-    <hr>
-
-    <div class="field">
-      <label>Hauteur: <span id="hVal">600</span> m</label><br>
-      <input id="slider" type="range" min="0" max="3000" step="100" value="600">
-    </div>
-
-    <div class="field">
-      <label><input type="checkbox" id="all"> Tous cercles 100m</label><br>
-      <label><input type="checkbox" id="labels" checked> Labels</label><br>
-      <label><input type="checkbox" id="showConn" checked> Afficher zones atteignables</label>
-    </div>
-
-    <hr>
-
-    <div class="field">
-      <label>Mode</label><br>
-      <select id="mode">
-        <option value="QFE">QFE (terrain)</option>
-        <option value="QNH">QNH</option>
-        <option value="QFE_REF">QFE référence</option>
-      </select>
-    </div>
-
-    <div class="field">
-      <label>Terrain référence</label><br>
-      <select id="refSelect"></select>
-    </div>
-
-    <hr>
-
-    <div class="field">
-      <label>Distance filtre (km): <input id="rangeKm" type="number" value="100" step="1"></label>
-    </div>
-  </aside>
-
-  <aside id="menuVent" class="panel" style="left:320px; display:none;" role="region" aria-label="Vent">
-    <h3>Vent</h3>
-    <label><input type="checkbox" id="applyWind"> Prendre en compte le vent</label>
-    <div id="windControls" style="margin-top:8px;"></div>
-    <div style="margin-top:8px;">
-      <button id="btnRecalcWind" style="width:100%;">Recalculer tout</button>
-    </div>
-  </aside>
-
+  <!-- Full integrated script (map, controls, calculations) -->
   <script>
   document.addEventListener('DOMContentLoaded', function () {
-    // DOM éléments
+    // DOM elements
     const panel = document.getElementById('panel');
     const menuVent = document.getElementById('menuVent');
     const btnPanel = document.getElementById('btnPanel');
@@ -390,8 +287,12 @@
     const applyWind = document.getElementById('applyWind');
 
     // --- MAP ---
-    const map = L.map('map').setView([43.8, 0.1], 9);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    const map = L.map('map', { preferCanvas: true }).setView([43.8, 0.1], 9);
+    window._glide_map = map;
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
 
     // --- POSITION ---
     let userPos = { lat: 43.8, lon: 0.1 };
@@ -442,7 +343,7 @@
       return "rgb(" + r + "," + g + ",0)";
     }
 
-    // --- WIND MENU GENERATION (sans document.write) ---
+    // --- WIND MENU GENERATION ---
     const windLayers = [
       { label: "0-500", v: "v0", d: "d0" },
       { label: "500-1000", v: "v1", d: "d1" },
@@ -457,19 +358,15 @@
       container.innerHTML = '';
       windLayers.forEach(w => {
         const block = document.createElement('div');
-        block.style.marginBottom = '6px';
+        block.className = 'wind-row';
         block.innerHTML = `
-          <b>${w.label} m</b><br>
-          <div style="display:flex;align-items:center;">
-            <input type="range" id="${w.v}" min="0" max="50" value="0" style="flex:1;">
-            <span id="${w.v}_label" style="margin-left:8px;width:60px;text-align:right;">0 km/h</span>
-          </div>
-          Direction: <input type="number" id="${w.d}" value="0" style="width:80px;"> °
-          <hr>
+          <div style="min-width:80px;"><b style="font-size:12px;">${w.label} m</b></div>
+          <input type="range" id="${w.v}" min="0" max="50" value="0" style="flex:1;">
+          <span id="${w.v}_label" style="width:60px;text-align:right;font-size:12px;">0 km/h</span>
+          <input type="number" id="${w.d}" value="0" style="width:70px;">
         `;
         container.appendChild(block);
 
-        // events
         const slider = block.querySelector(`#${w.v}`);
         const label = block.querySelector(`#${w.v}_label`);
         slider.addEventListener('input', () => { label.innerText = slider.value + ' km/h'; });
@@ -477,7 +374,6 @@
     }
     initWindMenu();
 
-    // helper to read wind values safely
     function getWindForLayer(idx) {
       const layer = windLayers[Math.max(0, Math.min(windLayers.length - 1, idx))];
       const vEl = document.getElementById(layer.v);
@@ -535,7 +431,6 @@
           const d = h_util * finesseUse; // portée sans vent (m)
 
           if (!useWind) {
-            // cercle classique
             const circle = L.circle([t.lat, t.lon], { radius: d, color: color(hh), weight: 2, fill: false }).addTo(map);
             objs.push(circle);
 
@@ -550,33 +445,25 @@
               });
             }
           } else {
-            // polygone venté
             const polyPts = [];
-            // choose step to balance performance/quality
-            const step = 6; // degrees
+            const step = 6;
             for (let a = 0; a < 360; a += step) {
               const alphaRad = a * Math.PI / 180;
 
-              // wind layer index by altitude hh
               let layerIdx = Math.floor(hh / 500);
               if (layerIdx > windLayers.length - 1) layerIdx = windLayers.length - 1;
               const wind = getWindForLayer(layerIdx);
-              const W = wind.v; // km/h
-              const dir = wind.d; // degrees (meteorological)
-              const dirRad = (dir + 180) * Math.PI / 180; // convert to vector direction (where wind pushes)
+              const W = wind.v;
+              const dir = wind.d;
+              const dirRad = (dir + 180) * Math.PI / 180;
 
-              // projection of wind on heading alphaRad
-              // positive projWind means tailwind (helps), negative means headwind (reduces)
               const projWind = W * Math.cos(alphaRad - dirRad);
 
-              // avoid division by zero or negative denom too small
               let denom = vCruise - projWind;
-              if (denom < 5) denom = 5; // safety floor (km/h)
+              if (denom < 5) denom = 5;
 
-              // effDist in meters
               const effDist = d * (vCruise / denom);
 
-              // convert to lat/lon offsets (approx)
               const latOff = (effDist / 111000) * Math.cos(alphaRad);
               const lonOff = (effDist / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(alphaRad);
 
@@ -598,7 +485,6 @@
             }
           }
         }
-        // marker terrain
         objs.push(L.marker([t.lat, t.lon]).addTo(map));
       });
     }
@@ -606,7 +492,7 @@
     // initial update
     update();
 
-    // ajout terrain au clic
+    // ajout terrain
     map.on('click', function (e) {
       const nom = prompt("Nom terrain ?");
       if (!nom) return;
@@ -618,7 +504,7 @@
       update();
     });
 
-    // --- UI events ---
+    // UI events
     slider.addEventListener('input', () => {
       hVal.innerText = slider.value;
       update();
@@ -627,14 +513,13 @@
     btnRecalc.addEventListener('click', update);
     btnRecalcWind.addEventListener('click', update);
 
-    // reactive changes
     [finesse, fb, seuil, marge, vCruiseInput, mode, labels, all, rangeKm, refSelect, applyWind].forEach(el => {
       el.addEventListener('change', update);
     });
 
-    // toggle panels
+    // toggle panels (hidden by default)
     btnPanel.addEventListener('click', () => {
-      panel.style.display = (panel.style.display === 'none') ? 'block' : 'none';
+      panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none';
     });
     btnVent.addEventListener('click', () => {
       menuVent.style.display = (menuVent.style.display === 'none' || menuVent.style.display === '') ? 'block' : 'none';
@@ -652,14 +537,11 @@
       }
 
       el.addEventListener('pointerdown', function (e) {
-        // only left button
         if (e.button && e.button !== 0) return;
-
-        // if clicked on a form control, don't start dragging
         if (isFormControl(e.target)) return;
 
         dragging = true;
-        el.setPointerCapture(e.pointerId);
+        try { el.setPointerCapture(e.pointerId); } catch (err) {}
         offsetX = e.clientX - el.offsetLeft;
         offsetY = e.clientY - el.offsetTop;
         el.style.cursor = 'grabbing';
@@ -687,8 +569,6 @@
         dragging = false;
         el.style.cursor = 'default';
       });
-
-      // touch fallback handled by pointer events
     }
 
     makeDraggable(panel);
@@ -701,13 +581,10 @@
       if (s && lbl) lbl.innerText = s.value + ' km/h';
     });
 
-    // expose update to console for debugging if needed
+    // expose update and map for debugging
     window._glide_update = update;
+    window._glide_map = map;
   });
-  </script>
-
-</body>
-</html>
   </script>
 
 </body>
