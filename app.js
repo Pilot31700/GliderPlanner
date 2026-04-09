@@ -1,6 +1,16 @@
 // app.js - logique principale (carte, UI, calculs)
 // Chargé avec defer depuis index.html
 
+// --- Fix Leaflet default icon 404 issue (solution 1) ---
+// Force Leaflet to use CDN-hosted marker images to avoid 404s when files are missing.
+if (typeof L !== 'undefined' && L.Icon && L.Icon.Default) {
+  L.Icon.Default.mergeOptions({
+    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+    iconUrl:       'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+    shadowUrl:     'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png'
+  });
+}
+
 // Helpers pour activer/désactiver interactions Leaflet
 function enableMapInteractions(map) {
   try {
