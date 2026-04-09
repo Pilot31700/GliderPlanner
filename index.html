@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
-  <title>Glide Planner V2 - Single Paste</title>
+  <title>Glide Planner v4 - Prep Interactive</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -30,6 +30,7 @@
       -webkit-touch-callout: none;
       user-select: none;
       -webkit-tap-highlight-color: transparent;
+      background:#eaeaea;
     }
     /* état flouté (visuel seulement) */
     #map.blurred {
@@ -114,7 +115,7 @@
       max-height:78vh;
       overflow:auto;
       border:1px solid rgba(20,20,20,0.04);
-      touch-action: none;
+      touch-action: none; /* allow dragging panels without triggering map gestures */
     }
 
     .panel h4 { margin:0 0 8px 0; font-size:15px; }
@@ -217,7 +218,7 @@
     <button id="btnVent" class="toggleBtn second" title="Vent">🌬</button>
 
     <div id="panel" class="panel" style="left:12px; top:72px; display:none;">
-      <h4>Glide Planner V2</h4>
+      <h4>Glide Planner v4</h4>
 
       <div class="field">Finesse: <input id="finesse" type="number" value="30"></div>
       <div class="field">Finesse basse: <input id="fb" type="number" value="10"></div>
@@ -299,7 +300,7 @@
         if (map.boxZoom && map.boxZoom.enable) map.boxZoom.enable();
         if (map.keyboard && map.keyboard.enable) map.keyboard.enable();
         if (map.tap && map.tap.enable) map.tap.enable();
-        const el = document.getElementById('map');
+        const el = map.getContainer ? map.getContainer() : document.getElementById('map');
         if (el) {
           el.style.pointerEvents = 'auto';
           el.style.touchAction = 'pan-x pan-y pinch-zoom';
@@ -317,7 +318,7 @@
         if (map.boxZoom && map.boxZoom.disable) map.boxZoom.disable();
         if (map.keyboard && map.keyboard.disable) map.keyboard.disable();
         if (map.tap && map.tap.disable) map.tap.disable();
-        const el = document.getElementById('map');
+        const el = map.getContainer ? map.getContainer() : document.getElementById('map');
         if (el) {
           el.style.pointerEvents = 'none';
           el.style.touchAction = 'none';
@@ -367,6 +368,7 @@
           if(blockerManual) { blockerManual.style.display = 'block'; blockerManual.style.pointerEvents = 'auto'; }
           if(window._glide_map) disableMapInteractions(window._glide_map);
         } else {
+          // prep ou vol : carte nette et interactive
           mapEl.classList.remove('blurred');
           if(blockerHome) { blockerHome.style.display = 'none'; blockerHome.style.pointerEvents = 'none'; }
           if(blockerManual) { blockerManual.style.display = 'none'; blockerManual.style.pointerEvents = 'none'; }
@@ -427,14 +429,14 @@
     const applyWind = document.getElementById('applyWind');
 
     // --- MAP ---
-    const map = L.map('map', { preferCanvas: true }).setView([43.8, 0.1], 9);
+    const map = L.map('map', { preferCanvas: true, tap: true }).setView([43.8, 0.1], 9);
     window._glide_map = map;
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    // Ensure interactions are initially disabled (home shown) and enabled when needed
+    // Ensure interactions are disabled initially (home shown)
     disableMapInteractions(map);
 
     // --- POSITION ---
