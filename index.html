@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
-  <title>Glide Planner v1</title>
+  <title>Glide Planner V2 - Single Paste</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -25,6 +25,11 @@
       z-index:1;
       transition: filter 220ms ease;
       pointer-events:auto;
+      touch-action: pan-x pan-y pinch-zoom;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
     }
     /* état flouté (visuel seulement) */
     #map.blurred {
@@ -109,6 +114,7 @@
       max-height:78vh;
       overflow:auto;
       border:1px solid rgba(20,20,20,0.04);
+      touch-action: none;
     }
 
     .panel h4 { margin:0 0 8px 0; font-size:15px; }
@@ -189,7 +195,7 @@
   <div id="mapBlockerHome" class="map-blocker" aria-hidden="true"></div>
   <div id="mapBlockerManual" class="map-blocker" aria-hidden="true"></div>
 
-  <!-- HOME (overlay centré) -->
+  <!-- HOME (overlay centré au-dessus de la carte) -->
   <div id="homeScreen" aria-label="Accueil">
     <div id="homeInner">
       <h2 id="homeTitle">Glide Planner</h2>
@@ -211,7 +217,7 @@
     <button id="btnVent" class="toggleBtn second" title="Vent">🌬</button>
 
     <div id="panel" class="panel" style="left:12px; top:72px; display:none;">
-      <h4>Glide Planner v1</h4>
+      <h4>Glide Planner V2</h4>
 
       <div class="field">Finesse: <input id="finesse" type="number" value="30"></div>
       <div class="field">Finesse basse: <input id="fb" type="number" value="10"></div>
@@ -282,30 +288,40 @@
   </div>
 
   <script>
-    /* Helpers pour activer/désactiver interactions Leaflet */
+    /* Helpers pour activer/désactiver interactions Leaflet (robuste multi-navigateurs) */
     function enableMapInteractions(map) {
       try {
-        if (map.dragging) map.dragging.enable();
-        if (map.scrollWheelZoom) map.scrollWheelZoom.enable();
-        if (map.touchZoom) map.touchZoom.enable();
-        if (map.doubleClickZoom) map.doubleClickZoom.enable();
-        if (map.boxZoom) map.boxZoom.enable();
-        if (map.keyboard) map.keyboard.enable();
-        const m = document.getElementById('map');
-        if (m) m.style.pointerEvents = 'auto';
+        if (!map) return;
+        if (map.dragging && map.dragging.enable) map.dragging.enable();
+        if (map.scrollWheelZoom && map.scrollWheelZoom.enable) map.scrollWheelZoom.enable();
+        if (map.touchZoom && map.touchZoom.enable) map.touchZoom.enable();
+        if (map.doubleClickZoom && map.doubleClickZoom.enable) map.doubleClickZoom.enable();
+        if (map.boxZoom && map.boxZoom.enable) map.boxZoom.enable();
+        if (map.keyboard && map.keyboard.enable) map.keyboard.enable();
+        if (map.tap && map.tap.enable) map.tap.enable();
+        const el = document.getElementById('map');
+        if (el) {
+          el.style.pointerEvents = 'auto';
+          el.style.touchAction = 'pan-x pan-y pinch-zoom';
+        }
       } catch (e) { console.warn('enableMapInteractions', e); }
     }
 
     function disableMapInteractions(map) {
       try {
-        if (map.dragging) map.dragging.disable();
-        if (map.scrollWheelZoom) map.scrollWheelZoom.disable();
-        if (map.touchZoom) map.touchZoom.disable();
-        if (map.doubleClickZoom) map.doubleClickZoom.disable();
-        if (map.boxZoom) map.boxZoom.disable();
-        if (map.keyboard) map.keyboard.disable();
-        const m = document.getElementById('map');
-        if (m) m.style.pointerEvents = 'none';
+        if (!map) return;
+        if (map.dragging && map.dragging.disable) map.dragging.disable();
+        if (map.scrollWheelZoom && map.scrollWheelZoom.disable) map.scrollWheelZoom.disable();
+        if (map.touchZoom && map.touchZoom.disable) map.touchZoom.disable();
+        if (map.doubleClickZoom && map.doubleClickZoom.disable) map.doubleClickZoom.disable();
+        if (map.boxZoom && map.boxZoom.disable) map.boxZoom.disable();
+        if (map.keyboard && map.keyboard.disable) map.keyboard.disable();
+        if (map.tap && map.tap.disable) map.tap.disable();
+        const el = document.getElementById('map');
+        if (el) {
+          el.style.pointerEvents = 'none';
+          el.style.touchAction = 'none';
+        }
       } catch (e) { console.warn('disableMapInteractions', e); }
     }
 
@@ -356,6 +372,7 @@
           if(blockerManual) { blockerManual.style.display = 'none'; blockerManual.style.pointerEvents = 'none'; }
           if(window._glide_map) {
             enableMapInteractions(window._glide_map);
+            // invalidateSize pour forcer Leaflet à reprendre la main (utile sur mobile/desktop)
             setTimeout(()=> window._glide_map.invalidateSize(), 120);
           }
         }
@@ -416,6 +433,9 @@
       maxZoom: 19,
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
+
+    // Ensure interactions are initially disabled (home shown) and enabled when needed
+    disableMapInteractions(map);
 
     // --- POSITION ---
     let userPos = { lat: 43.8, lon: 0.1 };
