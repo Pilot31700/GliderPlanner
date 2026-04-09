@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
-  <title>Glide Planner V20 - Fix position toggle</title>
+  <title>Glide Planner V20 - Fix interactions (prep passes clicks to map)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -18,7 +18,7 @@
 
     html, body { margin:0; height:100%; font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial; }
 
-    /* MAP (par défaut fixed) */
+    /* MAP */
     #map {
       position:fixed;
       inset:0;
@@ -33,30 +33,34 @@
       background:#eaeaea;
     }
 
-    /* Quand on veut que la carte soit "libre" (préparation), on passe en absolute */
-    #map.map-absolute {
-      position:absolute;
-      inset:0;
-    }
+    /* When we want the map to be "free" (prep/vol) we switch to absolute to avoid fixed-layer capture issues */
+    #map.map-absolute { position:absolute; inset:0; }
 
-    /* flou visuel sur Home / Manuel */
+    /* blur used on Home / Manuel */
     .map-blurred {
       filter: blur(6px) brightness(0.55) saturate(0.9);
-      pointer-events:none; /* bloque les interactions quand floutée */
+      pointer-events:none;
     }
 
-    /* HOME (voile centré au-dessus de la carte) */
-    #homeScreen {
+    /* SCREENS
+       Default: screens do not capture pointer events so clicks fall through to the map.
+       Individual interactive elements inside screens (buttons, panels) explicitly enable pointer-events.
+    */
+    .screen {
       position:fixed;
       inset:0;
-      z-index:30;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      color:white;
-      text-align:center;
-      pointer-events:auto;
+      display:none;
+      z-index:40;
+      background: transparent;
+      overflow:auto;
+      padding:28px;
+      pointer-events:none; /* IMPORTANT: let clicks pass to map by default */
     }
+
+    /* HOME (centered overlay) - interactive (blocks map) */
+    #homeScreen { display:flex; align-items:center; justify-content:center; color:white; text-align:center; }
+    #homeScreen[aria-hidden="false"] { pointer-events:auto; } /* when visible, block map */
+
     #homeInner {
       width: min(720px, 92%);
       padding: 36px;
@@ -82,13 +86,17 @@
       cursor:pointer;
       box-shadow: 0 6px 18px rgba(10,10,10,0.18);
       transition: transform .12s ease, box-shadow .12s ease;
-      pointer-events:auto;
+      pointer-events:auto; /* interactive */
       touch-action: manipulation;
     }
     .menuBtn:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(10,10,10,0.22); }
 
-    /* PREP SCREEN (map + panels) */
-    #prepScreen { position:fixed; inset:0; display:none; z-index:40; background:transparent; }
+    /* PREP SCREEN specifics */
+    #prepScreen { color:black; text-shadow:none; }
+    /* prepScreen remains pointer-events:none so clicks fall through to map,
+       but interactive children (panels, buttons) must explicitly enable pointer-events */
+    #prepScreen[aria-hidden="false"] { /* visible but not blocking by default */ pointer-events:none; }
+
     .backBtn {
       position: absolute;
       top:12px; left:12px;
@@ -101,7 +109,7 @@
       font-weight:600;
       cursor:pointer;
       box-shadow: 0 6px 18px rgba(0,0,0,0.25);
-      pointer-events:auto;
+      pointer-events:auto; /* allow clicking the back button */
       touch-action: manipulation;
     }
 
@@ -117,8 +125,8 @@
       max-height:78vh;
       overflow:auto;
       border:1px solid rgba(20,20,20,0.04);
-      touch-action: none;
-      pointer-events:auto;
+      touch-action: none; /* allow dragging without triggering map gestures */
+      pointer-events:auto; /* interactive */
     }
 
     .panel h4 { margin:0 0 8px 0; font-size:15px; }
@@ -162,17 +170,6 @@
     .wind-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
     .wind-row input[type="number"] { width:70px; }
 
-    /* OTHER SCREENS */
-    .screen {
-      position:fixed;
-      inset:0;
-      display:none;
-      z-index:40;
-      background: transparent;
-      overflow:auto;
-      padding:28px;
-    }
-
     /* MANUEL content card */
     #manuelCard {
       width: min(900px, 94%);
@@ -182,6 +179,7 @@
       border-radius: 10px;
       box-shadow: 0 8px 30px rgba(0,0,0,0.12);
       z-index:45;
+      pointer-events:auto; /* interactive when visible */
     }
 
     @media (max-width:720px){
@@ -289,7 +287,7 @@
   </div>
 
   <script>
-    /* Helpers pour activer/désactiver interactions Leaflet */
+    /* Robust helpers to enable/disable Leaflet interactions */
     function enableMapInteractions(map) {
       try {
         if (!map) return;
@@ -326,12 +324,11 @@
       } catch (e) { console.warn('disableMapInteractions', e); }
     }
 
-    /* goTo : gestion des écrans + flou + interactions + toggle position */
+    /* goTo: manage screens, aria-hidden, blur, and map positioning */
     function goTo(screenId){
       const screens = ['homeScreen','prepScreen','volScreen','manuelScreen'];
       const mapEl = document.getElementById('map');
 
-      // hide all screens and set aria-hidden
       screens.forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
@@ -344,27 +341,29 @@
         }
       });
 
-      // If we are on prepScreen, make the map absolute (so it can be panned on mobile)
-      if (mapEl) {
-        if (screenId === 'prepScreen' || screenId === 'volScreen') {
-          // remove blur, enable interactions, and set map to absolute so touch gestures work reliably
-          mapEl.classList.remove('map-blurred');
-          mapEl.classList.add('map-absolute');
-          if (window._glide_map) {
-            enableMapInteractions(window._glide_map);
-            // small delay to allow layout change then invalidate size
-            setTimeout(()=> window._glide_map.invalidateSize(), 120);
-          }
-        } else {
-          // home or manuel: blur and disable interactions, restore fixed positioning
-          mapEl.classList.add('map-blurred');
-          mapEl.classList.remove('map-absolute');
-          if (window._glide_map) disableMapInteractions(window._glide_map);
-        }
+      if (!mapEl) return;
+
+      if (screenId === 'prepScreen' || screenId === 'volScreen') {
+        // Prep/Vol: map must be interactive and receive pointer events.
+        mapEl.classList.remove('map-blurred');
+        mapEl.classList.add('map-absolute'); // avoid fixed-layer capture issues on some devices
+        // Ensure the prepScreen itself does not capture pointer events (so clicks fall through to map),
+        // but keep interactive children (panels, buttons) clickable (they already have pointer-events:auto).
+        const prep = document.getElementById('prepScreen');
+        if (prep) prep.style.pointerEvents = 'none';
+        enableMapInteractions(window._glide_map);
+        setTimeout(()=> window._glide_map.invalidateSize(), 120);
+      } else {
+        // Home/Manuel: map blurred and non-interactive; screens should block interactions.
+        mapEl.classList.add('map-blurred');
+        mapEl.classList.remove('map-absolute');
+        const prep = document.getElementById('prepScreen');
+        if (prep) prep.style.pointerEvents = 'auto'; // not necessary but safe
+        disableMapInteractions(window._glide_map);
       }
     }
 
-    /* Attacher listeners aux boutons */
+    /* Attach navigation listeners */
     document.addEventListener('DOMContentLoaded', function(){
       const btnGoPrep = document.getElementById('btnGoPrep');
       const btnGoVol = document.getElementById('btnGoVol');
@@ -386,7 +385,7 @@
     });
   </script>
 
-  <!-- Script complet intégré (carte, contrôles, calculs) -->
+  <!-- Main app script (map, controls, calculations) -->
   <script>
   document.addEventListener('DOMContentLoaded', function () {
     // DOM elements
@@ -465,14 +464,13 @@
     }
     populateRef();
 
-    // couleur selon hauteur
     function color(h) {
       const r = Math.round(255 * (1 - (h / 3000)));
       const g = Math.round(255 * (h / 3000));
       return "rgb(" + r + "," + g + ",0)";
     }
 
-    // --- WIND MENU GENERATION ---
+    // --- WIND MENU ---
     const windLayers = [
       { label: "0-500", v: "v0", d: "d0" },
       { label: "500-1000", v: "v1", d: "d1" },
@@ -646,7 +644,7 @@
       el.addEventListener('change', update);
     });
 
-    // toggle panels (hidden by default)
+    // toggle panels
     if (btnPanel) btnPanel.addEventListener('click', () => {
       if (!panel) return;
       panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none';
@@ -656,7 +654,7 @@
       menuVent.style.display = (menuVent.style.display === 'none' || menuVent.style.display === '') ? 'block' : 'none';
     });
 
-    // make panels draggable but ignore drags started on form controls
+    // draggable panels (ignore drags started on form controls)
     function makeDraggable(el) {
       if (!el) return;
       let dragging = false;
