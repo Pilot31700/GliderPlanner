@@ -1,285 +1,206 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-<meta charset="utf-8">
-<title>PlanneurMob V14 - Zones atteignables</title>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+<title>Planneur V15</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
 <style>
-html, body { margin:0; height:100%; }
-#map { position:fixed; width:100%; height:100%; }
-
-.panel {
-  position:absolute;
-  top:10px;
-  left:10px;
-  width:280px;
-  background:rgba(240,240,240,0.95);
-  padding:10px;
-  border-radius:10px;
-  font-family:sans-serif;
-  z-index:1000;
-  max-height:85vh;
-  overflow:auto;
-}
-
-.toggleBtn {
-  position:absolute;
-  top:10px;
-  right:10px;
-  z-index:1100;
-  background:black;
-  color:white;
-  padding:8px;
-  border-radius:8px;
-}
-
-.label {
-  font-size:11px;
-  font-weight:bold;
-  background:rgba(255,255,255,0.8);
-  padding:2px 4px;
-  border-radius:4px;
-}
+  body, html { margin:0; padding:0; height:100%; font-family:Arial,sans-serif;}
+  #map { height:100%; width:100%; }
+  .menu { position:absolute; top:10px; left:10px; background:white; padding:10px; border-radius:6px; z-index:1000; max-height:90%; overflow:auto; box-shadow:0 0 10px rgba(0,0,0,0.3);}
+  .menu h3 { margin:5px 0; }
+  .menu label { display:block; margin:3px 0; }
+  .slider-label { display:flex; justify-content:space-between; }
+  button { margin:3px 0; padding:3px 6px; }
 </style>
 </head>
 <body>
-
 <div id="map"></div>
 
-<button class="toggleBtn" onclick="panel.style.display = panel.style.display==='none'?'block':'none'">⚙</button>
-
-<div id="panel" class="panel">
-
-<b>Glide Planner V14</b><br><br>
-
-Finesse: <input id="finesse" type="number" value="30"><br>
-Finesse basse: <input id="fb" type="number" value="10"><br>
-Seuil finesse basse: <input id="seuil" type="number" value="500"><br>
-Marge: <input id="marge" type="number" value="250"><br>
-<button onclick="update()">Recalculer</button>
-<hr>
-
-Hauteur: <span id="hVal">600</span><br>
-<input id="slider" type="range" min="400" max="1500" step="100" value="600" oninput="update()"><br>
-
-<input type="checkbox" id="all" onchange="update()"> Tous cercles 100m<br>
-<input type="checkbox" id="labels" checked onchange="update()"> Labels<br>
-<input type="checkbox" id="showConn" checked onchange="update()"> Afficher zones atteignables<br>
-<hr>
-
-Mode:
-<select id="mode" onchange="update()">
-<option value="QFE">QFE (terrain)</option>
-<option value="QNH">QNH</option>
-<option value="QFE_REF">QFE référence</option>
-</select><br>
-
-Terrain référence:
-<select id="refSelect" onchange="update()"></select><br>
-<hr>
-
-Distance filtre (km):
-<input id="rangeKm" type="number" value="100" onchange="update()">
-
+<div class="menu" id="menuParam">
+  <h3>Paramètres</h3>
+  <label><input type="checkbox" id="showLabels" checked> Afficher labels</label>
+  <label>Mode altimétrique:
+    <select id="modeAlt">
+      <option value="QFE">QFE terrain départ</option>
+      <option value="QNH">QNH</option>
+      <option value="QFE_REF">QFE terrain référence</option>
+    </select>
+  </label>
+  <label>Finesse standard: <input type="number" id="finesse" value="10" min="1"></label>
+  <label>Seuil finesse basse (m): <input type="number" id="seuilFinesse" value="500"></label>
+  <label>Marge sécurité (m): <input type="number" id="marge" value="250"></label>
+  <label><input type="checkbox" id="showZones"> Afficher zones atteignables</label>
+  <label><input type="checkbox" id="showAllCircles"> Tout afficher (100m)</label>
 </div>
 
+<div class="menu" id="menuVent" style="top:10px; left:250px;">
+  <h3>Vent</h3>
+  <label><input type="checkbox" id="applyWind"> Prendre en compte le vent</label>
+  <div id="windControls">
+    <div>
+      <strong>Tranche 0–500 m</strong>
+      <div class="slider-label"><span>Vitesse (km/h)</span><span id="v0_500_val">0</span></div>
+      <input type="range" id="v0_500" min="0" max="50" value="0">
+      <label>Direction (°) <input type="number" id="d0_500" value="0" min="0" max="359"></label>
+    </div>
+    <div>
+      <strong>Tranche 500–1000 m</strong>
+      <div class="slider-label"><span>Vitesse (km/h)</span><span id="v500_1000_val">0</span></div>
+      <input type="range" id="v500_1000" min="0" max="50" value="0">
+      <label>Direction (°) <input type="number" id="d500_1000" value="0" min="0" max="359"></label>
+    </div>
+    <div>
+      <strong>Tranche 1000–1500 m</strong>
+      <div class="slider-label"><span>Vitesse (km/h)</span><span id="v1000_1500_val">0</span></div>
+      <input type="range" id="v1000_1500" min="0" max="50" value="0">
+      <label>Direction (°) <input type="number" id="d1000_1500" value="0" min="0" max="359"></label>
+    </div>
+    <div>
+      <strong>Tranche 1500–2000 m</strong>
+      <div class="slider-label"><span>Vitesse (km/h)</span><span id="v1500_2000_val">0</span></div>
+      <input type="range" id="v1500_2000" min="0" max="50" value="0">
+      <label>Direction (°) <input type="number" id="d1500_2000" value="0" min="0" max="359"></label>
+    </div>
+    <div>
+      <strong>Tranche 2000–2500 m</strong>
+      <div class="slider-label"><span>Vitesse (km/h)</span><span id="v2000_2500_val">0</span></div>
+      <input type="range" id="v2000_2500" min="0" max="50" value="0">
+      <label>Direction (°) <input type="number" id="d2000_2500" value="0" min="0" max="359"></label>
+    </div>
+    <div>
+      <strong>Tranche 2500–3000 m</strong>
+      <div class="slider-label"><span>Vitesse (km/h)</span><span id="v2500_3000_val">0</span></div>
+      <input type="range" id="v2500_3000" min="0" max="50" value="0">
+      <label>Direction (°) <input type="number" id="d2500_3000" value="0" min="0" max="359"></label>
+    </div>
+    <button id="applyWindBtn">Appliquer le vent</button>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-// --- MAP ---
-var map = L.map('map').setView([43.8,0.1],9);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+// ------------------ Carte ------------------
+const map = L.map('map').setView([43.5,0], 7); // France
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 18
+}).addTo(map);
 
-// --- POSITION ---
-let userPos = {lat:43.8, lon:0.1};
-map.on('moveend', ()=>{
-  let c = map.getCenter();
-  userPos = {lat:c.lat, lon:c.lng};
-  update();
-});
-
-// --- DISTANCE ---
-function distanceKm(a,b){
-  let R=6371;
-  let dLat=(b.lat-a.lat)*Math.PI/180;
-  let dLon=(b.lon-a.lon)*Math.PI/180;
-  let x = Math.sin(dLat/2)**2 +
-          Math.cos(a.lat*Math.PI/180) *
-          Math.cos(b.lat*Math.PI/180) *
-          Math.sin(dLon/2)**2;
-  return 2*R*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
-}
-
-// --- BASE TERRAINS ---
-let terrainsAll = [
-  {id:"LFDA",lat:43.709,lon:-0.249,alt:80},
-  {id:"LFID",lat:43.955,lon:0.373,alt:130},
-  {id:"LFCN",lat:43.762,lon:-0.036,alt:100},
-  {id:"LFDH",lat:43.646,lon:0.601,alt:130},
-  {id:"LFBM",lat:43.911,lon:-0.507,alt:52},
-  {id:"LFCL",lat:43.586,lon:1.499,alt:152}
+// ------------------ Terrains init ------------------
+let terrains = [
+  {code:"LFDA", nom:"Aire-sur-l'Adour", lat:43.7086, lng:-0.0564, alt:136},
+  {code:"LFID", nom:"Condom", lat:43.960, lng:0.295, alt:146},
+  {code:"LFCN", nom:"Cazères", lat:43.25, lng:1.27, alt:180},
+  {code:"LFDH", nom:"Auch", lat:43.647, lng:0.587, alt:160}
 ];
 
-let terrains=[];
+let refTerrain = "LFDA";
 
-// remplir select référence
-function populateRef(){
-  refSelect.innerHTML="";
-  terrainsAll.forEach(t=>{
-    let opt=document.createElement("option");
-    opt.value=t.id;
-    opt.innerText=t.id;
-    refSelect.appendChild(opt);
-  });
-}
-populateRef();
+// ------------------ Paramètres ------------------
+let finesse = 10;
+let seuilFinesse = 500;
+let marge = 250;
+let modeAlt = "QFE";
+let showLabels = true;
+let showZones = true;
+let showAllCircles = false;
 
-// --- COULEUR ---
-function color(h){
-  let r=Math.round(255*(1-(h-400)/1100));
-  let g=Math.round(255*((h-400)/1100));
-  return "rgb("+r+","+g+",0)";
-}
+// ------------------ Vent ------------------
+let applyWind = false;
+let windTranches = [
+  {min:0,max:500,v:0,d:0},
+  {min:500,max:1000,v:0,d:0},
+  {min:1000,max:1500,v:0,d:0},
+  {min:1500,max:2000,v:0,d:0},
+  {min:2000,max:2500,v:0,d:0},
+  {min:2500,max:3000,v:0,d:0},
+];
 
-// --- DRAW ---
-let objs=[];
+// ------------------ Cercles ------------------
+let circleLayers = [];
 
-// calcul intersections / zones atteignables
-function computeConnections(terrains, h, modeVal, margeVal, seuilVal, f, fbVal, refAlt){
-  let connections = [];
-  for(let i=0;i<terrains.length;i++){
-    for(let j=i+1;j<terrains.length;j++){
-      let A = terrains[i], B=terrains[j];
-      let dAB = distanceKm(A,B)*1000;
-
-      function computeReach(t){
-        let h_rel;
-        if(modeVal==="QFE"){ h_rel = h; }
-        else if(modeVal==="QNH"){ h_rel = h - t.alt; }
-        else if(modeVal==="QFE_REF"){ h_rel = h - (t.alt - refAlt);}
-        if(h_rel<=0) return 0;
-        let finesseUse = (h_rel<=seuilVal)? fbVal : f;
-        let h_util = h_rel - margeVal;
-        if(h_util<=0) return 0;
-        return h_util*finesseUse;
-      }
-
-      let dA = computeReach(A);
-      let dB = computeReach(B);
-      if(dA+dB>=dAB){ connections.push({A,B,dAB}); }
-    }
+// ------------------ Fonctions ------------------
+function hauteurTerrain(terrain) {
+  if(modeAlt=="QFE") return 0;
+  if(modeAlt=="QNH") return terrain.alt;
+  if(modeAlt=="QFE_REF") {
+    let ref = terrains.find(t=>t.code===refTerrain);
+    return terrain.alt - ref.alt;
   }
-  return connections;
+  return 0;
 }
 
-// altitude minimale pour relier A->B
-function computeMinAltitude(A,B,modeVal,margeVal,f){
-  let dAB = distanceKm(A,B)*1000;
-  let h_needed = (dAB/f)+margeVal;
-  if(modeVal==="QNH") return h_needed + A.alt;
-  return h_needed;
+function calcDistance(r, angle, tranche) {
+  // Vent effect
+  if(!applyWind) return r;
+  let theta = angle*Math.PI/180;
+  let windTheta = windTranches[tranche].d*Math.PI/180;
+  let vx = Math.cos(windTheta - theta) * windTranches[tranche].v;
+  return r + vx; // simple approx km/h -> km à adapter
 }
 
-function update(){
-  objs.forEach(o=>map.removeLayer(o));
-  objs=[];
-  let range = parseFloat(rangeKm.value);
-
-  terrains = terrainsAll.filter(t=>distanceKm(userPos,t)<=range);
-
-  let h=parseInt(slider.value);
-  hVal.innerText=h;
-
-  let f=parseFloat(finesse.value);
-  let fbVal=parseFloat(fb.value);
-  let seuilVal=parseFloat(seuil.value);
-  let margeVal=parseFloat(marge.value);
-  let modeVal=mode.value;
-  let showLabels=labels.checked;
-  let allVal=all.checked;
-  let showConn = document.getElementById("showConn").checked;
-
-  let ref = terrainsAll.find(t => t.id === refSelect.value);
-  let refAlt = ref?ref.alt:0;
-
-  // cercles
-  terrains.forEach(t=>{
-    let hMin=allVal?400:h;
-    let hMax=allVal?1500:h;
-    for(let hh=hMin;hh<=hMax;hh+=100){
-      let h_rel;
-      if(modeVal==="QFE"){ h_rel = hh; }
-      else if(modeVal==="QNH"){ h_rel = hh - t.alt; }
-      else if(modeVal==="QFE_REF"){ h_rel = hh - (t.alt - refAlt); }
-      if(h_rel<=0) continue;
-      let finesseUse = (h_rel<=seuilVal)? fbVal : f;
-      let h_util = h_rel - margeVal;
-      if(h_util<=0) continue;
-      let d = h_util*finesseUse;
-
-      let circle=L.circle([t.lat,t.lon],{
-        radius:d,
-        color:color(hh),
-        weight:2,
-        fill:false
-      }).addTo(map);
-      objs.push(circle);
-
-      if(showLabels){
-        [0,180].forEach(a=>{
-          let rad=a*Math.PI/180;
-          let latOff=(d/111000)*Math.cos(rad);
-          let lonOff=(d/(111000*Math.cos(t.lat*Math.PI/180)))*Math.sin(rad);
-          let lab=L.marker([t.lat+latOff,t.lon+lonOff],{
-            icon:L.divIcon({
-              className:'label',
-              html:hh+"m-F"+Math.round(finesseUse)+"-"+t.id
-            })
-          }).addTo(map);
-          objs.push(lab);
-        });
+function drawCircles() {
+  // clear previous
+  circleLayers.forEach(c=>map.removeLayer(c));
+  circleLayers=[];
+  
+  terrains.forEach((terrain)=>{
+    let baseAlt = hauteurTerrain(terrain);
+    let maxAlt = showAllCircles ? 3000 : 1000;
+    let step = showAllCircles ? 100 : 500;
+    for(let h=step; h<=maxAlt; h+=step){
+      let effectiveH = h - marge;
+      let radius = finesse * effectiveH / 1000; // en km
+      // Déformation
+      let points = [];
+      for(let angle=0; angle<360; angle+=10){
+        let r = calcDistance(radius, angle, Math.floor(h/500));
+        let lat = terrain.lat + (r/111) * Math.cos(angle*Math.PI/180);
+        let lng = terrain.lng + (r/(111*Math.cos(terrain.lat*Math.PI/180))) * Math.sin(angle*Math.PI/180);
+        points.push([lat,lng]);
+      }
+      let color = `hsl(${120*(h/3000)},100%,50%)`;
+      let poly = L.polygon(points, {color:color, fill:false, weight:2}).addTo(map);
+      circleLayers.push(poly);
+      // Label
+      if(showLabels && angle%2==0){
+        let mid = points[Math.floor(points.length/4)];
+        L.marker(mid,{icon:L.divIcon({className:'label', html:`${h}m-${terrain.code}`, iconSize:[0,0]})}).addTo(map);
       }
     }
-
-    let m=L.marker([t.lat,t.lon]).addTo(map);
-    objs.push(m);
   });
-
-  // connections zones
-  if(showConn){
-    let conns = computeConnections(terrains,h,modeVal,margeVal,seuilVal,f,fbVal,refAlt);
-    conns.forEach(c=>{
-      let line=L.polyline([[c.A.lat,c.A.lon],[c.B.lat,c.B.lon]],{
-        color:"blue",weight:3,dashArray:"5,5"
-      }).addTo(map);
-      objs.push(line);
-
-      let hMin = computeMinAltitude(c.A,c.B,modeVal,margeVal,f);
-      let midLat = (c.A.lat+c.B.lat)/2;
-      let midLon = (c.A.lon+c.B.lon)/2;
-      let label=L.marker([midLat,midLon],{
-        icon:L.divIcon({className:'label',html:"Min: "+Math.round(hMin)+"m"})
-      }).addTo(map);
-      objs.push(label);
-    });
-  }
 }
 
-update();
-
-// --- ajout terrain ---
-map.on('click', function(e){
-  let nom=prompt("Nom terrain ?");
-  if(!nom) return;
-  let alt=parseFloat(prompt("Altitude m ?"));
-  if(isNaN(alt)) return;
-  terrainsAll.push({id:nom,lat:e.latlng.lat,lon:e.latlng.lng,alt:alt});
-  populateRef();
-  update();
+// ------------------ Event listeners ------------------
+document.getElementById("finesse").addEventListener("change", (e)=>{
+  finesse=parseFloat(e.target.value); drawCircles();
 });
-</script>
+document.getElementById("seuilFinesse").addEventListener("change", (e)=>{seuilFinesse=parseFloat(e.target.value); drawCircles();});
+document.getElementById("marge").addEventListener("change", (e)=>{marge=parseFloat(e.target.value); drawCircles();});
+document.getElementById("modeAlt").addEventListener("change",(e)=>{modeAlt=e.target.value; drawCircles();});
+document.getElementById("showLabels").addEventListener("change",(e)=>{showLabels=e.target.checked; drawCircles();});
+document.getElementById("showZones").addEventListener("change",(e)=>{showZones=e.target.checked; drawCircles();});
+document.getElementById("showAllCircles").addEventListener("change",(e)=>{showAllCircles=e.target.checked; drawCircles();});
 
+// Vent sliders
+["v0_500","v500_1000","v1000_1500","v1500_2000","v2000_2500","v2500_3000"].forEach((id,i)=>{
+  document.getElementById(id).addEventListener("input",(e)=>{
+    windTranches[i].v=parseFloat(e.target.value);
+    document.getElementById(id+"_val").innerText=e.target.value;
+  });
+});
+["d0_500","d500_1000","d1000_1500","d1500_2000","d2000_2500","d2500_3000"].forEach((id,i)=>{
+  document.getElementById(id).addEventListener("change",(e)=>{
+    windTranches[i].d=parseFloat(e.target.value);
+  });
+});
+
+document.getElementById("applyWindBtn").addEventListener("click",()=>{applyWind=document.getElementById("applyWind").checked; drawCircles();});
+
+// Initial draw
+drawCircles();
+
+</script>
 </body>
 </html>
