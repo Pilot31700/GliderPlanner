@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>PlanneurMob V17 fixe</title>
+<title>PlanneurMob V17 Fix</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -31,7 +31,7 @@ html, body { margin:0; height:100%; }
 <button class="toggleBtn" style="top:60px;" onclick="toggleVent()">⚡</button>
 
 <div id="panel" class="panel">
-<b>Glide Planner V17 fix</b><br><br>
+<b>Glide Planner V17 Fix</b><br><br>
 
 Finesse: <input id="finesse" type="number" value="30"><br>
 Finesse basse: <input id="fb" type="number" value="10"><br>
@@ -96,7 +96,7 @@ function distanceKm(a,b){
   return 2*R*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
 }
 
-// --- BASE TERRAINS ---
+// --- TERRAINS ---
 let terrainsAll = [
   {id:"LFDA",lat:43.709,lon:-0.249,alt:80},
   {id:"LFID",lat:43.955,lon:0.373,alt:130},
@@ -165,7 +165,6 @@ let objs=[];
 function getWindAdjustedPoints(lat, lon, h, dMax, vCruise){
   if(!applyWind.checked) return null;
 
-  // déterminer couche
   let layerIdx = Math.floor(h/500);
   if(layerIdx>5) layerIdx=5;
   let v = parseFloat(document.getElementById(windLayers[layerIdx].v).value);
@@ -180,8 +179,7 @@ function getWindAdjustedPoints(lat, lon, h, dMax, vCruise){
     let x = Math.cos(angleRad);
     let y = Math.sin(angleRad);
     let windRad = dir*Math.PI/180;
-    let angleRel = Math.atan2(y,x);
-    let deltaV = v * Math.cos(angleRel - windRad);
+    let deltaV = v * Math.cos(Math.atan2(y,x)-windRad);
     let distAdj = dMax * (1 + deltaV/vCruise);
     let latOff = (distAdj/111000)*y;
     let lonOff = (distAdj/(111000*Math.cos(lat*Math.PI/180)))*x;
@@ -226,25 +224,22 @@ function update(){
       let h_util = h_rel - margeVal;
       if(h_util<=0) continue;
 
-      let d = h_util*finesseUse*1000;
-      let points = getWindAdjustedPoints(t.lat, t.lon, hh, d, vCruise);
+      let d = h_util*finesseUse;
 
+      let points = getWindAdjustedPoints(t.lat,t.lon,hh,d,vCruise);
       if(points){
-        let poly = L.polygon(points,{color:color(hh),weight:2,fill:false}).addTo(map);
-        objs.push(poly);
+        objs.push(L.polygon(points,{color:color(hh),weight:2,fill:false}).addTo(map));
       } else {
-        let circle = L.circle([t.lat,t.lon],{radius:d,color:color(hh),weight:2,fill:false}).addTo(map);
-        objs.push(circle);
+        objs.push(L.circle([t.lat,t.lon],{radius:d,color:color(hh),weight:2,fill:false}).addTo(map));
+      }
 
-        if(showLabels){
-          [0,180].forEach(a=>{
-            let rad=a*Math.PI/180;
-            let latOff=(d/111000)*Math.cos(rad);
-            let lonOff=(d/(111000*Math.cos(t.lat*Math.PI/180)))*Math.sin(rad);
-            let lab=L.marker([t.lat+latOff,t.lon+lonOff],{icon:L.divIcon({className:'label', html:hh+"m-F"+Math.round(finesseUse)+"-"+t.id})}).addTo(map);
-            objs.push(lab);
-          });
-        }
+      if(showLabels && !points){
+        [0,180].forEach(a=>{
+          let rad=a*Math.PI/180;
+          let latOff=(d/111000)*Math.cos(rad);
+          let lonOff=(d/(111000*Math.cos(t.lat*Math.PI/180)))*Math.sin(rad);
+          objs.push(L.marker([t.lat+latOff,t.lon+lonOff],{icon:L.divIcon({className:'label', html:hh+"m-F"+Math.round(finesseUse)+"-"+t.id})}).addTo(map));
+        });
       }
     }
     objs.push(L.marker([t.lat,t.lon]).addTo(map));
@@ -261,6 +256,7 @@ map.on('click', function(e){
   terrainsAll.push({id:nom,lat:e.latlng.lat,lon:e.latlng.lng,alt:alt});
   populateRef(); update();
 });
+
 </script>
 </body>
 </html>
