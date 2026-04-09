@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
-  <title>Glide Planner v40 - Fix z-index</title>
+  <title>Glide Planner v1</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -24,6 +24,7 @@
       inset:0;
       z-index:1;
       transition: filter 220ms ease;
+      pointer-events:auto;
     }
     /* état flouté (visuel seulement) */
     #map.blurred {
@@ -36,7 +37,7 @@
       inset:0;
       z-index:25;
       background:transparent;
-      pointer-events:auto; /* bloque les interactions vers la carte */
+      pointer-events:none;
       display:none;
     }
 
@@ -44,7 +45,7 @@
     #homeScreen {
       position:fixed;
       inset:0;
-      z-index:30; /* inférieur à prep/vol pour éviter d'obstruer si on oublie de cacher */
+      z-index:30;
       display:flex;
       align-items:center;
       justify-content:center;
@@ -154,7 +155,7 @@
       position:fixed;
       inset:0;
       display:none;
-      z-index:40; /* same as prep so they appear above home */
+      z-index:40;
       background: transparent;
       overflow:auto;
       padding:28px;
@@ -210,7 +211,7 @@
     <button id="btnVent" class="toggleBtn second" title="Vent">🌬</button>
 
     <div id="panel" class="panel" style="left:12px; top:72px; display:none;">
-      <h4>Glide Planner v40</h4>
+      <h4>Glide Planner v1</h4>
 
       <div class="field">Finesse: <input id="finesse" type="number" value="30"></div>
       <div class="field">Finesse basse: <input id="fb" type="number" value="10"></div>
@@ -281,15 +282,34 @@
   </div>
 
   <script>
-    /**
-     * goTo(screenId)
-     * - gère l'affichage des écrans
-     * - active/désactive le flou visuel et les blockers (Home / Manuel)
-     *
-     * Important fix:
-     * - prep/vol/manuel ont z-index >= 40 so they appear above home if home wasn't hidden
-     * - we explicitly hide homeScreen when switching to another screen to avoid leftover overlay
-     */
+    /* Helpers pour activer/désactiver interactions Leaflet */
+    function enableMapInteractions(map) {
+      try {
+        if (map.dragging) map.dragging.enable();
+        if (map.scrollWheelZoom) map.scrollWheelZoom.enable();
+        if (map.touchZoom) map.touchZoom.enable();
+        if (map.doubleClickZoom) map.doubleClickZoom.enable();
+        if (map.boxZoom) map.boxZoom.enable();
+        if (map.keyboard) map.keyboard.enable();
+        const m = document.getElementById('map');
+        if (m) m.style.pointerEvents = 'auto';
+      } catch (e) { console.warn('enableMapInteractions', e); }
+    }
+
+    function disableMapInteractions(map) {
+      try {
+        if (map.dragging) map.dragging.disable();
+        if (map.scrollWheelZoom) map.scrollWheelZoom.disable();
+        if (map.touchZoom) map.touchZoom.disable();
+        if (map.doubleClickZoom) map.doubleClickZoom.disable();
+        if (map.boxZoom) map.boxZoom.disable();
+        if (map.keyboard) map.keyboard.disable();
+        const m = document.getElementById('map');
+        if (m) m.style.pointerEvents = 'none';
+      } catch (e) { console.warn('disableMapInteractions', e); }
+    }
+
+    /* goTo : gestion des écrans + flou + blockers + interactions */
     function goTo(screenId){
       const home = document.getElementById('homeScreen');
       const prep = document.getElementById('prepScreen');
@@ -305,9 +325,9 @@
       if(vol) { vol.style.display = 'none'; vol.setAttribute('aria-hidden','true'); }
       if(manuel) { manuel.style.display = 'none'; manuel.setAttribute('aria-hidden','true'); }
 
-      // hide blockers by default
-      if(blockerHome) blockerHome.style.display = 'none';
-      if(blockerManual) blockerManual.style.display = 'none';
+      // hide blockers by default and ensure they don't capture pointer events
+      if(blockerHome) { blockerHome.style.display = 'none'; blockerHome.style.pointerEvents = 'none'; }
+      if(blockerManual) { blockerManual.style.display = 'none'; blockerManual.style.pointerEvents = 'none'; }
 
       // show requested screen
       const target = document.getElementById(screenId);
@@ -320,26 +340,29 @@
         target.setAttribute('aria-hidden','false');
       }
 
-      // map visual state and blockers
+      // map visual state, blockers and interactions
       if(mapEl){
         if(screenId === 'homeScreen'){
           mapEl.classList.add('blurred');
-          if(blockerHome) blockerHome.style.display = 'block';
+          if(blockerHome) { blockerHome.style.display = 'block'; blockerHome.style.pointerEvents = 'auto'; }
+          if(window._glide_map) disableMapInteractions(window._glide_map);
         } else if(screenId === 'manuelScreen'){
           mapEl.classList.add('blurred');
-          if(blockerManual) blockerManual.style.display = 'block';
+          if(blockerManual) { blockerManual.style.display = 'block'; blockerManual.style.pointerEvents = 'auto'; }
+          if(window._glide_map) disableMapInteractions(window._glide_map);
         } else {
           mapEl.classList.remove('blurred');
+          if(blockerHome) { blockerHome.style.display = 'none'; blockerHome.style.pointerEvents = 'none'; }
+          if(blockerManual) { blockerManual.style.display = 'none'; blockerManual.style.pointerEvents = 'none'; }
+          if(window._glide_map) {
+            enableMapInteractions(window._glide_map);
+            setTimeout(()=> window._glide_map.invalidateSize(), 120);
+          }
         }
-      }
-
-      // ensure map renders correctly when showing prep or vol
-      if(window._glide_map && (screenId === 'prepScreen' || screenId === 'volScreen')){
-        setTimeout(()=> window._glide_map.invalidateSize(), 120);
       }
     }
 
-    // Attach event listeners to buttons (avoid inline onclick issues)
+    /* Attacher listeners aux boutons */
     document.addEventListener('DOMContentLoaded', function(){
       const btnGoPrep = document.getElementById('btnGoPrep');
       const btnGoVol = document.getElementById('btnGoVol');
