@@ -1,8 +1,6 @@
-<!DOCTYPE html>
-<html lang="fr">
 <head>
   <meta charset="utf-8" />
-  <title>Glide Planner v1.1</title>
+  <title>Glide Planner V1.0 </title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -14,6 +12,15 @@
       --panel-bg: rgba(250,250,250,0.96);
       --panel-shadow: 0 6px 18px rgba(20,20,20,0.18);
       --glass: rgba(8,10,15,0.45);
+
+      /* Mode Vol style C */
+      --vol-bg: rgba(255,255,255,0.98);
+      --vol-border: rgba(0,0,0,0.08);
+      --vol-shadow: 0 8px 28px rgba(0,0,0,0.22);
+      --vol-title: #0b1220;
+      --vol-text: #222;
+      --vol-sub: #666;
+      --vol-accent: #1f6feb;
     }
 
     html, body { margin:0; height:100%; font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial; }
@@ -33,19 +40,14 @@
       background:#eaeaea;
     }
 
-    /* When we want the map to be "free" (prep/vol) we switch to absolute to avoid fixed-layer capture issues */
     #map.map-absolute { position:absolute; inset:0; }
 
-    /* blur used on Home / Manuel */
     .map-blurred {
       filter: blur(6px) brightness(0.55) saturate(0.9);
       pointer-events:none;
     }
 
-    /* SCREENS
-       Default: screens do not capture pointer events so clicks fall through to the map.
-       Individual interactive elements inside screens (buttons, panels) explicitly enable pointer-events.
-    */
+    /* SCREENS */
     .screen {
       position:fixed;
       inset:0;
@@ -54,12 +56,11 @@
       background: transparent;
       overflow:auto;
       padding:28px;
-      pointer-events:none; /* IMPORTANT: let clicks pass to map by default */
+      pointer-events:none;
     }
 
-    /* HOME (centered overlay) - interactive (blocks map) */
     #homeScreen { display:flex; align-items:center; justify-content:center; color:white; text-align:center; }
-    #homeScreen[aria-hidden="false"] { pointer-events:auto; } /* when visible, block map */
+    #homeScreen[aria-hidden="false"] { pointer-events:auto; }
 
     #homeInner {
       width: min(720px, 92%);
@@ -86,16 +87,14 @@
       cursor:pointer;
       box-shadow: 0 6px 18px rgba(10,10,10,0.18);
       transition: transform .12s ease, box-shadow .12s ease;
-      pointer-events:auto; /* interactive */
+      pointer-events:auto;
       touch-action: manipulation;
     }
     .menuBtn:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(10,10,10,0.22); }
 
-    /* PREP SCREEN specifics */
+    /* PREP SCREEN */
     #prepScreen { color:black; text-shadow:none; }
-    /* prepScreen remains pointer-events:none so clicks fall through to map,
-       but interactive children (panels, buttons) must explicitly enable pointer-events */
-    #prepScreen[aria-hidden="false"] { /* visible but not blocking by default */ pointer-events:none; }
+    #prepScreen[aria-hidden="false"] { pointer-events:none; }
 
     .backBtn {
       position: absolute;
@@ -109,7 +108,7 @@
       font-weight:600;
       cursor:pointer;
       box-shadow: 0 6px 18px rgba(0,0,0,0.25);
-      pointer-events:auto; /* allow clicking the back button */
+      pointer-events:auto;
       touch-action: manipulation;
     }
 
@@ -125,8 +124,8 @@
       max-height:78vh;
       overflow:auto;
       border:1px solid rgba(20,20,20,0.04);
-      touch-action: none; /* allow dragging without triggering map gestures */
-      pointer-events:auto; /* interactive */
+      touch-action: none;
+      pointer-events:auto;
     }
 
     .panel h4 { margin:0 0 8px 0; font-size:15px; }
@@ -166,11 +165,11 @@
       display:inline-block;
     }
 
-    /* Wind panel smaller controls */
+    /* Wind panel */
     .wind-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
     .wind-row input[type="number"] { width:70px; }
 
-    /* MANUEL content card */
+    /* MANUEL */
     #manuelCard {
       width: min(900px, 94%);
       margin: 60px auto;
@@ -179,75 +178,122 @@
       border-radius: 10px;
       box-shadow: 0 8px 30px rgba(0,0,0,0.12);
       z-index:45;
-      pointer-events:auto; /* interactive when visible */
+      pointer-events:auto;
     }
 
-    /* Mode Vol panel (will be appended at end of body) */
+    /* ============================
+       MODE VOL — STYLE C MODERNE
+       ============================ */
+
+    #btnVolMenu {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 5000;
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      border: none;
+      background: var(--vol-accent);
+      color: white;
+      font-size: 22px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: var(--vol-shadow);
+      pointer-events: auto;
+    }
+
     #volPanel {
       position: absolute;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 360px;
-      background: rgba(255,255,255,0.98);
-      padding: 12px;
-      border-radius: 12px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.22);
-      z-index:4000;
-      pointer-events:auto;
-      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
-      color: #111;
+      top: 80px;
+      left: 12px;
+      width: 330px;
+      background: var(--vol-bg);
+      border: 1px solid var(--vol-border);
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: var(--vol-shadow);
+      z-index: 5000;
       display: none;
+      pointer-events: auto;
+      touch-action: none;
     }
-    #volPanel h4 { margin: 0 0 8px 0; font-size: 15px; }
-    .volRow { font-size: 13px; margin-bottom: 8px; }
-    .volRow label { display:block; font-weight:700; font-size:12px; color:#333; margin-bottom:6px; }
-    .rangeIndicator { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:6px; }
-    .rangeValue { font-weight:800; font-size:18px; color:#1f6feb; }
-    .rangeUnit { font-size:12px; color:#444; }
-    #btnCenter {
+
+    #volPanel h3 {
+      margin: 0 0 10px 0;
+      font-size: 17px;
+      color: var(--vol-title);
+    }
+
+    .volField {
+      margin-bottom: 14px;
+      font-size: 13px;
+      color: var(--vol-text);
+    }
+
+    .volField label {
+      font-weight: 700;
+      font-size: 12px;
+      color: var(--vol-sub);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .volSliderRow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .volSliderRow input[type="range"] {
+      flex: 1;
+    }
+
+    .volValue {
+      width: 42px;
+      text-align: right;
+      font-weight: 700;
+      color: var(--vol-accent);
+    }
+
+    #volAltitudeDisplay {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--vol-accent);
+      margin-top: 4px;
+    }
+
+    #btnCenterVol {
       position: absolute;
       bottom: 20px;
       right: 20px;
-      z-index: 4000;
       width: 52px;
       height: 52px;
       border-radius: 50%;
       border: none;
-      background: #1f6feb;
+      background: var(--vol-accent);
       color: white;
-      font-size: 20px;
-      box-shadow: 0 8px 22px rgba(0,0,0,0.28);
+      font-size: 22px;
+      box-shadow: var(--vol-shadow);
       cursor: pointer;
-      pointer-events: auto;
-    }
-    #manualAltContainer { display:none; margin-top:8px; padding:8px; background:rgba(0,0,0,0.03); border-radius:8px; }
-    #manualAlt { width:100%; }
-    #altSource { font-size:12px; color:#666; margin-top:6px; }
-    #mapRangeBadge {
-      position: absolute;
-      bottom: 92px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 4000;
-      background: rgba(255,255,255,0.95);
-      padding: 6px 10px;
-      border-radius: 8px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.12);
-      font-weight:700;
-      display:none;
-      pointer-events:none;
+      z-index: 5000;
+      display: none;
     }
 
     @media (max-width:720px){
-      .panel { width:90%; left:5% !important; right:5% !important; top:12px !important; }
-      .menuBtn { min-width:160px; }
-      #homeTitle { font-size:28px; }
-      #volPanel { width:92%; left:4%; transform:none; }
-      #btnCenter { right:12px; bottom:12px; width:48px; height:48px; }
+      #volPanel {
+        width: 92%;
+        left: 4%;
+      }
+      #btnVolMenu {
+        left: 12px;
+      }
     }
   </style>
 </head>
+
 <body>
 
   <!-- MAP -->
@@ -275,7 +321,7 @@
     <button id="btnVent" class="toggleBtn second" title="Vent">🌬</button>
 
     <div id="panel" class="panel" style="left:12px; top:72px; display:none;">
-      <h4>Glide Planner v1.1</h4>
+      <h4>Glide Planner V1.0</h4>
 
       <div class="field">Finesse: <input id="finesse" type="number" value="30"></div>
       <div class="field">Finesse basse: <input id="fb" type="number" value="10"></div>
@@ -321,16 +367,13 @@
     </div>
   </div>
 
-  <!-- MODE VOL -->
+  <!-- MODE VOL (contenu ajouté dans le bloc 3) -->
   <div id="volScreen" class="screen" aria-hidden="true">
     <button class="backBtn" id="backFromVol">← Menu</button>
     <h2 style="margin-top:60px; text-align:center;">Mode Vol</h2>
-    <p style="text-align:center; max-width:900px; margin:12px auto; color:#333;">Mode Vol : carte interactive, affichage simplifié pour cockpit.</p>
-
-    <!-- Bouton pour appliquer l'altitude planeur aux terrains (overlay non invasive) -->
-    <div style="text-align:center; margin-top:12px;">
-      <button id="applyPlaneAltBtn" class="menuBtn" style="min-width:220px;">Appliquer altitude planeur</button>
-    </div>
+    <p style="text-align:center; max-width:900px; margin:12px auto; color:#333;">
+      Mode Vol : carte interactive, affichage cockpit moderne.
+    </p>
   </div>
 
   <!-- MANUEL -->
@@ -349,928 +392,329 @@
       <p style="color:#666; font-size:13px;">La carte est affichée en arrière-plan, floutée et non interactive pour faciliter la lecture.</p>
     </div>
   </div>
+  <!-- ============================
+       MODE VOL — UI (STYLE C)
+       ============================ -->
 
-  <!-- Vol Panel (panneau Mode Vol autonome, masqué par défaut) -->
-  <div id="volPanel" role="region" aria-label="Mode vol" aria-hidden="true">
-    <h4>Mode Vol</h4>
+  <!-- Bouton flottant pour ouvrir/fermer le panneau -->
+  <button id="btnVolMenu">☰</button>
 
-    <div class="volRow">
-      <label><input type="checkbox" id="useGPSVol"> Utiliser GPS pour l'altitude</label>
-    </div>
+  <!-- Panneau Mode Vol (draggable) -->
+  <div id="volPanel">
+    <h3>Mode Vol</h3>
 
-    <div class="volRow">
-      <label for="finesseVol">Finesse haute</label>
-      <input type="range" id="finesseVol" min="10" max="60" value="30">
-    </div>
-
-    <div class="volRow">
-      <label for="fbVol">Finesse basse</label>
-      <input type="range" id="fbVol" min="5" max="30" value="10">
-    </div>
-
-    <div class="volRow">
-      <label for="seuilVol">Seuil (m)</label>
-      <input type="range" id="seuilVol" min="0" max="2000" value="500">
-      <input type="number" id="seuilInput" value="500" style="width:90px; margin-top:6px;">
-    </div>
-
-    <div class="volRow">
-      <label for="margeVol">Marge (m)</label>
-      <input type="number" id="margeVol" value="250" style="width:90px;">
-    </div>
-
-    <div class="volRow">
-      <div>Altitude utilisée : <strong><span id="altDisplay">—</span> m</strong></div>
-      <div id="altSource" aria-live="polite">Source : —</div>
-    </div>
-
-    <div id="manualAltContainer">
-      <label for="manualAlt">Altitude manuelle (si GPS indisponible)</label>
-      <input type="range" id="manualAlt" min="0" max="3000" step="1" value="600">
-      <div style="display:flex; justify-content:space-between; margin-top:6px;">
-        <small id="manualAltVal">600 m</small>
-        <small style="font-size:12px;color:#666;">(utilisée si GPS indisponible ou GPS désactivé)</small>
+    <div class="volField">
+      <label>Finesse haute</label>
+      <div class="volSliderRow">
+        <input type="range" id="volFinesse" min="10" max="60" value="30">
+        <div class="volValue" id="volFinesseVal">30</div>
       </div>
     </div>
 
-    <div class="volRow rangeIndicator" style="margin-top:10px;">
-      <div>
-        <div style="font-size:12px;color:#666;">Portée estimée</div>
-        <div class="rangeValue" id="porteeKm">—</div>
+    <div class="volField">
+      <label>Finesse basse</label>
+      <div class="volSliderRow">
+        <input type="range" id="volFinesseBasse" min="5" max="30" value="10">
+        <div class="volValue" id="volFinesseBasseVal">10</div>
       </div>
-      <div style="text-align:right;">
-        <div class="rangeUnit">km</div>
-        <div style="font-size:11px;color:#666;margin-top:6px;">(projection sol)</div>
+    </div>
+
+    <div class="volField">
+      <label>Seuil (m)</label>
+      <div class="volSliderRow">
+        <input type="range" id="volSeuil" min="0" max="2000" value="500">
+        <input type="number" id="volSeuilInput" value="500" style="width:70px;">
       </div>
+    </div>
+
+    <div class="volField">
+      <label>Marge (m)</label>
+      <input type="number" id="volMarge" value="250" style="width:90px;">
+    </div>
+
+    <div class="volField">
+      <label><input type="checkbox" id="volUseGPS" checked> Utiliser GPS</label>
+    </div>
+
+    <div class="volField" id="volManualAltBlock" style="display:none;">
+      <label>Altitude manuelle (m)</label>
+      <div class="volSliderRow">
+        <input type="range" id="volManualAlt" min="0" max="3000" value="600">
+        <div class="volValue" id="volManualAltVal">600</div>
+      </div>
+    </div>
+
+    <div class="volField">
+      <label>Altitude utilisée</label>
+      <div id="volAltitudeDisplay">—</div>
+    </div>
+
+    <div class="volField">
+      <label>Portée estimée</label>
+      <div id="volPorteeKm" style="font-size:18px;font-weight:700;color:var(--vol-accent);">— km</div>
     </div>
   </div>
 
-  <button id="btnCenter" aria-label="Centrer sur le planeur" aria-pressed="true" style="display:none;">📍</button>
-  <div id="mapRangeBadge" aria-hidden="true">— km</div>
+  <!-- Bouton pour recentrer la carte -->
+  <button id="btnCenterVol">📍</button>
 
+
+  <!-- ============================
+       MODE VOL — SCRIPT COMPLET
+       ============================ -->
   <script>
-    /* Robust helpers to enable/disable Leaflet interactions */
-    function enableMapInteractions(map) {
-      try {
-        if (!map) return;
-        if (map.dragging && map.dragging.enable) map.dragging.enable();
-        if (map.scrollWheelZoom && map.scrollWheelZoom.enable) map.scrollWheelZoom.enable();
-        if (map.touchZoom && map.touchZoom.enable) map.touchZoom.enable();
-        if (map.doubleClickZoom && map.doubleClickZoom.enable) map.doubleClickZoom.enable();
-        if (map.boxZoom && map.boxZoom.enable) map.boxZoom.enable();
-        if (map.keyboard && map.keyboard.enable) map.keyboard.enable();
-        if (map.tap && map.tap.enable) map.tap.enable();
-        const el = map.getContainer ? map.getContainer() : document.getElementById('map');
-        if (el) {
-          el.style.pointerEvents = 'auto';
-          el.style.touchAction = 'pan-x pan-y pinch-zoom';
-        }
-      } catch (e) { console.warn('enableMapInteractions', e); }
-    }
+  document.addEventListener("DOMContentLoaded", function(){
 
-    function disableMapInteractions(map) {
-      try {
-        if (!map) return;
-        if (map.dragging && map.dragging.disable) map.dragging.disable();
-        if (map.scrollWheelZoom && map.scrollWheelZoom.disable) map.scrollWheelZoom.disable();
-        if (map.touchZoom && map.touchZoom.disable) map.touchZoom.disable();
-        if (map.doubleClickZoom && map.doubleClickZoom.disable) map.doubleClickZoom.disable();
-        if (map.boxZoom && map.boxZoom.disable) map.boxZoom.disable();
-        if (map.keyboard && map.keyboard.disable) map.keyboard.disable();
-        if (map.tap && map.tap.disable) map.tap.disable();
-        const el = map.getContainer ? map.getContainer() : document.getElementById('map');
-        if (el) {
-          el.style.pointerEvents = 'none';
-          el.style.touchAction = 'none';
-        }
-      } catch (e) { console.warn('disableMapInteractions', e); }
-    }
+    /* ---------------------------------------------------------
+       RÉFÉRENCES DOM
+    --------------------------------------------------------- */
+    const btnVolMenu = document.getElementById("btnVolMenu");
+    const volPanel = document.getElementById("volPanel");
+    const btnCenterVol = document.getElementById("btnCenterVol");
 
-    /* goTo: manage screens, aria-hidden, blur, and map positioning */
-    function goTo(screenId){
-      const screens = ['homeScreen','prepScreen','volScreen','manuelScreen'];
-      const mapEl = document.getElementById('map');
+    const volFinesse = document.getElementById("volFinesse");
+    const volFinesseVal = document.getElementById("volFinesseVal");
 
-      screens.forEach(id => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        if (id === screenId) {
-          el.style.display = (id === 'homeScreen') ? 'flex' : 'block';
-          el.removeAttribute('aria-hidden');
-        } else {
-          el.style.display = 'none';
-          el.setAttribute('aria-hidden','true');
-        }
-      });
+    const volFinesseBasse = document.getElementById("volFinesseBasse");
+    const volFinesseBasseVal = document.getElementById("volFinesseBasseVal");
 
-      if (!mapEl) return;
+    const volSeuil = document.getElementById("volSeuil");
+    const volSeuilInput = document.getElementById("volSeuilInput");
 
-      if (screenId === 'prepScreen' || screenId === 'volScreen') {
-        // Prep/Vol: map must be interactive and receive pointer events.
-        mapEl.classList.remove('map-blurred');
-        mapEl.classList.add('map-absolute'); // avoid fixed-layer capture issues on some devices
-        const prep = document.getElementById('prepScreen');
-        if (prep) prep.style.pointerEvents = 'none';
-        enableMapInteractions(window._glide_map);
-        setTimeout(()=> window._glide_map.invalidateSize(), 120);
-      } else {
-        // Home/Manuel: map blurred and non-interactive; screens should block interactions.
-        mapEl.classList.add('map-blurred');
-        mapEl.classList.remove('map-absolute');
-        const prep = document.getElementById('prepScreen');
-        if (prep) prep.style.pointerEvents = 'auto';
-        disableMapInteractions(window._glide_map);
-      }
+    const volMarge = document.getElementById("volMarge");
 
-      // Panel visibility for volPanel
-      const volPanel = document.getElementById('volPanel');
-      const btnCenter = document.getElementById('btnCenter');
-      if (volPanel) {
-        volPanel.style.display = (screenId === 'volScreen' && screenId !== 'homeScreen') ? 'block' : 'none';
-      }
-      if (btnCenter) {
-        btnCenter.style.display = (screenId === 'homeScreen') ? 'none' : 'block';
-      }
-    }
+    const volUseGPS = document.getElementById("volUseGPS");
+    const volManualAltBlock = document.getElementById("volManualAltBlock");
+    const volManualAlt = document.getElementById("volManualAlt");
+    const volManualAltVal = document.getElementById("volManualAltVal");
 
-    /* Attach navigation listeners */
-    document.addEventListener('DOMContentLoaded', function(){
-      const btnGoPrep = document.getElementById('btnGoPrep');
-      const btnGoVol = document.getElementById('btnGoVol');
-      const btnGoManuel = document.getElementById('btnGoManuel');
-      const backFromPrep = document.getElementById('backFromPrep');
-      const backFromVol = document.getElementById('backFromVol');
-      const backFromManuel = document.getElementById('backFromManuel');
+    const volAltitudeDisplay = document.getElementById("volAltitudeDisplay");
+    const volPorteeKm = document.getElementById("volPorteeKm");
 
-      if(btnGoPrep) btnGoPrep.addEventListener('click', (e) => { e.preventDefault(); goTo('prepScreen'); });
-      if(btnGoVol) btnGoVol.addEventListener('click', (e) => { e.preventDefault(); goTo('volScreen'); });
-      if(btnGoManuel) btnGoManuel.addEventListener('click', (e) => { e.preventDefault(); goTo('manuelScreen'); });
+    /* ---------------------------------------------------------
+       VARIABLES MODE VOL
+    --------------------------------------------------------- */
+    let volPlaneurPos = null;
+    let volAltitudeGPS = null;
+    let volAltitudeFiltered = null;
+    let volAutoCenter = true;
 
-      if(backFromPrep) backFromPrep.addEventListener('click', (e) => { e.preventDefault(); goTo('homeScreen'); });
-      if(backFromVol) backFromVol.addEventListener('click', (e) => { e.preventDefault(); goTo('homeScreen'); });
-      if(backFromManuel) backFromManuel.addEventListener('click', (e) => { e.preventDefault(); goTo('homeScreen'); });
+    let volPlaneurMarker = null;
+    let volPlaneurCircle = null;
+    let volTerrainsLayer = null;
 
-      // show home by default
-      goTo('homeScreen');
-    });
-  </script>
-
-  <!-- Main app script (map, controls, calculations) -->
-  <script>
-  document.addEventListener('DOMContentLoaded', function () {
-    // DOM elements
-    const panel = document.getElementById('panel');
-    const menuVent = document.getElementById('menuVent');
-    const btnPanel = document.getElementById('btnPanel');
-    const btnVent = document.getElementById('btnVent');
-    const btnRecalc = document.getElementById('btnRecalc');
-    const btnRecalcWind = document.getElementById('btnRecalcWind');
-
-    const hVal = document.getElementById('hVal');
-    const slider = document.getElementById('slider');
-    const finesse = document.getElementById('finesse');
-    const fb = document.getElementById('fb');
-    const seuil = document.getElementById('seuil');
-    const marge = document.getElementById('marge');
-    const vCruiseInput = document.getElementById('vCruise');
-    const mode = document.getElementById('mode');
-    const labels = document.getElementById('labels');
-    const all = document.getElementById('all');
-    const refSelect = document.getElementById('refSelect');
-    const rangeKm = document.getElementById('rangeKm');
-    const applyWind = document.getElementById('applyWind');
-
-    // --- MAP ---
-    const map = L.map('map', { preferCanvas: true, tap: true }).setView([43.8, 0.1], 9);
-    window._glide_map = map;
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
-
-    // Ensure interactions are disabled initially (home shown)
-    disableMapInteractions(map);
-
-    // --- POSITION ---
-    let userPos = { lat: 43.8, lon: 0.1 };
-    map.on('moveend', () => {
-      const c = map.getCenter();
-      userPos = { lat: c.lat, lon: c.lng };
-      update();
+    /* ---------------------------------------------------------
+       AFFICHAGE / MASQUAGE DU PANNEAU
+    --------------------------------------------------------- */
+    btnVolMenu.addEventListener("click", () => {
+      volPanel.style.display = (volPanel.style.display === "none" || volPanel.style.display === "") ? "block" : "none";
     });
 
-    // --- DISTANCE ---
-    function distanceKm(a, b) {
-      const R = 6371;
-      const dLat = (b.lat - a.lat) * Math.PI / 180;
-      const dLon = (b.lon - a.lon) * Math.PI / 180;
-      const x = Math.sin(dLat / 2) ** 2 +
-        Math.cos(a.lat * Math.PI / 180) *
-        Math.cos(b.lat * Math.PI / 180) *
-        Math.sin(dLon / 2) ** 2;
-      return 2 * R * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
-    }
+    /* ---------------------------------------------------------
+       DRAGGABLE PANEL
+    --------------------------------------------------------- */
+    (function makeDraggable(el){
+      let dragging = false, offsetX = 0, offsetY = 0;
 
-    // --- TERRAINS ---
-    let terrainsAll = [
-      { id: "LFDA", lat: 43.709, lon: -0.249, alt: 80 },
-      { id: "LFID", lat: 43.955, lon: 0.373, alt: 130 },
-      { id: "LFCN", lat: 43.762, lon: -0.036, alt: 100 },
-      { id: "LFDH", lat: 43.646, lon: 0.601, alt: 130 },
-      { id: "LFBM", lat: 43.911, lon: -0.507, alt: 52 },
-      { id: "LFCL", lat: 43.586, lon: 1.499, alt: 152 }
-    ];
-    let terrains = [];
-
-    function populateRef() {
-      if (!refSelect) return;
-      refSelect.innerHTML = "";
-      terrainsAll.forEach(t => {
-        const opt = document.createElement("option");
-        opt.value = t.id;
-        opt.innerText = t.id;
-        refSelect.appendChild(opt);
-      });
-    }
-    populateRef();
-
-    function color(h) {
-      const r = Math.round(255 * (1 - (h / 3000)));
-      const g = Math.round(255 * (h / 3000));
-      return "rgb(" + r + "," + g + ",0)";
-    }
-
-    // --- WIND MENU ---
-    const windLayers = [
-      { label: "0-500", v: "v0", d: "d0" },
-      { label: "500-1000", v: "v1", d: "d1" },
-      { label: "1000-1500", v: "v2", d: "d2" },
-      { label: "1500-2000", v: "v3", d: "d3" },
-      { label: "2000-2500", v: "v4", d: "d4" },
-      { label: "2500-3000", v: "v5", d: "d5" }
-    ];
-
-    function initWindMenu() {
-      const container = document.getElementById('windControls');
-      if (!container) return;
-      container.innerHTML = '';
-      windLayers.forEach(w => {
-        const block = document.createElement('div');
-        block.className = 'wind-row';
-        block.innerHTML = `
-          <div style="min-width:80px;"><b style="font-size:12px;">${w.label} m</b></div>
-          <input type="range" id="${w.v}" min="0" max="50" value="0" style="flex:1;">
-          <span id="${w.v}_label" style="width:60px;text-align:right;font-size:12px;">0 km/h</span>
-          <input type="number" id="${w.d}" value="0" style="width:70px;">
-        `;
-        container.appendChild(block);
-
-        const slider = block.querySelector(`#${w.v}`);
-        const label = block.querySelector(`#${w.v}_label`);
-        if (slider && label) slider.addEventListener('input', () => { label.innerText = slider.value + ' km/h'; });
-      });
-    }
-    initWindMenu();
-
-    function getWindForLayer(idx) {
-      const layer = windLayers[Math.max(0, Math.min(windLayers.length - 1, idx))];
-      const vEl = document.getElementById(layer.v);
-      const dEl = document.getElementById(layer.d);
-      const v = vEl ? parseFloat(vEl.value) : 0;
-      const d = dEl ? parseFloat(dEl.value) : 0;
-      return { v: isNaN(v) ? 0 : v, d: isNaN(d) ? 0 : d };
-    }
-
-    // --- UPDATE ---
-    let objs = [];
-
-    function clearObjs() {
-      objs.forEach(o => {
-        try { map.removeLayer(o); } catch(e){}
-      });
-      objs = [];
-    }
-
-    function update() {
-      clearObjs();
-
-      const range = (rangeKm && rangeKm.value) ? parseFloat(rangeKm.value) : 100;
-      terrains = terrainsAll.filter(t => distanceKm(userPos, t) <= range);
-
-      const h = (slider && slider.value) ? parseInt(slider.value, 10) : 0;
-      if (hVal) hVal.innerText = h;
-
-      const f = (finesse && finesse.value) ? parseFloat(finesse.value) : 30;
-      const fbVal = (fb && fb.value) ? parseFloat(fb.value) : 10;
-      const seuilVal = (seuil && seuil.value) ? parseFloat(seuil.value) : 500;
-      const margeVal = (marge && marge.value) ? parseFloat(marge.value) : 250;
-      const vCruise = (vCruiseInput && vCruiseInput.value) ? parseFloat(vCruiseInput.value) : 100;
-      const modeVal = (mode && mode.value) ? mode.value : 'QFE';
-      const showLabels = (labels && labels.checked) ? true : false;
-      const allVal = (all && all.checked) ? true : false;
-      const useWind = (applyWind && applyWind.checked) ? true : false;
-
-      const ref = terrainsAll.find(t => refSelect && t.id === refSelect.value);
-      const refAlt = ref ? ref.alt : 0;
-
-      terrains.forEach(t => {
-        const hMin = allVal ? 0 : h;
-        const hMax = allVal ? 3000 : h;
-
-        for (let hh = hMin; hh <= hMax; hh += 100) {
-          let h_rel;
-          if (modeVal === "QFE") h_rel = hh;
-          else if (modeVal === "QNH") h_rel = hh - t.alt;
-          else h_rel = hh - (t.alt - refAlt);
-
-          if (h_rel <= 0) continue;
-          const finesseUse = (h_rel <= seuilVal) ? fbVal : f;
-          const h_util = h_rel - margeVal;
-          if (h_util <= 0) continue;
-
-          const d = h_util * finesseUse; // portée sans vent (m)
-
-          if (!useWind) {
-            const circle = L.circle([t.lat, t.lon], { radius: d, color: color(hh), weight: 2, fill: false }).addTo(map);
-            objs.push(circle);
-
-            if (showLabels) {
-              [0, 180].forEach(a => {
-                const rad = a * Math.PI / 180;
-                const latOff = (d / 111000) * Math.cos(rad);
-                const lonOff = (d / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(rad);
-                objs.push(L.marker([t.lat + latOff, t.lon + lonOff], {
-                  icon: L.divIcon({ className: 'label', html: hh + "m-F" + Math.round(finesseUse) + "-" + t.id })
-                }).addTo(map));
-              });
-            }
-          } else {
-            const polyPts = [];
-            const step = 6;
-            for (let a = 0; a < 360; a += step) {
-              const alphaRad = a * Math.PI / 180;
-
-              let layerIdx = Math.floor(hh / 500);
-              if (layerIdx > windLayers.length - 1) layerIdx = windLayers.length - 1;
-              const wind = getWindForLayer(layerIdx);
-              const W = wind.v;
-              const dir = wind.d;
-              const dirRad = (dir + 180) * Math.PI / 180;
-
-              const projWind = W * Math.cos(alphaRad - dirRad);
-
-              let denom = vCruise - projWind;
-              if (denom < 5) denom = 5;
-
-              const effDist = d * (vCruise / denom);
-
-              const latOff = (effDist / 111000) * Math.cos(alphaRad);
-              const lonOff = (effDist / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(alphaRad);
-
-              polyPts.push([t.lat + latOff, t.lon + lonOff]);
-            }
-
-            const poly = L.polygon(polyPts, { color: color(hh), weight: 2, fill: false }).addTo(map);
-            objs.push(poly);
-
-            if (showLabels) {
-              [0, 180].forEach(a => {
-                const rad = a * Math.PI / 180;
-                const latOff = (d / 111000) * Math.cos(rad);
-                const lonOff = (d / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(rad);
-                objs.push(L.marker([t.lat + latOff, t.lon + lonOff], {
-                  icon: L.divIcon({ className: 'label', html: hh + "m-F" + Math.round(finesseUse) + "-" + t.id })
-                }).addTo(map));
-              });
-            }
-          }
-        }
-        objs.push(L.marker([t.lat, t.lon]).addTo(map));
-      });
-    }
-
-    // initial update
-    update();
-
-    // ajout terrain (clic sur carte)
-    map.on('click', function (e) {
-      const nom = prompt("Nom terrain ?");
-      if (!nom) return;
-      const altStr = prompt("Altitude m ?");
-      const alt = parseFloat(altStr);
-      if (isNaN(alt)) return;
-      terrainsAll.push({ id: nom, lat: e.latlng.lat, lon: e.latlng.lng, alt: alt });
-      populateRef();
-      update();
-    });
-
-    // UI events (guarded)
-    if (slider) slider.addEventListener('input', () => { if (hVal) hVal.innerText = slider.value; update(); });
-    if (btnRecalc) btnRecalc.addEventListener('click', (e) => { e.preventDefault(); update(); });
-    if (btnRecalcWind) btnRecalcWind.addEventListener('click', (e) => { e.preventDefault(); update(); });
-
-    [
-      finesse, fb, seuil, marge, vCruiseInput, mode, labels, all, rangeKm, refSelect, applyWind
-    ].forEach(el => {
-      if (!el) return;
-      el.addEventListener('change', update);
-    });
-
-    // toggle panels
-    if (btnPanel) btnPanel.addEventListener('click', () => {
-      if (!panel) return;
-      panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none';
-    });
-    if (btnVent) btnVent.addEventListener('click', () => {
-      if (!menuVent) return;
-      menuVent.style.display = (menuVent.style.display === 'none' || menuVent.style.display === '') ? 'block' : 'none';
-    });
-
-    // draggable panels (ignore drags started on form controls)
-    function makeDraggable(el) {
-      if (!el) return;
-      let dragging = false;
-      let offsetX = 0;
-      let offsetY = 0;
-
-      function isFormControl(target) {
-        if (!target) return false;
-        return !!target.closest('input, select, textarea, button, label, [role="slider"], .no-drag');
-      }
-
-      el.addEventListener('pointerdown', function (e) {
-        if (e.button && e.button !== 0) return;
-        if (isFormControl(e.target)) return;
-
+      el.addEventListener("pointerdown", e => {
+        if (e.target.tagName === "INPUT") return;
         dragging = true;
-        try { el.setPointerCapture(e.pointerId); } catch (err) {}
         offsetX = e.clientX - el.offsetLeft;
         offsetY = e.clientY - el.offsetTop;
-        el.style.cursor = 'grabbing';
-        e.preventDefault();
+        el.setPointerCapture(e.pointerId);
       });
 
-      el.addEventListener('pointermove', function (e) {
+      el.addEventListener("pointermove", e => {
         if (!dragging) return;
-        let left = e.clientX - offsetX;
-        let top = e.clientY - offsetY;
-        left = Math.max(0, Math.min(window.innerWidth - el.offsetWidth, left));
-        top = Math.max(0, Math.min(window.innerHeight - el.offsetHeight, top));
-        el.style.left = left + 'px';
-        el.style.top = top + 'px';
+        el.style.left = (e.clientX - offsetX) + "px";
+        el.style.top = (e.clientY - offsetY) + "px";
       });
 
-      el.addEventListener('pointerup', function (e) {
-        if (!dragging) return;
+      el.addEventListener("pointerup", e => {
         dragging = false;
-        try { el.releasePointerCapture(e.pointerId); } catch (err) {}
-        el.style.cursor = 'default';
+        el.releasePointerCapture(e.pointerId);
       });
+    })(volPanel);
 
-      el.addEventListener('pointercancel', function () {
-        dragging = false;
-        el.style.cursor = 'default';
+    /* ---------------------------------------------------------
+       SYNCHRO SLIDERS
+    --------------------------------------------------------- */
+    volFinesse.addEventListener("input", () => volFinesseVal.textContent = volFinesse.value);
+    volFinesseBasse.addEventListener("input", () => volFinesseBasseVal.textContent = volFinesseBasse.value);
+
+    volSeuil.addEventListener("input", () => {
+      volSeuilInput.value = volSeuil.value;
+    });
+    volSeuilInput.addEventListener("change", () => {
+      volSeuil.value = volSeuilInput.value;
+    });
+
+    volManualAlt.addEventListener("input", () => {
+      volManualAltVal.textContent = volManualAlt.value;
+    });
+
+    volUseGPS.addEventListener("change", () => {
+      volManualAltBlock.style.display = volUseGPS.checked ? "none" : "block";
+    });
+
+    /* ---------------------------------------------------------
+       INITIALISATION DES COUCHES MODE VOL
+    --------------------------------------------------------- */
+    function volEnsureLayers(){
+      if (!volTerrainsLayer) volTerrainsLayer = L.layerGroup().addTo(window._glide_map);
+      if (!volPlaneurMarker) volPlaneurMarker = L.circleMarker([0,0], {
+        radius: 6, color:"#ff2e2e", fillColor:"#ff2e2e", fillOpacity:1
+      }).addTo(window._glide_map);
+      if (!volPlaneurCircle) volPlaneurCircle = L.circle([0,0], {
+        radius: 0,
+        color: "rgba(31,111,235,0.95)",
+        weight: 3,
+        fillColor: "rgba(31,111,235,0.15)",
+        fillOpacity: 1
+      }).addTo(window._glide_map);
+    }
+
+    /* ---------------------------------------------------------
+       NETTOYAGE MODE VOL (quand on quitte volScreen)
+    --------------------------------------------------------- */
+    function volClear(){
+      if (volTerrainsLayer) volTerrainsLayer.clearLayers();
+      if (volPlaneurCircle) volPlaneurCircle.setRadius(0);
+    }
+
+    /* ---------------------------------------------------------
+       CALCUL PORTEE
+    --------------------------------------------------------- */
+    function volComputeRadius(alt){
+      const f = parseFloat(volFinesse.value);
+      const fb = parseFloat(volFinesseBasse.value);
+      const seuil = parseFloat(volSeuil.value);
+      const marge = parseFloat(volMarge.value);
+
+      const finesseUse = (alt <= seuil) ? fb : f;
+      const hUtil = alt - marge;
+      if (hUtil <= 0) return 0;
+
+      return hUtil * finesseUse;
+    }
+
+    /* ---------------------------------------------------------
+       DESSIN DES CERCLES AUTOUR DES TERRAINS
+    --------------------------------------------------------- */
+    function volDrawTerrains(altPlaneur){
+      if (!window.terrainsAll) return;
+      volTerrainsLayer.clearLayers();
+
+      window.terrainsAll.forEach(t => {
+        const h_rel = altPlaneur - t.alt;
+        if (h_rel <= 0) return;
+
+        const f = parseFloat(volFinesse.value);
+        const fb = parseFloat(volFinesseBasse.value);
+        const seuil = parseFloat(volSeuil.value);
+        const marge = parseFloat(volMarge.value);
+
+        const finesseUse = (h_rel <= seuil) ? fb : f;
+        const hUtil = h_rel - marge;
+        if (hUtil <= 0) return;
+
+        const d = hUtil * finesseUse;
+
+        const c = L.circle([t.lat, t.lon], {
+          radius: d,
+          color: "#1f6feb",
+          weight: 2,
+          fill: false
+        });
+        volTerrainsLayer.addLayer(c);
       });
     }
 
-    makeDraggable(panel);
-    makeDraggable(menuVent);
+    /* ---------------------------------------------------------
+       MISE À JOUR MODE VOL
+    --------------------------------------------------------- */
+    function volUpdate(){
+      if (!volPlaneurPos) return;
 
-    // initialize wind labels
-    windLayers.forEach(w => {
-      const s = document.getElementById(w.v);
-      const lbl = document.getElementById(w.v + '_label');
-      if (s && lbl) lbl.innerText = s.value + ' km/h';
+      volEnsureLayers();
+
+      // altitude utilisée
+      let alt;
+      if (volUseGPS.checked && volAltitudeFiltered != null) {
+        alt = volAltitudeFiltered;
+      } else {
+        alt = parseFloat(volManualAlt.value);
+      }
+
+      volAltitudeDisplay.textContent = Math.round(alt) + " m";
+
+      // portée
+      const radius = volComputeRadius(alt);
+      volPorteeKm.textContent = (radius/1000).toFixed(2) + " km";
+
+      // maj marker + cercle
+      volPlaneurMarker.setLatLng([volPlaneurPos.lat, volPlaneurPos.lon]);
+      volPlaneurCircle.setLatLng([volPlaneurPos.lat, volPlaneurPos.lon]);
+      volPlaneurCircle.setRadius(radius);
+
+      // cercles terrains
+      volDrawTerrains(alt);
+
+      // auto center
+      if (volAutoCenter) {
+        window._glide_map.panTo([volPlaneurPos.lat, volPlaneurPos.lon], {animate:true});
+      }
+    }
+
+    /* ---------------------------------------------------------
+       GPS
+    --------------------------------------------------------- */
+    if (navigator.geolocation){
+      navigator.geolocation.watchPosition(pos => {
+        volPlaneurPos = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+
+        if (typeof pos.coords.altitude === "number") {
+          if (volAltitudeFiltered == null) volAltitudeFiltered = pos.coords.altitude;
+          else volAltitudeFiltered = volAltitudeFiltered * 0.7 + pos.coords.altitude * 0.3;
+        }
+
+        volUpdate();
+      }, err => {
+        console.warn("GPS error", err);
+      }, { enableHighAccuracy:true, maximumAge:1000, timeout:5000 });
+    }
+
+    /* ---------------------------------------------------------
+       RECENTRAGE MANUEL
+    --------------------------------------------------------- */
+    btnCenterVol.addEventListener("click", () => {
+      volAutoCenter = true;
+      if (volPlaneurPos) window._glide_map.panTo([volPlaneurPos.lat, volPlaneurPos.lon], {animate:true});
     });
 
-    // expose update and map for debugging
-    window._glide_update = update;
-    window._glide_map = map;
+    window._glide_map.on("dragstart", () => {
+      volAutoCenter = false;
+    });
+
+    /* ---------------------------------------------------------
+       INTÉGRATION AVEC goTo()
+    --------------------------------------------------------- */
+    const screens = document.querySelectorAll(".screen");
+    const obs = new MutationObserver(() => {
+      const volVisible = document.getElementById("volScreen").getAttribute("aria-hidden") === "false";
+      const homeVisible = document.getElementById("homeScreen").getAttribute("aria-hidden") === "false";
+
+      btnVolMenu.style.display = volVisible ? "flex" : "none";
+      btnCenterVol.style.display = volVisible ? "block" : "none";
+      volPanel.style.display = volVisible ? "block" : "none";
+
+      if (!volVisible) volClear();
+    });
+
+    screens.forEach(s => obs.observe(s, {attributes:true, attributeFilter:["aria-hidden"]}));
+
   });
   </script>
-
-  <!-- ===== Mode Vol (autonome) ===== -->
-  <script>
-  (function(){
-    function whenMapReady(cb) {
-      if (window._glide_map) return cb(window._glide_map);
-      let tries = 0;
-      const t = setInterval(() => {
-        tries++;
-        if (window._glide_map) {
-          clearInterval(t);
-          cb(window._glide_map);
-        } else if (tries > 40) {
-          clearInterval(t);
-          console.warn('Mode vol: map introuvable, abandon.');
-        }
-      }, 150);
-    }
-
-    whenMapReady(function(map){
-      // DOM refs
-      const volPanel = document.getElementById('volPanel');
-      const btnCenter = document.getElementById('btnCenter');
-      const useGPSVol = document.getElementById('useGPSVol');
-      const finesseVol = document.getElementById('finesseVol');
-      const fbVol = document.getElementById('fbVol');
-      const seuilVol = document.getElementById('seuilVol');
-      const seuilInput = document.getElementById('seuilInput');
-      const margeVol = document.getElementById('margeVol');
-      const altDisplay = document.getElementById('altDisplay');
-      const altSource = document.getElementById('altSource');
-      const manualAltContainer = document.getElementById('manualAltContainer');
-      const manualAlt = document.getElementById('manualAlt');
-      const manualAltVal = document.getElementById('manualAltVal');
-      const porteeKmEl = document.getElementById('porteeKm');
-
-      // Persist key
-      const USE_GPS_KEY = 'glide:vol:useGPS';
-
-      // State
-      let autoCenter = true;
-      let planeurPos = null;
-      let altitudeGPS = null;
-      let altitudeFiltered = null;
-      let useGPS = true;
-
-      // Layers (created once)
-      let cercleVol = null;
-      let markerPlaneur = null;
-
-      // Throttle / center params
-      let pendingUpdate = false;
-      const UPDATE_MIN_MS = 180;
-      const CENTER_MIN_DISTANCE_M = 8;
-      let lastCenterTime = 0;
-      let lastPos = null;
-
-      // Restore persisted GPS preference
-      try {
-        const s = localStorage.getItem(USE_GPS_KEY);
-        if (s !== null) useGPS = s === 'true';
-      } catch (e) {}
-      useGPSVol.checked = useGPS;
-
-      // Panel visibility: show only when volScreen active and not on home
-      function updatePanelVisibility() {
-        const volScreen = document.getElementById('volScreen');
-        const homeScreen = document.getElementById('homeScreen');
-        const isVolActive = volScreen && volScreen.getAttribute('aria-hidden') !== 'true';
-        const isHomeActive = homeScreen && homeScreen.getAttribute('aria-hidden') !== 'true';
-        volPanel.style.display = (isVolActive && !isHomeActive) ? 'block' : 'none';
-        btnCenter.style.display = isHomeActive ? 'none' : 'block';
-      }
-
-      const screens = document.querySelectorAll('.screen');
-      const obs = new MutationObserver(updatePanelVisibility);
-      screens.forEach(s => obs.observe(s, { attributes: true, attributeFilter: ['aria-hidden'] }));
-      updatePanelVisibility();
-
-      // Utility: haversine meters
-      function haversineMeters(a,b){
-        const R = 6371000;
-        const toRad = Math.PI/180;
-        const dLat = (b.lat - a.lat) * toRad;
-        const dLon = (b.lon - a.lon) * toRad;
-        const lat1 = a.lat * toRad;
-        const lat2 = b.lat * toRad;
-        const x = Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;
-        return 2 * R * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
-      }
-
-      // Ensure layers exist (create once)
-      function ensureLayers(){
-        if (!cercleVol) {
-          cercleVol = L.circle([0,0], {
-            radius: 0,
-            color: 'rgba(31,111,235,0.95)',
-            weight: 3.2,
-            fillColor: 'rgba(31,111,235,0.16)',
-            fillOpacity: 1,
-            interactive: false
-          }).addTo(map);
-        }
-        if (!markerPlaneur) {
-          markerPlaneur = L.circleMarker([0,0], { radius: 6, color: '#ff2e2e', fillColor:'#ff2e2e', fillOpacity:1, interactive:false }).addTo(map);
-        }
-      }
-
-      // Compute radius (m) from altitude
-      function computeRadius(alt){
-        const f = parseFloat(finesseVol.value) || 30;
-        const fLow = parseFloat(fbVol.value) || 10;
-        const seuilVal = parseFloat(seuilVol.value) || 500;
-        const margeVal = parseFloat(margeVol.value) || 250;
-        const finesseUse = (alt <= seuilVal) ? fLow : f;
-        const hUtil = alt - margeVal;
-        if (hUtil <= 0) return 0;
-        return hUtil * finesseUse;
-      }
-
-      // Schedule update (throttle)
-      function scheduleUpdate(){
-        if (pendingUpdate) return;
-        pendingUpdate = true;
-        const now = Date.now();
-        const delay = Math.max(0, UPDATE_MIN_MS - (now - (window._lastVolUpdate||0)));
-        setTimeout(() => {
-          pendingUpdate = false;
-          window._lastVolUpdate = Date.now();
-          doUpdate();
-        }, delay);
-      }
-
-      // Actual update: update layers and UI
-      function doUpdate(){
-        if (!planeurPos) {
-          altDisplay.innerText = '—';
-          altSource.innerText = 'Source : —';
-          porteeKmEl.innerText = '—';
-          return;
-        }
-        ensureLayers();
-
-        // decide altitude to use
-        let altToUse = null;
-        let source = '—';
-        if (useGPS) {
-          if (typeof altitudeFiltered === 'number' && !isNaN(altitudeFiltered)) {
-            altToUse = altitudeFiltered;
-            source = 'GPS';
-          } else {
-            altToUse = parseFloat(manualAlt.value) || 0;
-            source = 'manuel (GPS indisponible)';
-          }
-        } else {
-          altToUse = parseFloat(manualAlt.value) || 0;
-          source = 'manuel (GPS désactivé)';
-        }
-
-        // update UI
-        altDisplay.innerText = (typeof altToUse === 'number' && !isNaN(altToUse)) ? Math.round(altToUse) : '—';
-        altSource.innerText = 'Source : ' + source;
-
-        const radius = computeRadius(altToUse);
-
-        // update circle and marker
-        try {
-          cercleVol.setLatLng([planeurPos.lat, planeurPos.lon]);
-          cercleVol.setRadius(radius);
-          markerPlaneur.setLatLng([planeurPos.lat, planeurPos.lon]);
-        } catch (err) {
-          console.warn('Mode vol: erreur mise à jour couches', err);
-        }
-
-        // update portée indicator in km (rounded to 2 decimals)
-        const km = (radius / 1000);
-        porteeKmEl.innerText = (km >= 0) ? (Math.round(km * 100) / 100).toFixed(2) : '—';
-
-        // auto center: pan only if moved enough or after timeout
-        if (autoCenter) {
-          const now = Date.now();
-          const moved = lastPos ? haversineMeters(lastPos, planeurPos) : Infinity;
-          if (moved > CENTER_MIN_DISTANCE_M || (now - lastCenterTime) > 3000) {
-            try {
-              map.panTo([planeurPos.lat, planeurPos.lon], { animate: true });
-            } catch(e){}
-            lastCenterTime = now;
-            lastPos = { ...planeurPos };
-          }
-        }
-      }
-
-      // Update manual UI visibility
-      function updateManualUI(){
-        const showManual = (!useGPS) || (useGPS && (altitudeFiltered === null || typeof altitudeFiltered !== 'number' || isNaN(altitudeFiltered)));
-        manualAltContainer.style.display = showManual ? 'block' : 'none';
-      }
-
-      // Sync inputs
-      seuilVol.oninput = () => { seuilInput.value = seuilVol.value; scheduleUpdate(); };
-      seuilInput.onchange = () => { seuilVol.value = seuilInput.value; scheduleUpdate(); };
-      [finesseVol, fbVol, margeVol].forEach(el => { if (el) el.addEventListener('input', scheduleUpdate); });
-      manualAlt.addEventListener('input', () => { manualAltVal.innerText = manualAlt.value + ' m'; scheduleUpdate(); });
-
-      // Center button
-      btnCenter.addEventListener('click', () => {
-        autoCenter = true;
-        btnCenter.setAttribute('aria-pressed','true');
-        if (planeurPos) map.panTo([planeurPos.lat, planeurPos.lon], { animate: true });
-      });
-
-      map.on('dragstart', () => {
-        autoCenter = false;
-        btnCenter.setAttribute('aria-pressed','false');
-      });
-
-      // GPS checkbox
-      useGPSVol.addEventListener('change', () => {
-        useGPS = !!useGPSVol.checked;
-        try { localStorage.setItem(USE_GPS_KEY, String(useGPS)); } catch(e){}
-        updateManualUI();
-        scheduleUpdate();
-      });
-
-      // Watch position (defensive)
-      if (navigator.geolocation) {
-        try {
-          navigator.geolocation.watchPosition((pos) => {
-            planeurPos = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-            altitudeGPS = (typeof pos.coords.altitude === 'number') ? pos.coords.altitude : null;
-            if (altitudeGPS === null) {
-              // keep previous filtered value
-            } else if (altitudeFiltered === null || typeof altitudeFiltered !== 'number') {
-              altitudeFiltered = altitudeGPS;
-            } else {
-              altitudeFiltered = altitudeFiltered * 0.7 + altitudeGPS * 0.3;
-            }
-            updateManualUI();
-            scheduleUpdate();
-            // notify overlay if present
-            if (window._volMode && typeof window._volMode._onPlaneAltChange === 'function') {
-              try { window._volMode._onPlaneAltChange(); } catch(e){}
-            }
-          }, (err) => {
-            console.warn('Mode vol: GPS error', err);
-            altitudeGPS = null;
-            altitudeFiltered = null;
-            updateManualUI();
-            scheduleUpdate();
-          }, { enableHighAccuracy: true, maximumAge: 1000, timeout: 5000 });
-        } catch (e) {
-          console.warn('Mode vol: watchPosition failed', e);
-        }
-      } else {
-        altitudeGPS = null;
-        altitudeFiltered = null;
-        updateManualUI();
-      }
-
-      // Ensure layers exist and initial draw
-      ensureLayers();
-      scheduleUpdate();
-
-      // Expose debug handle
-      window._volMode = {
-        scheduleUpdate, doUpdate, ensureLayers, getState: () => ({ planeurPos, altitudeGPS, altitudeFiltered, useGPS, autoCenter }),
-        _onPlaneAltChange: function(){ /* placeholder, overlay will override if present */ }
-      };
-
-      // Safety: hide vol UI if home screen is active (avoid opening menus on home)
-      updatePanelVisibility();
-    });
-  })();
-  </script>
-
-  <!-- ===== Overlay altitude planeur (non invasive) ===== -->
-  <script>
-  (function(){
-    // LayerGroup dédié pour l'overlay
-    let planeAltLayer = null;
-    let planeAltOverlayEnabled = false;
-
-    function ensurePlaneAltLayer() {
-      if (!planeAltLayer) {
-        if (!window._glide_map) return;
-        planeAltLayer = L.layerGroup().addTo(window._glide_map);
-      }
-    }
-
-    function round100(x){
-      return (typeof x === 'number' && !isNaN(x)) ? Math.round(x / 100) * 100 : null;
-    }
-
-    // Dessine la superposition en utilisant l'altitude du planeur
-    window.drawTerrainsUsingPlaneAltitude = function() {
-      if (!window._glide_map) return;
-      ensurePlaneAltLayer();
-      if (!planeAltLayer) return;
-      planeAltLayer.clearLayers();
-
-      // lire altitude planeur depuis window._volMode si disponible
-      let planeAlt = null;
-      try {
-        if (window._volMode && typeof window._volMode.getState === 'function') {
-          const s = window._volMode.getState();
-          if (s && typeof s.altitudeFiltered === 'number') planeAlt = s.altitudeFiltered;
-          else if (s && typeof s.altitudeGPS === 'number') planeAlt = s.altitudeGPS;
-        }
-      } catch (e) {
-        console.warn('drawTerrainsUsingPlaneAltitude: erreur lecture _volMode', e);
-        planeAlt = null;
-      }
-
-      const altFromPlaneur = round100(planeAlt);
-      if (altFromPlaneur === null) {
-        // rien à dessiner si pas d'altitude
-        return;
-      }
-
-      // sécurité: terrains doit exister globalement
-      const tList = window.terrains && window.terrains.length ? window.terrains : (window.terrainsAll || []);
-      if (!Array.isArray(tList) || tList.length === 0) return;
-
-      // récupérer valeurs globales si disponibles
-      const allVal = window.all && window.all.checked ? true : false;
-      const h = window.slider ? parseInt(window.slider.value || 0, 10) : 0;
-      const f = window.finesse ? parseFloat(window.finesse.value || 30) : 30;
-      const fbVal = window.fb ? parseFloat(window.fb.value || 10) : 10;
-      const seuilVal = window.seuil ? parseFloat(window.seuil.value || 500) : 500;
-      const margeVal = window.marge ? parseFloat(window.marge.value || 250) : 250;
-      const vCruise = window.vCruise ? parseFloat(window.vCruise.value || 100) : 100;
-      const modeVal = window.mode ? (window.mode.value || 'QFE') : 'QFE';
-      const showLabels = window.labels && window.labels.checked ? true : false;
-      const useWind = window.applyWind && window.applyWind.checked ? true : false;
-      const ref = (window.terrainsAll && window.refSelect) ? window.terrainsAll.find(tt => tt.id === window.refSelect.value) : null;
-      const refAlt = ref ? ref.alt : 0;
-
-      tList.forEach(t => {
-        const hMin = allVal ? 0 : h;
-        const hMax = allVal ? 3000 : h;
-        for (let hh = hMin; hh <= hMax; hh += 100) {
-          // altitudeEffective calculée à partir de altFromPlaneur
-          let altitudeEffective;
-          if (modeVal === "QFE") altitudeEffective = altFromPlaneur;
-          else if (modeVal === "QNH") altitudeEffective = altFromPlaneur - t.alt;
-          else altitudeEffective = altFromPlaneur - (t.alt - refAlt);
-
-          if (altitudeEffective <= 0) continue;
-          const finesseUse = (altitudeEffective <= seuilVal) ? fbVal : f;
-          const h_util = altitudeEffective - margeVal;
-          if (h_util <= 0) continue;
-          const d = h_util * finesseUse;
-
-          if (!useWind) {
-            const c = L.circle([t.lat, t.lon], { radius: d, color: (window.color ? window.color(hh) : '#1f6feb'), weight: 2, fill: false });
-            planeAltLayer.addLayer(c);
-            if (showLabels) {
-              [0,180].forEach(a => {
-                const rad = a * Math.PI / 180;
-                const latOff = (d / 111000) * Math.cos(rad);
-                const lonOff = (d / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(rad);
-                const m = L.marker([t.lat + latOff, t.lon + lonOff], {
-                  icon: L.divIcon({ className: 'label', html: hh + "m-F" + Math.round(finesseUse) + "-" + t.id })
-                });
-                planeAltLayer.addLayer(m);
-              });
-            }
-          } else {
-            // version simplifiée du polygone vent (compatible avec ta logique)
-            const polyPts = [];
-            const step = 6;
-            for (let a = 0; a < 360; a += step) {
-              const alphaRad = a * Math.PI / 180;
-              const latOff = (d / 111000) * Math.cos(alphaRad);
-              const lonOff = (d / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(alphaRad);
-              polyPts.push([t.lat + latOff, t.lon + lonOff]);
-            }
-            planeAltLayer.addLayer(L.polygon(polyPts, { color: (window.color ? window.color(hh) : '#1f6feb'), weight: 2, fill: false }));
-          }
-        }
-        // marker terrain discret pour repère
-        planeAltLayer.addLayer(L.circleMarker([t.lat, t.lon], { radius: 4, color: '#333', fill: false }));
-      });
-    };
-
-    // Toggle et helpers
-    window.togglePlaneAltOverlay = function(enable) {
-      ensurePlaneAltLayer();
-      if (!planeAltLayer) return;
-      planeAltOverlayEnabled = (typeof enable === 'boolean') ? enable : !planeAltOverlayEnabled;
-      if (planeAltOverlayEnabled) {
-        window.drawTerrainsUsingPlaneAltitude();
-      } else {
-        planeAltLayer.clearLayers();
-      }
-    };
-
-    // Hook simple pour mise à jour automatique depuis _volMode
-    if (window._volMode) {
-      window._volMode._onPlaneAltChange = function() {
-        if (planeAltOverlayEnabled) window.drawTerrainsUsingPlaneAltitude();
-      };
-    }
-
-    // Expose état
-    window._planeAltOverlay = {
-      isEnabled: () => planeAltOverlayEnabled,
-      toggle: window.togglePlaneAltOverlay,
-      draw: window.drawTerrainsUsingPlaneAltitude
-    };
-
-    // Connect button in volScreen (delegated)
-    document.addEventListener('click', function(e){
-      if (e.target && e.target.id === 'applyPlaneAltBtn') {
-        const btn = e.target;
-        const enabled = window._planeAltOverlay && window._planeAltOverlay.isEnabled();
-        window.togglePlaneAltOverlay(!enabled);
-        btn.textContent = enabled ? 'Appliquer altitude planeur' : 'Désactiver overlay planeur';
-      }
-    });
-  })();
-  </script>
-  <!-- ===== fin overlay ===== -->
 
 </body>
 </html>
