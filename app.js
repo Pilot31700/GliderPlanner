@@ -1,209 +1,105 @@
-// app.js - Glide Planner (robust, instrumented, best-effort fixes)
-// - Ensures Leaflet icons don't 404 (CDN fallback)
-// - Global error / rejection handlers
-// - Defensive checks around Leaflet loading and init
-// - Unregisters any active service worker on load (helps during debugging)
-// - Fixes aria-hidden focus issue by blurring active element before hiding screens
-// - Try/catch around initApp with detailed logging
-// - Exposes debug handles on window for interactive troubleshooting
+  <script>
+    /* Robust helpers to enable/disable Leaflet interactions */
+    function enableMapInteractions(map) {
+      try {
+        if (!map) return;
+        if (map.dragging && map.dragging.enable) map.dragging.enable();
+        if (map.scrollWheelZoom && map.scrollWheelZoom.enable) map.scrollWheelZoom.enable();
+        if (map.touchZoom && map.touchZoom.enable) map.touchZoom.enable();
+        if (map.doubleClickZoom && map.doubleClickZoom.enable) map.doubleClickZoom.enable();
+        if (map.boxZoom && map.boxZoom.enable) map.boxZoom.enable();
+        if (map.keyboard && map.keyboard.enable) map.keyboard.enable();
+        if (map.tap && map.tap.enable) map.tap.enable();
+        const el = map.getContainer ? map.getContainer() : document.getElementById('map');
+        if (el) {
+          el.style.pointerEvents = 'auto';
+          el.style.touchAction = 'pan-x pan-y pinch-zoom';
+        }
+      } catch (e) { console.warn('enableMapInteractions', e); }
+    }
 
-/* =========================
-   Global error handlers
-   ========================= */
-window.addEventListener('error', function (e) {
-  try {
-    console.error('Global error caught:', e.message, e.filename + ':' + e.lineno + ':' + e.colno, e.error);
-  } catch (err) { console.error('Error logging failed', err); }
-});
-window.addEventListener('unhandledrejection', function (e) {
-  try {
-    console.error('Unhandled promise rejection:', e.reason);
-  } catch (err) { console.error('Error logging rejection', err); }
-});
+    function disableMapInteractions(map) {
+      try {
+        if (!map) return;
+        if (map.dragging && map.dragging.disable) map.dragging.disable();
+        if (map.scrollWheelZoom && map.scrollWheelZoom.disable) map.scrollWheelZoom.disable();
+        if (map.touchZoom && map.touchZoom.disable) map.touchZoom.disable();
+        if (map.doubleClickZoom && map.doubleClickZoom.disable) map.doubleClickZoom.disable();
+        if (map.boxZoom && map.boxZoom.disable) map.boxZoom.disable();
+        if (map.keyboard && map.keyboard.disable) map.keyboard.disable();
+        if (map.tap && map.tap.disable) map.tap.disable();
+        const el = map.getContainer ? map.getContainer() : document.getElementById('map');
+        if (el) {
+          el.style.pointerEvents = 'none';
+          el.style.touchAction = 'none';
+        }
+      } catch (e) { console.warn('disableMapInteractions', e); }
+    }
 
-/* =========================
-   Optional: unregister service workers (debug convenience)
-   ========================= */
-if ('serviceWorker' in navigator) {
-  try {
-    navigator.serviceWorker.getRegistrations().then(regs => {
-      if (regs && regs.length) {
-        console.info('Unregistering service workers for debug:', regs.length);
-        regs.forEach(r => r.unregister().then(ok => console.info('SW unregistered:', ok)));
-      }
-    }).catch(err => console.warn('SW unregister failed', err));
-  } catch (err) { console.warn('SW check failed', err); }
-}
+    /* goTo: manage screens, aria-hidden, blur, and map positioning */
+    function goTo(screenId){
+      const screens = ['homeScreen','prepScreen','volScreen','manuelScreen'];
+      const mapEl = document.getElementById('map');
 
-/* =========================
-   Utility: ensure Leaflet icons use CDN images to avoid 404s
-   This will run immediately if L is present, otherwise wait for DOMContentLoaded or window load.
-   ========================= */
-(function ensureLeafletIcons() {
-  const applyIcons = () => {
-    try {
-      if (typeof L !== 'undefined' && L.Icon && L.Icon.Default) {
-        L.Icon.Default.mergeOptions({
-          iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-          iconUrl:       'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-          shadowUrl:     'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png'
-        });
-        console.info('Leaflet icon URLs set to CDN.');
+      screens.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (id === screenId) {
+          el.style.display = (id === 'homeScreen') ? 'flex' : 'block';
+          el.removeAttribute('aria-hidden');
+        } else {
+          el.style.display = 'none';
+          el.setAttribute('aria-hidden','true');
+        }
+      });
+
+      if (!mapEl) return;
+
+      if (screenId === 'prepScreen' || screenId === 'volScreen') {
+        // Prep/Vol: map must be interactive and receive pointer events.
+        mapEl.classList.remove('map-blurred');
+        mapEl.classList.add('map-absolute'); // avoid fixed-layer capture issues on some devices
+        // Ensure the prepScreen itself does not capture pointer events (so clicks fall through to map),
+        // but keep interactive children (panels, buttons) clickable (they already have pointer-events:auto).
+        const prep = document.getElementById('prepScreen');
+        if (prep) prep.style.pointerEvents = 'none';
+        enableMapInteractions(window._glide_map);
+        setTimeout(()=> window._glide_map.invalidateSize(), 120);
       } else {
-        console.warn('Leaflet not available yet when trying to set icon URLs.');
+        // Home/Manuel: map blurred and non-interactive; screens should block interactions.
+        mapEl.classList.add('map-blurred');
+        mapEl.classList.remove('map-absolute');
+        const prep = document.getElementById('prepScreen');
+        if (prep) prep.style.pointerEvents = 'auto'; // not necessary but safe
+        disableMapInteractions(window._glide_map);
       }
-    } catch (err) {
-      console.error('Failed to set Leaflet icon URLs', err);
     }
-  };
 
-  if (typeof L !== 'undefined') {
-    applyIcons();
-  } else {
-    // Try to apply after DOMContentLoaded or window load as fallback
-    document.addEventListener('DOMContentLoaded', applyIcons, { once: true });
-    window.addEventListener('load', applyIcons, { once: true });
-    // Also a short interval fallback (in case scripts load in odd order)
-    let tries = 0;
-    const int = setInterval(() => {
-      tries++;
-      if (typeof L !== 'undefined') {
-        applyIcons();
-        clearInterval(int);
-      } else if (tries > 20) {
-        clearInterval(int);
-        console.warn('Leaflet did not appear after waiting; icon fallback not applied.');
-      }
-    }, 150);
-  }
-})();
+    /* Attach navigation listeners */
+    document.addEventListener('DOMContentLoaded', function(){
+      const btnGoPrep = document.getElementById('btnGoPrep');
+      const btnGoVol = document.getElementById('btnGoVol');
+      const btnGoManuel = document.getElementById('btnGoManuel');
+      const backFromPrep = document.getElementById('backFromPrep');
+      const backFromVol = document.getElementById('backFromVol');
+      const backFromManuel = document.getElementById('backFromManuel');
 
-/* =========================
-   Helpers to enable/disable map interactions
-   ========================= */
-function enableMapInteractions(map) {
-  try {
-    if (!map) return;
-    if (map.dragging && map.dragging.enable) map.dragging.enable();
-    if (map.scrollWheelZoom && map.scrollWheelZoom.enable) map.scrollWheelZoom.enable();
-    if (map.touchZoom && map.touchZoom.enable) map.touchZoom.enable();
-    if (map.doubleClickZoom && map.doubleClickZoom.enable) map.doubleClickZoom.enable();
-    if (map.boxZoom && map.boxZoom.enable) map.boxZoom.enable();
-    if (map.keyboard && map.keyboard.enable) map.keyboard.enable();
-    if (map.tap && map.tap.enable) map.tap.enable();
-    const el = map.getContainer ? map.getContainer() : document.getElementById('map');
-    if (el) {
-      el.style.pointerEvents = 'auto';
-      el.style.touchAction = 'pan-x pan-y pinch-zoom';
-    }
-  } catch (e) { console.warn('enableMapInteractions', e); }
-}
+      if(btnGoPrep) btnGoPrep.addEventListener('click', (e) => { e.preventDefault(); goTo('prepScreen'); });
+      if(btnGoVol) btnGoVol.addEventListener('click', (e) => { e.preventDefault(); goTo('volScreen'); });
+      if(btnGoManuel) btnGoManuel.addEventListener('click', (e) => { e.preventDefault(); goTo('manuelScreen'); });
 
-function disableMapInteractions(map) {
-  try {
-    if (!map) return;
-    if (map.dragging && map.dragging.disable) map.dragging.disable();
-    if (map.scrollWheelZoom && map.scrollWheelZoom.disable) map.scrollWheelZoom.disable();
-    if (map.touchZoom && map.touchZoom.disable) map.touchZoom.disable();
-    if (map.doubleClickZoom && map.doubleClickZoom.disable) map.doubleClickZoom.disable();
-    if (map.boxZoom && map.boxZoom.disable) map.boxZoom.disable();
-    if (map.keyboard && map.keyboard.disable) map.keyboard.disable();
-    if (map.tap && map.tap.disable) map.tap.disable();
-    const el = map.getContainer ? map.getContainer() : document.getElementById('map');
-    if (el) {
-      el.style.pointerEvents = 'none';
-      el.style.touchAction = 'none';
-    }
-  } catch (e) { console.warn('disableMapInteractions', e); }
-}
+      if(backFromPrep) backFromPrep.addEventListener('click', (e) => { e.preventDefault(); goTo('homeScreen'); });
+      if(backFromVol) backFromVol.addEventListener('click', (e) => { e.preventDefault(); goTo('homeScreen'); });
+      if(backFromManuel) backFromManuel.addEventListener('click', (e) => { e.preventDefault(); goTo('homeScreen'); });
 
-/* =========================
-   Navigation helper: hide screens safely (blurs active element first)
-   ========================= */
-function hideAllScreensExcept(screenId) {
-  const screens = ['homeScreen','prepScreen','volScreen','manuelScreen'];
-  try {
-    // Blur active element to avoid aria-hidden on focused element (accessibility warning & blocked interactions)
-    if (document.activeElement && typeof document.activeElement.blur === 'function') {
-      document.activeElement.blur();
-    }
-  } catch (e) { /* ignore */ }
-
-  screens.forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    if (id === screenId) {
-      el.style.display = (id === 'homeScreen') ? 'flex' : 'block';
-      el.removeAttribute('aria-hidden');
-    } else {
-      el.style.display = 'none';
-      el.setAttribute('aria-hidden','true');
-    }
-  });
-}
-
-/* =========================
-   goTo wrapper (keeps previous API)
-   ========================= */
-function goTo(screenId) {
-  const mapEl = document.getElementById('map');
-  hideAllScreensExcept(screenId);
-
-  if (!mapEl) return;
-
-  if (screenId === 'prepScreen' || screenId === 'volScreen') {
-    mapEl.classList.remove('map-blurred');
-    mapEl.classList.add('map-absolute');
-    const prep = document.getElementById('prepScreen');
-    if (prep) prep.style.pointerEvents = 'none';
-    if (window._glide_map) {
-      enableMapInteractions(window._glide_map);
-      setTimeout(()=> {
-        try { window._glide_map.invalidateSize(); } catch(e) {}
-      }, 120);
-    }
-  } else {
-    mapEl.classList.add('map-blurred');
-    mapEl.classList.remove('map-absolute');
-    const prep = document.getElementById('prepScreen');
-    if (prep) prep.style.pointerEvents = 'auto';
-    if (window._glide_map) disableMapInteractions(window._glide_map);
-  }
-}
-
-/* =========================
-   Attach navigation listeners on DOMContentLoaded
-   ========================= */
-document.addEventListener('DOMContentLoaded', function () {
-  try {
-    const btnGoPrep = document.getElementById('btnGoPrep');
-    const btnGoVol = document.getElementById('btnGoVol');
-    const btnGoManuel = document.getElementById('btnGoManuel');
-    const backFromPrep = document.getElementById('backFromPrep');
-    const backFromVol = document.getElementById('backFromVol');
-    const backFromManuel = document.getElementById('backFromManuel');
-
-    if (btnGoPrep) btnGoPrep.addEventListener('click', (e) => { e.preventDefault(); goTo('prepScreen'); });
-    if (btnGoVol) btnGoVol.addEventListener('click', (e) => { e.preventDefault(); goTo('volScreen'); });
-    if (btnGoManuel) btnGoManuel.addEventListener('click', (e) => { e.preventDefault(); goTo('manuelScreen'); });
-
-    if (backFromPrep) backFromPrep.addEventListener('click', (e) => { e.preventDefault(); goTo('homeScreen'); });
-    if (backFromVol) backFromVol.addEventListener('click', (e) => { e.preventDefault(); goTo('homeScreen'); });
-    if (backFromManuel) backFromManuel.addEventListener('click', (e) => { e.preventDefault(); goTo('homeScreen'); });
-
-    // show home by default
-    goTo('homeScreen');
-  } catch (err) {
-    console.error('Navigation listener setup failed', err);
-  }
-});
-
-/* =========================
-   Main application initialization
-   ========================= */
-function initApp() {
-  try {
-    // DOM refs
+      // show home by default
+      goTo('homeScreen');
+    });
+  </script>
+<!-- Main app script (map, controls, calculations) -->
+  <script>
+  document.addEventListener('DOMContentLoaded', function () {
+    // DOM elements
     const panel = document.getElementById('panel');
     const menuVent = document.getElementById('menuVent');
     const btnPanel = document.getElementById('btnPanel');
@@ -225,34 +121,53 @@ function initApp() {
     const rangeKm = document.getElementById('rangeKm');
     const applyWind = document.getElementById('applyWind');
 
-    // Ensure Leaflet is available
-    if (typeof L === 'undefined') {
-      console.error('Leaflet (L) is not defined. Ensure leaflet.js is loaded before app.js.');
-      return;
-    }
-
-    // Create map
+    // --- MAP ---
     const map = L.map('map', { preferCanvas: true, tap: true }).setView([43.8, 0.1], 9);
     window._glide_map = map;
-
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    // Initially disable interactions (home screen)
+    // Ensure interactions are disabled initially (home shown)
     disableMapInteractions(map);
 
-    // --- TERRAIN DATA ---
-    let terrainsAll = [
-      { id: "LFDA", lat: 43.709, lon: -0.249, alt: 80 },
-      { id: "LFID", lat: 43.955, lon: 0.373, alt: 130 },
-      { id: "LFCN", lat: 43.762, lon: -0.036, alt: 100 },
-      { id: "LFDH", lat: 43.646, lon: 0.601, alt: 130 },
-      { id: "LFBM", lat: 43.911, lon: -0.507, alt: 52 },
-      { id: "LFCL", lat: 43.586, lon: 1.499, alt: 152 }
-    ];
-    let terrains = [];
+    // --- POSITION ---
+    let userPos = { lat: 43.8, lon: 0.1 };
+    map.on('moveend', () => {
+      const c = map.getCenter();
+      userPos = { lat: c.lat, lon: c.lng };
+      update();
+    });
+
+    // --- DISTANCE ---
+    function distanceKm(a, b) {
+      const R = 6371;
+      const dLat = (b.lat - a.lat) * Math.PI / 180;
+      const dLon = (b.lon - a.lon) * Math.PI / 180;
+      const x = Math.sin(dLat / 2) ** 2 +
+        Math.cos(a.lat * Math.PI / 180) *
+        Math.cos(b.lat * Math.PI / 180) *
+        Math.sin(dLon / 2) ** 2;
+      return 2 * R * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+    }
+
+    // --- TERRAINS ---
+let terrainsAll = [];
+let terrains = [];
+
+fetch("terrains.json")
+  .then(r => r.json())
+  .then(data => {
+    terrainsAll = data;
+    terrains = data;
+
+    // Appelle ici ta fonction d'initialisation du Mode Prep
+    // Exemple :
+    initPrepTerrains(); 
+    updatePrep(); 
+  })
+  .catch(err => console.error("Erreur chargement terrains.json :", err));
 
     function populateRef() {
       if (!refSelect) return;
@@ -297,9 +212,9 @@ function initApp() {
         `;
         container.appendChild(block);
 
-        const sliderEl = block.querySelector(`#${w.v}`);
+        const slider = block.querySelector(`#${w.v}`);
         const label = block.querySelector(`#${w.v}_label`);
-        if (sliderEl && label) sliderEl.addEventListener('input', () => { label.innerText = sliderEl.value + ' km/h'; });
+        if (slider && label) slider.addEventListener('input', () => { label.innerText = slider.value + ' km/h'; });
       });
     }
     initWindMenu();
@@ -313,156 +228,128 @@ function initApp() {
       return { v: isNaN(v) ? 0 : v, d: isNaN(d) ? 0 : d };
     }
 
-    // --- DISTANCE UTIL ---
-    function distanceKm(a, b) {
-      const R = 6371;
-      const dLat = (b.lat - a.lat) * Math.PI / 180;
-      const dLon = (b.lon - a.lon) * Math.PI / 180;
-      const x = Math.sin(dLat / 2) ** 2 +
-        Math.cos(a.lat * Math.PI / 180) *
-        Math.cos(b.lat * Math.PI / 180) *
-        Math.sin(dLon / 2) ** 2;
-      return 2 * R * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
-    }
-
-    // --- STATE & UPDATE ---
-    let userPos = { lat: 43.8, lon: 0.1 };
-    map.on('moveend', () => {
-      const c = map.getCenter();
-      userPos = { lat: c.lat, lon: c.lng };
-      update();
-    });
-
+    // --- UPDATE ---
     let objs = [];
+
     function clearObjs() {
-      objs.forEach(o => {
-        try { map.removeLayer(o); } catch (e) {}
-      });
+      objs.forEach(o => map.removeLayer(o));
       objs = [];
     }
 
     function update() {
-      try {
-        clearObjs();
+      clearObjs();
 
-        const range = (rangeKm && rangeKm.value) ? parseFloat(rangeKm.value) : 100;
-        terrains = terrainsAll.filter(t => distanceKm(userPos, t) <= range);
+      const range = (rangeKm && rangeKm.value) ? parseFloat(rangeKm.value) : 100;
+      terrains = terrainsAll.filter(t => distanceKm(userPos, t) <= range);
 
-        const h = (slider && slider.value) ? parseInt(slider.value, 10) : 0;
-        if (hVal) hVal.innerText = h;
+      const h = (slider && slider.value) ? parseInt(slider.value, 10) : 0;
+      if (hVal) hVal.innerText = h;
 
-        const f = (finesse && finesse.value) ? parseFloat(finesse.value) : 30;
-        const fbVal = (fb && fb.value) ? parseFloat(fb.value) : 10;
-        const seuilVal = (seuil && seuil.value) ? parseFloat(seuil.value) : 500;
-        const margeVal = (marge && marge.value) ? parseFloat(marge.value) : 250;
-        const vCruise = (vCruiseInput && vCruiseInput.value) ? parseFloat(vCruiseInput.value) : 100;
-        const modeVal = (mode && mode.value) ? mode.value : 'QFE';
-        const showLabels = (labels && labels.checked) ? true : false;
-        const allVal = (all && all.checked) ? true : false;
-        const useWind = (applyWind && applyWind.checked) ? true : false;
+      const f = (finesse && finesse.value) ? parseFloat(finesse.value) : 30;
+      const fbVal = (fb && fb.value) ? parseFloat(fb.value) : 10;
+      const seuilVal = (seuil && seuil.value) ? parseFloat(seuil.value) : 500;
+      const margeVal = (marge && marge.value) ? parseFloat(marge.value) : 250;
+      const vCruise = (vCruiseInput && vCruiseInput.value) ? parseFloat(vCruiseInput.value) : 100;
+      const modeVal = (mode && mode.value) ? mode.value : 'QFE';
+      const showLabels = (labels && labels.checked) ? true : false;
+      const allVal = (all && all.checked) ? true : false;
+      const useWind = (applyWind && applyWind.checked) ? true : false;
 
-        const ref = terrainsAll.find(t => refSelect && t.id === refSelect.value);
-        const refAlt = ref ? ref.alt : 0;
+      const ref = terrainsAll.find(t => refSelect && t.id === refSelect.value);
+      const refAlt = ref ? ref.alt : 0;
 
-        terrains.forEach(t => {
-          const hMin = allVal ? 0 : h;
-          const hMax = allVal ? 3000 : h;
+      terrains.forEach(t => {
+        const hMin = allVal ? 0 : h;
+        const hMax = allVal ? 3000 : h;
 
-          for (let hh = hMin; hh <= hMax; hh += 100) {
-            let h_rel;
-            if (modeVal === "QFE") h_rel = hh;
-            else if (modeVal === "QNH") h_rel = hh - t.alt;
-            else h_rel = hh - (t.alt - refAlt);
+        for (let hh = hMin; hh <= hMax; hh += 100) {
+          let h_rel;
+          if (modeVal === "QFE") h_rel = hh;
+          else if (modeVal === "QNH") h_rel = hh - t.alt;
+          else h_rel = hh - (t.alt - refAlt);
 
-            if (h_rel <= 0) continue;
-            const finesseUse = (h_rel <= seuilVal) ? fbVal : f;
-            const h_util = h_rel - margeVal;
-            if (h_util <= 0) continue;
+          if (h_rel <= 0) continue;
+          const finesseUse = (h_rel <= seuilVal) ? fbVal : f;
+          const h_util = h_rel - margeVal;
+          if (h_util <= 0) continue;
 
-            const d = h_util * finesseUse; // portée sans vent (m)
+          const d = h_util * finesseUse; // portée sans vent (m)
 
-            if (!useWind) {
-              const circle = L.circle([t.lat, t.lon], { radius: d, color: color(hh), weight: 2, fill: false }).addTo(map);
-              objs.push(circle);
+          if (!useWind) {
+            const circle = L.circle([t.lat, t.lon], { radius: d, color: color(hh), weight: 2, fill: false }).addTo(map);
+            objs.push(circle);
 
-              if (showLabels) {
-                [0, 180].forEach(a => {
-                  const rad = a * Math.PI / 180;
-                  const latOff = (d / 111000) * Math.cos(rad);
-                  const lonOff = (d / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(rad);
-                  objs.push(L.marker([t.lat + latOff, t.lon + lonOff], {
-                    icon: L.divIcon({ className: 'label', html: hh + "m-F" + Math.round(finesseUse) + "-" + t.id })
-                  }).addTo(map));
-                });
-              }
-            } else {
-              const polyPts = [];
-              const step = 6;
-              for (let a = 0; a < 360; a += step) {
-                const alphaRad = a * Math.PI / 180;
+            if (showLabels) {
+              [0, 180].forEach(a => {
+                const rad = a * Math.PI / 180;
+                const latOff = (d / 111000) * Math.cos(rad);
+                const lonOff = (d / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(rad);
+                objs.push(L.marker([t.lat + latOff, t.lon + lonOff], {
+                  icon: L.divIcon({ className: 'label', html: hh + "m-F" + Math.round(finesseUse) + "-" + t.id })
+                }).addTo(map));
+              });
+            }
+          } else {
+            const polyPts = [];
+            const step = 6;
+            for (let a = 0; a < 360; a += step) {
+              const alphaRad = a * Math.PI / 180;
 
-                let layerIdx = Math.floor(hh / 500);
-                if (layerIdx > windLayers.length - 1) layerIdx = windLayers.length - 1;
-                const wind = getWindForLayer(layerIdx);
-                const W = wind.v;
-                const dir = wind.d;
-                const dirRad = (dir + 180) * Math.PI / 180;
+              let layerIdx = Math.floor(hh / 500);
+              if (layerIdx > windLayers.length - 1) layerIdx = windLayers.length - 1;
+              const wind = getWindForLayer(layerIdx);
+              const W = wind.v;
+              const dir = wind.d;
+              const dirRad = (dir + 180) * Math.PI / 180;
 
-                const projWind = W * Math.cos(alphaRad - dirRad);
+              const projWind = W * Math.cos(alphaRad - dirRad);
 
-                let denom = vCruise - projWind;
-                if (denom < 5) denom = 5;
+              let denom = vCruise - projWind;
+              if (denom < 5) denom = 5;
 
-                const effDist = d * (vCruise / denom);
+              const effDist = d * (vCruise / denom);
 
-                const latOff = (effDist / 111000) * Math.cos(alphaRad);
-                const lonOff = (effDist / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(alphaRad);
+              const latOff = (effDist / 111000) * Math.cos(alphaRad);
+              const lonOff = (effDist / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(alphaRad);
 
-                polyPts.push([t.lat + latOff, t.lon + lonOff]);
-              }
+              polyPts.push([t.lat + latOff, t.lon + lonOff]);
+            }
 
-              const poly = L.polygon(polyPts, { color: color(hh), weight: 2, fill: false }).addTo(map);
-              objs.push(poly);
+            const poly = L.polygon(polyPts, { color: color(hh), weight: 2, fill: false }).addTo(map);
+            objs.push(poly);
 
-              if (showLabels) {
-                [0, 180].forEach(a => {
-                  const rad = a * Math.PI / 180;
-                  const latOff = (d / 111000) * Math.cos(rad);
-                  const lonOff = (d / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(rad);
-                  objs.push(L.marker([t.lat + latOff, t.lon + lonOff], {
-                    icon: L.divIcon({ className: 'label', html: hh + "m-F" + Math.round(finesseUse) + "-" + t.id })
-                  }).addTo(map));
-                });
-              }
+            if (showLabels) {
+              [0, 180].forEach(a => {
+                const rad = a * Math.PI / 180;
+                const latOff = (d / 111000) * Math.cos(rad);
+                const lonOff = (d / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(rad);
+                objs.push(L.marker([t.lat + latOff, t.lon + lonOff], {
+                  icon: L.divIcon({ className: 'label', html: hh + "m-F" + Math.round(finesseUse) + "-" + t.id })
+                }).addTo(map));
+              });
             }
           }
-          objs.push(L.marker([t.lat, t.lon]).addTo(map));
-        });
-      } catch (err) {
-        console.error('Update failed:', err);
-      }
+        }
+        objs.push(L.marker([t.lat, t.lon]).addTo(map));
+      });
     }
 
     // initial update
     update();
 
-    // add terrain on map click
+    // ajout terrain (clic sur carte)
     map.on('click', function (e) {
-      try {
-        const nom = prompt("Nom terrain ?");
-        if (!nom) return;
-        const altStr = prompt("Altitude m ?");
-        const alt = parseFloat(altStr);
-        if (isNaN(alt)) return;
-        terrainsAll.push({ id: nom, lat: e.latlng.lat, lon: e.latlng.lng, alt: alt });
-        populateRef();
-        update();
-      } catch (err) {
-        console.error('Add terrain failed:', err);
-      }
+      const nom = prompt("Nom terrain ?");
+      if (!nom) return;
+      const altStr = prompt("Altitude m ?");
+      const alt = parseFloat(altStr);
+      if (isNaN(alt)) return;
+      terrainsAll.push({ id: nom, lat: e.latlng.lat, lon: e.latlng.lng, alt: alt });
+      populateRef();
+      update();
     });
 
-    // UI events
+    // UI events (guarded)
     if (slider) slider.addEventListener('input', () => { if (hVal) hVal.innerText = slider.value; update(); });
     if (btnRecalc) btnRecalc.addEventListener('click', (e) => { e.preventDefault(); update(); });
     if (btnRecalcWind) btnRecalcWind.addEventListener('click', (e) => { e.preventDefault(); update(); });
@@ -484,7 +371,7 @@ function initApp() {
       menuVent.style.display = (menuVent.style.display === 'none' || menuVent.style.display === '') ? 'block' : 'none';
     });
 
-    // draggable panels
+    // draggable panels (ignore drags started on form controls)
     function makeDraggable(el) {
       if (!el) return;
       let dragging = false;
@@ -534,58 +421,15 @@ function initApp() {
     makeDraggable(panel);
     makeDraggable(menuVent);
 
-    // init wind labels
+    // initialize wind labels
     windLayers.forEach(w => {
       const s = document.getElementById(w.v);
       const lbl = document.getElementById(w.v + '_label');
       if (s && lbl) lbl.innerText = s.value + ' km/h';
     });
 
-    // expose for debug
+    // expose update and map for debugging
     window._glide_update = update;
     window._glide_map = map;
-
-    console.info('initApp completed successfully.');
-  } catch (err) {
-    console.error('initApp failed with exception:', err);
-  }
-}
-
-/* =========================
-   Start the app safely:
-   - If Leaflet is already present, init immediately.
-   - Otherwise wait for DOMContentLoaded and a short interval fallback.
-   ========================= */
-(function startAppSafely() {
-  const start = () => {
-    try {
-      if (typeof L === 'undefined') {
-        console.warn('Leaflet not present at startAppSafely; waiting for load.');
-        return;
-      }
-      initApp();
-    } catch (err) {
-      console.error('startAppSafely error', err);
-    }
-  };
-
-  if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    // DOM is ready; try to start
-    start();
-  } else {
-    document.addEventListener('DOMContentLoaded', start, { once: true });
-  }
-
-  // fallback interval in case of odd script ordering
-  let tries = 0;
-  const int = setInterval(() => {
-    tries++;
-    if (typeof L !== 'undefined' && !window._glide_map) {
-      start();
-      clearInterval(int);
-    } else if (tries > 30) {
-      clearInterval(int);
-      console.warn('startAppSafely: Leaflet did not appear; app not started automatically.');
-    }
-  }, 200);
-})();
+  });
+  </script>
