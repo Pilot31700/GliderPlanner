@@ -1,6 +1,8 @@
+<!DOCTYPE html>
+<html lang="fr">
 <head>
   <meta charset="utf-8" />
-  <title>Glide Planner V1.0 </title>
+  <title>Glide Planner V1.0</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -13,7 +15,7 @@
       --panel-shadow: 0 6px 18px rgba(20,20,20,0.18);
       --glass: rgba(8,10,15,0.45);
 
-      /* Mode Vol style C */
+      /* Mode Vol style */
       --vol-bg: rgba(255,255,255,0.98);
       --vol-border: rgba(0,0,0,0.08);
       --vol-shadow: 0 8px 28px rgba(0,0,0,0.22);
@@ -165,11 +167,9 @@
       display:inline-block;
     }
 
-    /* Wind panel */
     .wind-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
     .wind-row input[type="number"] { width:70px; }
 
-    /* MANUEL */
     #manuelCard {
       width: min(900px, 94%);
       margin: 60px auto;
@@ -181,119 +181,122 @@
       pointer-events:auto;
     }
 
-    /* ============================
-       MODE VOL — STYLE C MODERNE
-       ============================ */
-
+    /* MODE VOL UI */
     #btnVolMenu {
-      position: absolute;
-      top: 12px;
-      left: 12px;
-      z-index: 5000;
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
-      border: none;
-      background: var(--vol-accent);
-      color: white;
-      font-size: 22px;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      box-shadow: var(--vol-shadow);
-      pointer-events: auto;
+      position:absolute;
+      top:12px;
+      left:12px;
+      z-index:3000;
+      width:48px;
+      height:48px;
+      border-radius:12px;
+      border:none;
+      background:var(--vol-accent);
+      color:white;
+      font-size:22px;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      box-shadow:var(--vol-shadow);
+      pointer-events:auto;
     }
 
     #volPanel {
-      position: absolute;
-      top: 80px;
-      left: 12px;
-      width: 330px;
-      background: var(--vol-bg);
-      border: 1px solid var(--vol-border);
-      border-radius: 14px;
-      padding: 14px;
-      box-shadow: var(--vol-shadow);
-      z-index: 5000;
-      display: none;
-      pointer-events: auto;
-      touch-action: none;
+      position:absolute;
+      top:72px;
+      left:12px;
+      width:330px;
+      background:var(--vol-bg);
+      border:1px solid var(--vol-border);
+      border-radius:14px;
+      padding:14px;
+      box-shadow:var(--vol-shadow);
+      z-index:3000;
+      display:none;
+      pointer-events:auto;
+      touch-action:none;
     }
 
     #volPanel h3 {
-      margin: 0 0 10px 0;
-      font-size: 17px;
-      color: var(--vol-title);
+      margin:0 0 10px 0;
+      font-size:17px;
+      color:var(--vol-title);
     }
 
     .volField {
-      margin-bottom: 14px;
-      font-size: 13px;
-      color: var(--vol-text);
+      margin-bottom:14px;
+      font-size:13px;
+      color:var(--vol-text);
     }
 
     .volField label {
-      font-weight: 700;
-      font-size: 12px;
-      color: var(--vol-sub);
-      display: block;
-      margin-bottom: 4px;
+      font-weight:700;
+      font-size:12px;
+      color:var(--vol-sub);
+      display:block;
+      margin-bottom:4px;
     }
 
     .volSliderRow {
-      display: flex;
-      align-items: center;
-      gap: 10px;
+      display:flex;
+      align-items:center;
+      gap:10px;
     }
 
     .volSliderRow input[type="range"] {
-      flex: 1;
+      flex:1;
     }
 
     .volValue {
-      width: 42px;
-      text-align: right;
-      font-weight: 700;
-      color: var(--vol-accent);
+      width:42px;
+      text-align:right;
+      font-weight:700;
+      color:var(--vol-accent);
     }
 
     #volAltitudeDisplay {
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--vol-accent);
-      margin-top: 4px;
+      font-size:18px;
+      font-weight:700;
+      color:var(--vol-accent);
+      margin-top:4px;
+    }
+
+    #volPorteeKm {
+      font-size:18px;
+      font-weight:700;
+      color:var(--vol-accent);
     }
 
     #btnCenterVol {
-      position: absolute;
-      bottom: 20px;
-      right: 20px;
-      width: 52px;
-      height: 52px;
-      border-radius: 50%;
-      border: none;
-      background: var(--vol-accent);
-      color: white;
-      font-size: 22px;
-      box-shadow: var(--vol-shadow);
-      cursor: pointer;
-      z-index: 5000;
-      display: none;
+      position:absolute;
+      bottom:20px;
+      right:20px;
+      width:52px;
+      height:52px;
+      border-radius:50%;
+      border:none;
+      background:var(--vol-accent);
+      color:white;
+      font-size:22px;
+      box-shadow:var(--vol-shadow);
+      cursor:pointer;
+      z-index:3000;
+      display:none;
     }
 
     @media (max-width:720px){
+      .panel { width:90%; left:5% !important; right:5% !important; top:12px !important; }
+      .menuBtn { min-width:160px; }
+      #homeTitle { font-size:28px; }
+
       #volPanel {
-        width: 92%;
-        left: 4%;
-      }
-      #btnVolMenu {
-        left: 12px;
+        width:92%;
+        left:4%;
       }
     }
   </style>
 </head>
-
 <body>
 
   <!-- MAP -->
@@ -367,12 +370,12 @@
     </div>
   </div>
 
-  <!-- MODE VOL (contenu ajouté dans le bloc 3) -->
+  <!-- MODE VOL -->
   <div id="volScreen" class="screen" aria-hidden="true">
     <button class="backBtn" id="backFromVol">← Menu</button>
     <h2 style="margin-top:60px; text-align:center;">Mode Vol</h2>
     <p style="text-align:center; max-width:900px; margin:12px auto; color:#333;">
-      Mode Vol : carte interactive, affichage cockpit moderne.
+      Mode Vol : carte centrée sur le planeur, affichage cockpit.
     </p>
   </div>
 
@@ -392,14 +395,10 @@
       <p style="color:#666; font-size:13px;">La carte est affichée en arrière-plan, floutée et non interactive pour faciliter la lecture.</p>
     </div>
   </div>
-  <!-- ============================
-       MODE VOL — UI (STYLE C)
-       ============================ -->
 
-  <!-- Bouton flottant pour ouvrir/fermer le panneau -->
+  <!-- MODE VOL UI -->
   <button id="btnVolMenu">☰</button>
 
-  <!-- Panneau Mode Vol (draggable) -->
   <div id="volPanel">
     <h3>Mode Vol</h3>
 
@@ -420,7 +419,7 @@
     </div>
 
     <div class="volField">
-      <label>Seuil (m)</label>
+      <label>Seuil changement finesse (m)</label>
       <div class="volSliderRow">
         <input type="range" id="volSeuil" min="0" max="2000" value="500">
         <input type="number" id="volSeuilInput" value="500" style="width:70px;">
@@ -433,7 +432,7 @@
     </div>
 
     <div class="volField">
-      <label><input type="checkbox" id="volUseGPS" checked> Utiliser GPS</label>
+      <label><input type="checkbox" id="volUseGPS" checked> Utiliser altitude GPS</label>
     </div>
 
     <div class="volField" id="volManualAltBlock" style="display:none;">
@@ -451,51 +450,442 @@
 
     <div class="volField">
       <label>Portée estimée</label>
-      <div id="volPorteeKm" style="font-size:18px;font-weight:700;color:var(--vol-accent);">— km</div>
+      <div id="volPorteeKm">— km</div>
     </div>
   </div>
 
-  <!-- Bouton pour recentrer la carte -->
   <button id="btnCenterVol">📍</button>
 
-
-  <!-- ============================
-       MODE VOL — SCRIPT COMPLET
-       ============================ -->
   <script>
-  document.addEventListener("DOMContentLoaded", function(){
+    function enableMapInteractions(map) {
+      try {
+        if (!map) return;
+        if (map.dragging && map.dragging.enable) map.dragging.enable();
+        if (map.scrollWheelZoom && map.scrollWheelZoom.enable) map.scrollWheelZoom.enable();
+        if (map.touchZoom && map.touchZoom.enable) map.touchZoom.enable();
+        if (map.doubleClickZoom && map.doubleClickZoom.enable) map.doubleClickZoom.enable();
+        if (map.boxZoom && map.boxZoom.enable) map.boxZoom.enable();
+        if (map.keyboard && map.keyboard.enable) map.keyboard.enable();
+        if (map.tap && map.tap.enable) map.tap.enable();
+        const el = map.getContainer ? map.getContainer() : document.getElementById('map');
+        if (el) {
+          el.style.pointerEvents = 'auto';
+          el.style.touchAction = 'pan-x pan-y pinch-zoom';
+        }
+      } catch (e) { console.warn('enableMapInteractions', e); }
+    }
 
-    /* ---------------------------------------------------------
-       RÉFÉRENCES DOM
-    --------------------------------------------------------- */
+    function disableMapInteractions(map) {
+      try {
+        if (!map) return;
+        if (map.dragging && map.dragging.disable) map.dragging.disable();
+        if (map.scrollWheelZoom && map.scrollWheelZoom.disable) map.scrollWheelZoom.disable();
+        if (map.touchZoom && map.touchZoom.disable) map.touchZoom.disable();
+        if (map.doubleClickZoom && map.doubleClickZoom.disable) map.doubleClickZoom.disable();
+        if (map.boxZoom && map.boxZoom.disable) map.boxZoom.disable();
+        if (map.keyboard && map.keyboard.disable) map.keyboard.disable();
+        if (map.tap && map.tap.disable) map.tap.disable();
+        const el = map.getContainer ? map.getContainer() : document.getElementById('map');
+        if (el) {
+          el.style.pointerEvents = 'none';
+          el.style.touchAction = 'none';
+        }
+      } catch (e) { console.warn('disableMapInteractions', e); }
+    }
+
+    function goTo(screenId){
+      const screens = ['homeScreen','prepScreen','volScreen','manuelScreen'];
+      const mapEl = document.getElementById('map');
+
+      screens.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (id === screenId) {
+          el.style.display = (id === 'homeScreen') ? 'flex' : 'block';
+          el.removeAttribute('aria-hidden');
+        } else {
+          el.style.display = 'none';
+          el.setAttribute('aria-hidden','true');
+        }
+      });
+
+      if (!mapEl) return;
+
+      if (screenId === 'prepScreen' || screenId === 'volScreen') {
+        mapEl.classList.remove('map-blurred');
+        mapEl.classList.add('map-absolute');
+        const prep = document.getElementById('prepScreen');
+        if (prep) prep.style.pointerEvents = 'none';
+        enableMapInteractions(window._glide_map);
+        setTimeout(()=> window._glide_map.invalidateSize(), 120);
+      } else {
+        mapEl.classList.add('map-blurred');
+        mapEl.classList.remove('map-absolute');
+        const prep = document.getElementById('prepScreen');
+        if (prep) prep.style.pointerEvents = 'auto';
+        disableMapInteractions(window._glide_map);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function(){
+      const btnGoPrep = document.getElementById('btnGoPrep');
+      const btnGoVol = document.getElementById('btnGoVol');
+      const btnGoManuel = document.getElementById('btnGoManuel');
+      const backFromPrep = document.getElementById('backFromPrep');
+      const backFromVol = document.getElementById('backFromVol');
+      const backFromManuel = document.getElementById('backFromManuel');
+
+      if(btnGoPrep) btnGoPrep.addEventListener('click', (e) => { e.preventDefault(); goTo('prepScreen'); });
+      if(btnGoVol) btnGoVol.addEventListener('click', (e) => { e.preventDefault(); goTo('volScreen'); });
+      if(btnGoManuel) btnGoManuel.addEventListener('click', (e) => { e.preventDefault(); goTo('manuelScreen'); });
+
+      if(backFromPrep) backFromPrep.addEventListener('click', (e) => { e.preventDefault(); goTo('homeScreen'); });
+      if(backFromVol) backFromVol.addEventListener('click', (e) => { e.preventDefault(); goTo('homeScreen'); });
+      if(backFromManuel) backFromManuel.addEventListener('click', (e) => { e.preventDefault(); goTo('homeScreen'); });
+
+      goTo('homeScreen');
+    });
+  </script>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const panel = document.getElementById('panel');
+    const menuVent = document.getElementById('menuVent');
+    const btnPanel = document.getElementById('btnPanel');
+    const btnVent = document.getElementById('btnVent');
+    const btnRecalc = document.getElementById('btnRecalc');
+    const btnRecalcWind = document.getElementById('btnRecalcWind');
+
+    const hVal = document.getElementById('hVal');
+    const slider = document.getElementById('slider');
+    const finesse = document.getElementById('finesse');
+    const fb = document.getElementById('fb');
+    const seuil = document.getElementById('seuil');
+    const marge = document.getElementById('marge');
+    const vCruiseInput = document.getElementById('vCruise');
+    const mode = document.getElementById('mode');
+    const labels = document.getElementById('labels');
+    const all = document.getElementById('all');
+    const refSelect = document.getElementById('refSelect');
+    const rangeKm = document.getElementById('rangeKm');
+    const applyWind = document.getElementById('applyWind');
+
+    const map = L.map('map', { preferCanvas: true, tap: true }).setView([43.8, 0.1], 9);
+    window._glide_map = map;
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    disableMapInteractions(map);
+
+    let userPos = { lat: 43.8, lon: 0.1 };
+    map.on('moveend', () => {
+      const c = map.getCenter();
+      userPos = { lat: c.lat, lon: c.lng };
+      update();
+    });
+
+    function distanceKm(a, b) {
+      const R = 6371;
+      const dLat = (b.lat - a.lat) * Math.PI / 180;
+      const dLon = (b.lon - a.lon) * Math.PI / 180;
+      const x = Math.sin(dLat / 2) ** 2 +
+        Math.cos(a.lat * Math.PI / 180) *
+        Math.cos(b.lat * Math.PI / 180) *
+        Math.sin(dLon / 2) ** 2;
+      return 2 * R * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+    }
+
+    let terrainsAll = [
+      { id: "LFDA", lat: 43.709, lon: -0.249, alt: 80 },
+      { id: "LFID", lat: 43.955, lon: 0.373, alt: 130 },
+      { id: "LFCN", lat: 43.762, lon: -0.036, alt: 100 },
+      { id: "LFDH", lat: 43.646, lon: 0.601, alt: 130 },
+      { id: "LFBM", lat: 43.911, lon: -0.507, alt: 52 },
+      { id: "LFCL", lat: 43.586, lon: 1.499, alt: 152 }
+    ];
+    let terrains = [];
+
+    function populateRef() {
+      if (!refSelect) return;
+      refSelect.innerHTML = "";
+      terrainsAll.forEach(t => {
+        const opt = document.createElement("option");
+        opt.value = t.id;
+        opt.innerText = t.id;
+        refSelect.appendChild(opt);
+      });
+    }
+    populateRef();
+
+    function color(h) {
+      const r = Math.round(255 * (1 - (h / 3000)));
+      const g = Math.round(255 * (h / 3000));
+      return "rgb(" + r + "," + g + ",0)";
+    }
+
+    const windLayers = [
+      { label: "0-500", v: "v0", d: "d0" },
+      { label: "500-1000", v: "v1", d: "d1" },
+      { label: "1000-1500", v: "v2", d: "d2" },
+      { label: "1500-2000", v: "v3", d: "d3" },
+      { label: "2000-2500", v: "v4", d: "d4" },
+      { label: "2500-3000", v: "v5", d: "d5" }
+    ];
+
+    function initWindMenu() {
+      const container = document.getElementById('windControls');
+      if (!container) return;
+      container.innerHTML = '';
+      windLayers.forEach(w => {
+        const block = document.createElement('div');
+        block.className = 'wind-row';
+        block.innerHTML = `
+          <div style="min-width:80px;"><b style="font-size:12px;">${w.label} m</b></div>
+          <input type="range" id="${w.v}" min="0" max="50" value="0" style="flex:1;">
+          <span id="${w.v}_label" style="width:60px;text-align:right;font-size:12px;">0 km/h</span>
+          <input type="number" id="${w.d}" value="0" style="width:70px;">
+        `;
+        container.appendChild(block);
+
+        const slider = block.querySelector(`#${w.v}`);
+        const label = block.querySelector(`#${w.v}_label`);
+        if (slider && label) slider.addEventListener('input', () => { label.innerText = slider.value + ' km/h'; });
+      });
+    }
+    initWindMenu();
+
+    function getWindForLayer(idx) {
+      const layer = windLayers[Math.max(0, Math.min(windLayers.length - 1, idx))];
+      const vEl = document.getElementById(layer.v);
+      const dEl = document.getElementById(layer.d);
+      const v = vEl ? parseFloat(vEl.value) : 0;
+      const d = dEl ? parseFloat(dEl.value) : 0;
+      return { v: isNaN(v) ? 0 : v, d: isNaN(d) ? 0 : d };
+    }
+
+    let objs = [];
+
+    function clearObjs() {
+      objs.forEach(o => map.removeLayer(o));
+      objs = [];
+    }
+
+    function update() {
+      clearObjs();
+
+      const range = (rangeKm && rangeKm.value) ? parseFloat(rangeKm.value) : 100;
+      terrains = terrainsAll.filter(t => distanceKm(userPos, t) <= range);
+
+      const h = (slider && slider.value) ? parseInt(slider.value, 10) : 0;
+      if (hVal) hVal.innerText = h;
+
+      const f = (finesse && finesse.value) ? parseFloat(finesse.value) : 30;
+      const fbVal = (fb && fb.value) ? parseFloat(fb.value) : 10;
+      const seuilVal = (seuil && seuil.value) ? parseFloat(seuil.value) : 500;
+      const margeVal = (marge && marge.value) ? parseFloat(marge.value) : 250;
+      const vCruise = (vCruiseInput && vCruiseInput.value) ? parseFloat(vCruiseInput.value) : 100;
+      const modeVal = (mode && mode.value) ? mode.value : 'QFE';
+      const showLabels = (labels && labels.checked) ? true : false;
+      const allVal = (all && all.checked) ? true : false;
+      const useWind = (applyWind && applyWind.checked) ? true : false;
+
+      const ref = terrainsAll.find(t => refSelect && t.id === refSelect.value);
+      const refAlt = ref ? ref.alt : 0;
+
+      terrains.forEach(t => {
+        const hMin = allVal ? 0 : h;
+        const hMax = allVal ? 3000 : h;
+
+        for (let hh = hMin; hh <= hMax; hh += 100) {
+          let h_rel;
+          if (modeVal === "QFE") h_rel = hh;
+          else if (modeVal === "QNH") h_rel = hh - t.alt;
+          else h_rel = hh - (t.alt - refAlt);
+
+          if (h_rel <= 0) continue;
+          const finesseUse = (h_rel <= seuilVal) ? fbVal : f;
+          const h_util = h_rel - margeVal;
+          if (h_util <= 0) continue;
+
+          const d = h_util * finesseUse;
+
+          if (!useWind) {
+            const circle = L.circle([t.lat, t.lon], { radius: d, color: color(hh), weight: 2, fill: false }).addTo(map);
+            objs.push(circle);
+
+            if (showLabels) {
+              [0, 180].forEach(a => {
+                const rad = a * Math.PI / 180;
+                const latOff = (d / 111000) * Math.cos(rad);
+                const lonOff = (d / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(rad);
+                objs.push(L.marker([t.lat + latOff, t.lon + lonOff], {
+                  icon: L.divIcon({ className: 'label', html: hh + "m-F" + Math.round(finesseUse) + "-" + t.id })
+                }).addTo(map));
+              });
+            }
+          } else {
+            const polyPts = [];
+            const step = 6;
+            for (let a = 0; a < 360; a += step) {
+              const alphaRad = a * Math.PI / 180;
+
+              let layerIdx = Math.floor(hh / 500);
+              if (layerIdx > windLayers.length - 1) layerIdx = windLayers.length - 1;
+              const wind = getWindForLayer(layerIdx);
+              const W = wind.v;
+              const dir = wind.d;
+              const dirRad = (dir + 180) * Math.PI / 180;
+
+              const projWind = W * Math.cos(alphaRad - dirRad);
+
+              let denom = vCruise - projWind;
+              if (denom < 5) denom = 5;
+
+              const effDist = d * (vCruise / denom);
+
+              const latOff = (effDist / 111000) * Math.cos(alphaRad);
+              const lonOff = (effDist / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(alphaRad);
+
+              polyPts.push([t.lat + latOff, t.lon + lonOff]);
+            }
+
+            const poly = L.polygon(polyPts, { color: color(hh), weight: 2, fill: false }).addTo(map);
+            objs.push(poly);
+
+            if (showLabels) {
+              [0, 180].forEach(a => {
+                const rad = a * Math.PI / 180;
+                const latOff = (d / 111000) * Math.cos(rad);
+                const lonOff = (d / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(rad);
+                objs.push(L.marker([t.lat + latOff, t.lon + lonOff], {
+                  icon: L.divIcon({ className: 'label', html: hh + "m-F" + Math.round(finesseUse) + "-" + t.id })
+                }).addTo(map));
+              });
+            }
+          }
+        }
+        objs.push(L.marker([t.lat, t.lon]).addTo(map));
+      });
+    }
+
+    update();
+
+    map.on('click', function (e) {
+      const nom = prompt("Nom terrain ?");
+      if (!nom) return;
+      const altStr = prompt("Altitude m ?");
+      const alt = parseFloat(altStr);
+      if (isNaN(alt)) return;
+      terrainsAll.push({ id: nom, lat: e.latlng.lat, lon: e.latlng.lng, alt: alt });
+      populateRef();
+      update();
+    });
+
+    if (slider) slider.addEventListener('input', () => { if (hVal) hVal.innerText = slider.value; update(); });
+    if (btnRecalc) btnRecalc.addEventListener('click', (e) => { e.preventDefault(); update(); });
+    if (btnRecalcWind) btnRecalcWind.addEventListener('click', (e) => { e.preventDefault(); update(); });
+
+    [
+      finesse, fb, seuil, marge, vCruiseInput, mode, labels, all, rangeKm, refSelect, applyWind
+    ].forEach(el => {
+      if (!el) return;
+      el.addEventListener('change', update);
+    });
+
+    if (btnPanel) btnPanel.addEventListener('click', () => {
+      if (!panel) return;
+      panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none';
+    });
+    if (btnVent) btnVent.addEventListener('click', () => {
+      if (!menuVent) return;
+      menuVent.style.display = (menuVent.style.display === 'none' || menuVent.style.display === '') ? 'block' : 'none';
+    });
+
+    function makeDraggable(el) {
+      if (!el) return;
+      let dragging = false;
+      let offsetX = 0;
+      let offsetY = 0;
+
+      function isFormControl(target) {
+        if (!target) return false;
+        return !!target.closest('input, select, textarea, button, label, [role="slider"], .no-drag');
+      }
+
+      el.addEventListener('pointerdown', function (e) {
+        if (e.button && e.button !== 0) return;
+        if (isFormControl(e.target)) return;
+
+        dragging = true;
+        try { el.setPointerCapture(e.pointerId); } catch (err) {}
+        offsetX = e.clientX - el.offsetLeft;
+        offsetY = e.clientY - el.offsetTop;
+        el.style.cursor = 'grabbing';
+        e.preventDefault();
+      });
+
+      el.addEventListener('pointermove', function (e) {
+        if (!dragging) return;
+        let left = e.clientX - offsetX;
+        let top = e.clientY - offsetY;
+        left = Math.max(0, Math.min(window.innerWidth - el.offsetWidth, left));
+        top = Math.max(0, Math.min(window.innerHeight - el.offsetHeight, top));
+        el.style.left = left + 'px';
+        el.style.top = top + 'px';
+      });
+
+      el.addEventListener('pointerup', function (e) {
+        if (!dragging) return;
+        dragging = false;
+        try { el.releasePointerCapture(e.pointerId); } catch (err) {}
+        el.style.cursor = 'default';
+      });
+
+      el.addEventListener('pointercancel', function () {
+        dragging = false;
+        el.style.cursor = 'default';
+      });
+    }
+
+    makeDraggable(panel);
+    makeDraggable(menuVent);
+
+    windLayers.forEach(w => {
+      const s = document.getElementById(w.v);
+      const lbl = document.getElementById(w.v + '_label');
+      if (s && lbl) lbl.innerText = s.value + ' km/h';
+    });
+
+    window._glide_update = update;
+    window._glide_map = map;
+    window.terrainsAll = terrainsAll;
+  });
+  </script>
+
+  <!-- MODE VOL SCRIPT -->
+  <script>
+  document.addEventListener('DOMContentLoaded', function(){
     const btnVolMenu = document.getElementById("btnVolMenu");
     const volPanel = document.getElementById("volPanel");
     const btnCenterVol = document.getElementById("btnCenterVol");
 
     const volFinesse = document.getElementById("volFinesse");
     const volFinesseVal = document.getElementById("volFinesseVal");
-
     const volFinesseBasse = document.getElementById("volFinesseBasse");
     const volFinesseBasseVal = document.getElementById("volFinesseBasseVal");
-
     const volSeuil = document.getElementById("volSeuil");
     const volSeuilInput = document.getElementById("volSeuilInput");
-
     const volMarge = document.getElementById("volMarge");
-
     const volUseGPS = document.getElementById("volUseGPS");
     const volManualAltBlock = document.getElementById("volManualAltBlock");
     const volManualAlt = document.getElementById("volManualAlt");
     const volManualAltVal = document.getElementById("volManualAltVal");
-
     const volAltitudeDisplay = document.getElementById("volAltitudeDisplay");
     const volPorteeKm = document.getElementById("volPorteeKm");
 
-    /* ---------------------------------------------------------
-       VARIABLES MODE VOL
-    --------------------------------------------------------- */
     let volPlaneurPos = null;
-    let volAltitudeGPS = null;
     let volAltitudeFiltered = null;
     let volAutoCenter = true;
 
@@ -503,88 +893,63 @@
     let volPlaneurCircle = null;
     let volTerrainsLayer = null;
 
-    /* ---------------------------------------------------------
-       AFFICHAGE / MASQUAGE DU PANNEAU
-    --------------------------------------------------------- */
-    btnVolMenu.addEventListener("click", () => {
-      volPanel.style.display = (volPanel.style.display === "none" || volPanel.style.display === "") ? "block" : "none";
-    });
-
-    /* ---------------------------------------------------------
-       DRAGGABLE PANEL
-    --------------------------------------------------------- */
-    (function makeDraggable(el){
-      let dragging = false, offsetX = 0, offsetY = 0;
-
-      el.addEventListener("pointerdown", e => {
-        if (e.target.tagName === "INPUT") return;
-        dragging = true;
-        offsetX = e.clientX - el.offsetLeft;
-        offsetY = e.clientY - el.offsetTop;
-        el.setPointerCapture(e.pointerId);
-      });
-
-      el.addEventListener("pointermove", e => {
-        if (!dragging) return;
-        el.style.left = (e.clientX - offsetX) + "px";
-        el.style.top = (e.clientY - offsetY) + "px";
-      });
-
-      el.addEventListener("pointerup", e => {
-        dragging = false;
-        el.releasePointerCapture(e.pointerId);
-      });
-    })(volPanel);
-
-    /* ---------------------------------------------------------
-       SYNCHRO SLIDERS
-    --------------------------------------------------------- */
-    volFinesse.addEventListener("input", () => volFinesseVal.textContent = volFinesse.value);
-    volFinesseBasse.addEventListener("input", () => volFinesseBasseVal.textContent = volFinesseBasse.value);
-
-    volSeuil.addEventListener("input", () => {
-      volSeuilInput.value = volSeuil.value;
-    });
-    volSeuilInput.addEventListener("change", () => {
-      volSeuil.value = volSeuilInput.value;
-    });
-
-    volManualAlt.addEventListener("input", () => {
-      volManualAltVal.textContent = volManualAlt.value;
-    });
-
-    volUseGPS.addEventListener("change", () => {
-      volManualAltBlock.style.display = volUseGPS.checked ? "none" : "block";
-    });
-
-    /* ---------------------------------------------------------
-       INITIALISATION DES COUCHES MODE VOL
-    --------------------------------------------------------- */
     function volEnsureLayers(){
-      if (!volTerrainsLayer) volTerrainsLayer = L.layerGroup().addTo(window._glide_map);
+      const map = window._glide_map;
+      if (!map) return;
+      if (!volTerrainsLayer) volTerrainsLayer = L.layerGroup().addTo(map);
       if (!volPlaneurMarker) volPlaneurMarker = L.circleMarker([0,0], {
-        radius: 6, color:"#ff2e2e", fillColor:"#ff2e2e", fillOpacity:1
-      }).addTo(window._glide_map);
+        radius:6, color:"#ff2e2e", fillColor:"#ff2e2e", fillOpacity:1
+      }).addTo(map);
       if (!volPlaneurCircle) volPlaneurCircle = L.circle([0,0], {
-        radius: 0,
-        color: "rgba(31,111,235,0.95)",
-        weight: 3,
-        fillColor: "rgba(31,111,235,0.15)",
-        fillOpacity: 1
-      }).addTo(window._glide_map);
+        radius:0,
+        color:"rgba(31,111,235,0.95)",
+        weight:3,
+        fillColor:"rgba(31,111,235,0.15)",
+        fillOpacity:1
+      }).addTo(map);
     }
 
-    /* ---------------------------------------------------------
-       NETTOYAGE MODE VOL (quand on quitte volScreen)
-    --------------------------------------------------------- */
     function volClear(){
       if (volTerrainsLayer) volTerrainsLayer.clearLayers();
       if (volPlaneurCircle) volPlaneurCircle.setRadius(0);
     }
 
-    /* ---------------------------------------------------------
-       CALCUL PORTEE
-    --------------------------------------------------------- */
+    btnVolMenu.addEventListener("click", () => {
+      volPanel.style.display = (volPanel.style.display === "none" || volPanel.style.display === "") ? "block" : "none";
+    });
+
+    (function makeDraggableVol(el){
+      let dragging = false, offsetX = 0, offsetY = 0;
+      el.addEventListener("pointerdown", e => {
+        if (e.target.tagName === "INPUT" || e.target.tagName === "BUTTON") return;
+        dragging = true;
+        offsetX = e.clientX - el.offsetLeft;
+        offsetY = e.clientY - el.offsetTop;
+        el.setPointerCapture(e.pointerId);
+      });
+      el.addEventListener("pointermove", e => {
+        if (!dragging) return;
+        el.style.left = (e.clientX - offsetX) + "px";
+        el.style.top = (e.clientY - offsetY) + "px";
+      });
+      el.addEventListener("pointerup", e => {
+        dragging = false;
+        try { el.releasePointerCapture(e.pointerId); } catch(e){}
+      });
+    })(volPanel);
+
+    volFinesse.addEventListener("input", () => volFinesseVal.textContent = volFinesse.value);
+    volFinesseBasse.addEventListener("input", () => volFinesseBasseVal.textContent = volFinesseBasse.value);
+
+    volSeuil.addEventListener("input", () => { volSeuilInput.value = volSeuil.value; });
+    volSeuilInput.addEventListener("change", () => { volSeuil.value = volSeuilInput.value; });
+
+    volManualAlt.addEventListener("input", () => { volManualAltVal.textContent = volManualAlt.value; });
+
+    volUseGPS.addEventListener("change", () => {
+      volManualAltBlock.style.display = volUseGPS.checked ? "none" : "block";
+    });
+
     function volComputeRadius(alt){
       const f = parseFloat(volFinesse.value);
       const fb = parseFloat(volFinesseBasse.value);
@@ -594,17 +959,12 @@
       const finesseUse = (alt <= seuil) ? fb : f;
       const hUtil = alt - marge;
       if (hUtil <= 0) return 0;
-
       return hUtil * finesseUse;
     }
 
-    /* ---------------------------------------------------------
-       DESSIN DES CERCLES AUTOUR DES TERRAINS
-    --------------------------------------------------------- */
     function volDrawTerrains(altPlaneur){
-      if (!window.terrainsAll) return;
+      if (!window.terrainsAll || !volTerrainsLayer) return;
       volTerrainsLayer.clearLayers();
-
       window.terrainsAll.forEach(t => {
         const h_rel = altPlaneur - t.alt;
         if (h_rel <= 0) return;
@@ -619,26 +979,22 @@
         if (hUtil <= 0) return;
 
         const d = hUtil * finesseUse;
-
         const c = L.circle([t.lat, t.lon], {
-          radius: d,
-          color: "#1f6feb",
-          weight: 2,
-          fill: false
+          radius:d,
+          color:"#1f6feb",
+          weight:2,
+          fill:false
         });
         volTerrainsLayer.addLayer(c);
       });
     }
 
-    /* ---------------------------------------------------------
-       MISE À JOUR MODE VOL
-    --------------------------------------------------------- */
     function volUpdate(){
-      if (!volPlaneurPos) return;
+      const map = window._glide_map;
+      if (!map || !volPlaneurPos) return;
 
       volEnsureLayers();
 
-      // altitude utilisée
       let alt;
       if (volUseGPS.checked && volAltitudeFiltered != null) {
         alt = volAltitudeFiltered;
@@ -648,71 +1004,53 @@
 
       volAltitudeDisplay.textContent = Math.round(alt) + " m";
 
-      // portée
       const radius = volComputeRadius(alt);
       volPorteeKm.textContent = (radius/1000).toFixed(2) + " km";
 
-      // maj marker + cercle
       volPlaneurMarker.setLatLng([volPlaneurPos.lat, volPlaneurPos.lon]);
       volPlaneurCircle.setLatLng([volPlaneurPos.lat, volPlaneurPos.lon]);
       volPlaneurCircle.setRadius(radius);
 
-      // cercles terrains
       volDrawTerrains(alt);
 
-      // auto center
       if (volAutoCenter) {
-        window._glide_map.panTo([volPlaneurPos.lat, volPlaneurPos.lon], {animate:true});
+        map.panTo([volPlaneurPos.lat, volPlaneurPos.lon], {animate:true});
       }
     }
 
-    /* ---------------------------------------------------------
-       GPS
-    --------------------------------------------------------- */
     if (navigator.geolocation){
       navigator.geolocation.watchPosition(pos => {
         volPlaneurPos = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-
         if (typeof pos.coords.altitude === "number") {
           if (volAltitudeFiltered == null) volAltitudeFiltered = pos.coords.altitude;
-          else volAltitudeFiltered = volAltitudeFiltered * 0.7 + pos.coords.altitude * 0.3;
+          else volAltitudeFiltered = volAltitudeFiltered*0.7 + pos.coords.altitude*0.3;
         }
-
         volUpdate();
       }, err => {
         console.warn("GPS error", err);
       }, { enableHighAccuracy:true, maximumAge:1000, timeout:5000 });
     }
 
-    /* ---------------------------------------------------------
-       RECENTRAGE MANUEL
-    --------------------------------------------------------- */
     btnCenterVol.addEventListener("click", () => {
       volAutoCenter = true;
-      if (volPlaneurPos) window._glide_map.panTo([volPlaneurPos.lat, volPlaneurPos.lon], {animate:true});
+      if (volPlaneurPos && window._glide_map) {
+        window._glide_map.panTo([volPlaneurPos.lat, volPlaneurPos.lon], {animate:true});
+      }
     });
 
-    window._glide_map.on("dragstart", () => {
-      volAutoCenter = false;
-    });
+    if (window._glide_map) {
+      window._glide_map.on("dragstart", () => { volAutoCenter = false; });
+    }
 
-    /* ---------------------------------------------------------
-       INTÉGRATION AVEC goTo()
-    --------------------------------------------------------- */
     const screens = document.querySelectorAll(".screen");
     const obs = new MutationObserver(() => {
       const volVisible = document.getElementById("volScreen").getAttribute("aria-hidden") === "false";
-      const homeVisible = document.getElementById("homeScreen").getAttribute("aria-hidden") === "false";
-
       btnVolMenu.style.display = volVisible ? "flex" : "none";
       btnCenterVol.style.display = volVisible ? "block" : "none";
       volPanel.style.display = volVisible ? "block" : "none";
-
       if (!volVisible) volClear();
     });
-
     screens.forEach(s => obs.observe(s, {attributes:true, attributeFilter:["aria-hidden"]}));
-
   });
   </script>
 
