@@ -1,101 +1,4 @@
-    /* Robust helpers to enable/disable Leaflet interactions */
-    function enableMapInteractions(map) {
-      try {
-        if (!map) return;
-        if (map.dragging && map.dragging.enable) map.dragging.enable();
-        if (map.scrollWheelZoom && map.scrollWheelZoom.enable) map.scrollWheelZoom.enable();
-        if (map.touchZoom && map.touchZoom.enable) map.touchZoom.enable();
-        if (map.doubleClickZoom && map.doubleClickZoom.enable) map.doubleClickZoom.enable();
-        if (map.boxZoom && map.boxZoom.enable) map.boxZoom.enable();
-        if (map.keyboard && map.keyboard.enable) map.keyboard.enable();
-        if (map.tap && map.tap.enable) map.tap.enable();
-        const el = map.getContainer ? map.getContainer() : document.getElementById('map');
-        if (el) {
-          el.style.pointerEvents = 'auto';
-          el.style.touchAction = 'pan-x pan-y pinch-zoom';
-        }
-      } catch (e) { console.warn('enableMapInteractions', e); }
-    }
-
-    function disableMapInteractions(map) {
-      try {
-        if (!map) return;
-        if (map.dragging && map.dragging.disable) map.dragging.disable();
-        if (map.scrollWheelZoom && map.scrollWheelZoom.disable) map.scrollWheelZoom.disable();
-        if (map.touchZoom && map.touchZoom.disable) map.touchZoom.disable();
-        if (map.doubleClickZoom && map.doubleClickZoom.disable) map.doubleClickZoom.disable();
-        if (map.boxZoom && map.boxZoom.disable) map.boxZoom.disable();
-        if (map.keyboard && map.keyboard.disable) map.keyboard.disable();
-        if (map.tap && map.tap.disable) map.tap.disable();
-        const el = map.getContainer ? map.getContainer() : document.getElementById('map');
-        if (el) {
-          el.style.pointerEvents = 'none';
-          el.style.touchAction = 'none';
-        }
-      } catch (e) { console.warn('disableMapInteractions', e); }
-    }
-
-    /* goTo: manage screens, aria-hidden, blur, and map positioning */
-    function goTo(screenId){
-      const screens = ['homeScreen','prepScreen','volScreen','manuelScreen'];
-      const mapEl = document.getElementById('map');
-
-      screens.forEach(id => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        if (id === screenId) {
-          el.style.display = (id === 'homeScreen') ? 'flex' : 'block';
-          el.removeAttribute('aria-hidden');
-        } else {
-          el.style.display = 'none';
-          el.setAttribute('aria-hidden','true');
-        }
-      });
-
-      if (!mapEl) return;
-
-      if (screenId === 'prepScreen' || screenId === 'volScreen') {
-        // Prep/Vol: map must be interactive and receive pointer events.
-        mapEl.classList.remove('map-blurred');
-        mapEl.classList.add('map-absolute'); // avoid fixed-layer capture issues on some devices
-        // Ensure the prepScreen itself does not capture pointer events (so clicks fall through to map),
-        // but keep interactive children (panels, buttons) clickable (they already have pointer-events:auto).
-        const prep = document.getElementById('prepScreen');
-        if (prep) prep.style.pointerEvents = 'none';
-        enableMapInteractions(window._glide_map);
-        setTimeout(()=> window._glide_map.invalidateSize(), 120);
-      } else {
-        // Home/Manuel: map blurred and non-interactive; screens should block interactions.
-        mapEl.classList.add('map-blurred');
-        mapEl.classList.remove('map-absolute');
-        const prep = document.getElementById('prepScreen');
-        if (prep) prep.style.pointerEvents = 'auto'; // not necessary but safe
-        disableMapInteractions(window._glide_map);
-      }
-    }
-
-    /* Attach navigation listeners */
-    document.addEventListener('DOMContentLoaded', function(){
-      const btnGoPrep = document.getElementById('btnGoPrep');
-      const btnGoVol = document.getElementById('btnGoVol');
-      const btnGoManuel = document.getElementById('btnGoManuel');
-      const backFromPrep = document.getElementById('backFromPrep');
-      const backFromVol = document.getElementById('backFromVol');
-      const backFromManuel = document.getElementById('backFromManuel');
-
-      if(btnGoPrep) btnGoPrep.addEventListener('click', (e) => { e.preventDefault(); goTo('prepScreen'); });
-      if(btnGoVol) btnGoVol.addEventListener('click', (e) => { e.preventDefault(); goTo('volScreen'); });
-      if(btnGoManuel) btnGoManuel.addEventListener('click', (e) => { e.preventDefault(); goTo('manuelScreen'); });
-
-      if(backFromPrep) backFromPrep.addEventListener('click', (e) => { e.preventDefault(); goTo('homeScreen'); });
-      if(backFromVol) backFromVol.addEventListener('click', (e) => { e.preventDefault(); goTo('homeScreen'); });
-      if(backFromManuel) backFromManuel.addEventListener('click', (e) => { e.preventDefault(); goTo('homeScreen'); });
-
-      // show home by default
-      goTo('homeScreen');
-    });
-
-<!-- Main app script (map, controls, calculations) -->
+  <!-- Main app script (map, controls, calculations) -->
   document.addEventListener('DOMContentLoaded', function () {
     // DOM elements
     const panel = document.getElementById('panel');
@@ -430,4 +333,101 @@ fetch("terrains.json")
     window._glide_update = update;
     window._glide_map = map;
   });
+
+  /* Robust helpers to enable/disable Leaflet interactions */
+    function enableMapInteractions(map) {
+      try {
+        if (!map) return;
+        if (map.dragging && map.dragging.enable) map.dragging.enable();
+        if (map.scrollWheelZoom && map.scrollWheelZoom.enable) map.scrollWheelZoom.enable();
+        if (map.touchZoom && map.touchZoom.enable) map.touchZoom.enable();
+        if (map.doubleClickZoom && map.doubleClickZoom.enable) map.doubleClickZoom.enable();
+        if (map.boxZoom && map.boxZoom.enable) map.boxZoom.enable();
+        if (map.keyboard && map.keyboard.enable) map.keyboard.enable();
+        if (map.tap && map.tap.enable) map.tap.enable();
+        const el = map.getContainer ? map.getContainer() : document.getElementById('map');
+        if (el) {
+          el.style.pointerEvents = 'auto';
+          el.style.touchAction = 'pan-x pan-y pinch-zoom';
+        }
+      } catch (e) { console.warn('enableMapInteractions', e); }
+    }
+
+    function disableMapInteractions(map) {
+      try {
+        if (!map) return;
+        if (map.dragging && map.dragging.disable) map.dragging.disable();
+        if (map.scrollWheelZoom && map.scrollWheelZoom.disable) map.scrollWheelZoom.disable();
+        if (map.touchZoom && map.touchZoom.disable) map.touchZoom.disable();
+        if (map.doubleClickZoom && map.doubleClickZoom.disable) map.doubleClickZoom.disable();
+        if (map.boxZoom && map.boxZoom.disable) map.boxZoom.disable();
+        if (map.keyboard && map.keyboard.disable) map.keyboard.disable();
+        if (map.tap && map.tap.disable) map.tap.disable();
+        const el = map.getContainer ? map.getContainer() : document.getElementById('map');
+        if (el) {
+          el.style.pointerEvents = 'none';
+          el.style.touchAction = 'none';
+        }
+      } catch (e) { console.warn('disableMapInteractions', e); }
+    }
+
+    /* goTo: manage screens, aria-hidden, blur, and map positioning */
+    function goTo(screenId){
+      const screens = ['homeScreen','prepScreen','volScreen','manuelScreen'];
+      const mapEl = document.getElementById('map');
+
+      screens.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (id === screenId) {
+          el.style.display = (id === 'homeScreen') ? 'flex' : 'block';
+          el.removeAttribute('aria-hidden');
+        } else {
+          el.style.display = 'none';
+          el.setAttribute('aria-hidden','true');
+        }
+      });
+
+      if (!mapEl) return;
+
+      if (screenId === 'prepScreen' || screenId === 'volScreen') {
+        // Prep/Vol: map must be interactive and receive pointer events.
+        mapEl.classList.remove('map-blurred');
+        mapEl.classList.add('map-absolute'); // avoid fixed-layer capture issues on some devices
+        // Ensure the prepScreen itself does not capture pointer events (so clicks fall through to map),
+        // but keep interactive children (panels, buttons) clickable (they already have pointer-events:auto).
+        const prep = document.getElementById('prepScreen');
+        if (prep) prep.style.pointerEvents = 'none';
+        enableMapInteractions(window._glide_map);
+        setTimeout(()=> window._glide_map.invalidateSize(), 120);
+      } else {
+        // Home/Manuel: map blurred and non-interactive; screens should block interactions.
+        mapEl.classList.add('map-blurred');
+        mapEl.classList.remove('map-absolute');
+        const prep = document.getElementById('prepScreen');
+        if (prep) prep.style.pointerEvents = 'auto'; // not necessary but safe
+        disableMapInteractions(window._glide_map);
+      }
+    }
+
+    /* Attach navigation listeners */
+    document.addEventListener('DOMContentLoaded', function(){
+      const btnGoPrep = document.getElementById('btnGoPrep');
+      const btnGoVol = document.getElementById('btnGoVol');
+      const btnGoManuel = document.getElementById('btnGoManuel');
+      const backFromPrep = document.getElementById('backFromPrep');
+      const backFromVol = document.getElementById('backFromVol');
+      const backFromManuel = document.getElementById('backFromManuel');
+
+      if(btnGoPrep) btnGoPrep.addEventListener('click', (e) => { e.preventDefault(); goTo('prepScreen'); });
+      if(btnGoVol) btnGoVol.addEventListener('click', (e) => { e.preventDefault(); goTo('volScreen'); });
+      if(btnGoManuel) btnGoManuel.addEventListener('click', (e) => { e.preventDefault(); goTo('manuelScreen'); });
+
+      if(backFromPrep) backFromPrep.addEventListener('click', (e) => { e.preventDefault(); goTo('homeScreen'); });
+      if(backFromVol) backFromVol.addEventListener('click', (e) => { e.preventDefault(); goTo('homeScreen'); });
+      if(backFromManuel) backFromManuel.addEventListener('click', (e) => { e.preventDefault(); goTo('homeScreen'); });
+
+      // show home by default
+      goTo('homeScreen');
+    });
 
