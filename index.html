@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
-  <title>Glide Planner V1.0 </title>
+  <title>Glide Planner v1.2 </title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -216,7 +216,7 @@
     <button id="btnVent" class="toggleBtn second" title="Vent">🌬</button>
 
     <div id="panel" class="panel" style="left:12px; top:72px; display:none;">
-      <h4>Glide Planner V1.0</h4>
+      <h4>Glide Planner v1.2</h4>
 
       <div class="field">Finesse: <input id="finesse" type="number" value="30"></div>
       <div class="field">Finesse basse: <input id="fb" type="number" value="10"></div>
@@ -268,6 +268,26 @@
     <h2 style="margin-top:60px; text-align:center;">Mode Vol</h2>
     <p style="text-align:center; max-width:900px; margin:12px auto; color:#333;">Mode Vol : carte interactive, affichage simplifié pour cockpit.</p>
   </div>
+
+<!-- ===== MODE VOL (INSERER ICI) ===== -->
+<style>
+  /* (CSS identique à celui fourni précédemment) */
+  /* ...colle ici le CSS complet du Mode Vol tel que je te l'ai donné... */
+</style>
+
+<div id="volPanel" role="region" aria-label="Mode vol">
+  <!-- (HTML du panneau : checkbox GPS, sliders, valeurs, bouton Masquer) -->
+  <!-- ...colle ici le HTML complet du Mode Vol tel que je te l'ai donné... -->
+</div>
+
+<button id="btnCenter" aria-label="Centrer sur le planeur" aria-pressed="true">📍</button>
+<div id="mapRangeBadge" aria-hidden="true">— km</div>
+
+<script>
+  /* (JS complet du Mode Vol) */
+  /* ...colle ici le script complet du Mode Vol tel que je te l'ai donné... */
+</script>
+<!-- ===== FIN MODE VOL ===== -->
 
   <!-- MANUEL -->
   <div id="manuelScreen" class="screen" aria-hidden="true">
@@ -541,81 +561,106 @@
       const ref = terrainsAll.find(t => refSelect && t.id === refSelect.value);
       const refAlt = ref ? ref.alt : 0;
 
-      terrains.forEach(t => {
-        const hMin = allVal ? 0 : h;
-        const hMax = allVal ? 3000 : h;
-
-        for (let hh = hMin; hh <= hMax; hh += 100) {
-          let h_rel;
-          if (modeVal === "QFE") h_rel = hh;
-          else if (modeVal === "QNH") h_rel = hh - t.alt;
-          else h_rel = hh - (t.alt - refAlt);
-
-          if (h_rel <= 0) continue;
-          const finesseUse = (h_rel <= seuilVal) ? fbVal : f;
-          const h_util = h_rel - margeVal;
-          if (h_util <= 0) continue;
-
-          const d = h_util * finesseUse; // portée sans vent (m)
-
-          if (!useWind) {
-            const circle = L.circle([t.lat, t.lon], { radius: d, color: color(hh), weight: 2, fill: false }).addTo(map);
-            objs.push(circle);
-
-            if (showLabels) {
-              [0, 180].forEach(a => {
-                const rad = a * Math.PI / 180;
-                const latOff = (d / 111000) * Math.cos(rad);
-                const lonOff = (d / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(rad);
-                objs.push(L.marker([t.lat + latOff, t.lon + lonOff], {
-                  icon: L.divIcon({ className: 'label', html: hh + "m-F" + Math.round(finesseUse) + "-" + t.id })
-                }).addTo(map));
-              });
-            }
-          } else {
-            const polyPts = [];
-            const step = 6;
-            for (let a = 0; a < 360; a += step) {
-              const alphaRad = a * Math.PI / 180;
-
-              let layerIdx = Math.floor(hh / 500);
-              if (layerIdx > windLayers.length - 1) layerIdx = windLayers.length - 1;
-              const wind = getWindForLayer(layerIdx);
-              const W = wind.v;
-              const dir = wind.d;
-              const dirRad = (dir + 180) * Math.PI / 180;
-
-              const projWind = W * Math.cos(alphaRad - dirRad);
-
-              let denom = vCruise - projWind;
-              if (denom < 5) denom = 5;
-
-              const effDist = d * (vCruise / denom);
-
-              const latOff = (effDist / 111000) * Math.cos(alphaRad);
-              const lonOff = (effDist / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(alphaRad);
-
-              polyPts.push([t.lat + latOff, t.lon + lonOff]);
-            }
-
-            const poly = L.polygon(polyPts, { color: color(hh), weight: 2, fill: false }).addTo(map);
-            objs.push(poly);
-
-            if (showLabels) {
-              [0, 180].forEach(a => {
-                const rad = a * Math.PI / 180;
-                const latOff = (d / 111000) * Math.cos(rad);
-                const lonOff = (d / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(rad);
-                objs.push(L.marker([t.lat + latOff, t.lon + lonOff], {
-                  icon: L.divIcon({ className: 'label', html: hh + "m-F" + Math.round(finesseUse) + "-" + t.id })
-                }).addTo(map));
-              });
-            }
-          }
-        }
-        objs.push(L.marker([t.lat, t.lon]).addTo(map));
-      });
+// --- Remplacer la boucle terrains.forEach(...) par ce bloc ---
+(function(){
+  // lire altitude planeur si disponible via window._volMode
+  let planeAlt = null;
+  try {
+    if (window._volMode && typeof window._volMode.getState === 'function') {
+      const s = window._volMode.getState();
+      if (s && typeof s.altitudeFiltered === 'number' && !isNaN(s.altitudeFiltered)) {
+        planeAlt = s.altitudeFiltered;
+      } else if (s && typeof s.altitudeGPS === 'number' && !isNaN(s.altitudeGPS)) {
+        planeAlt = s.altitudeGPS;
+      }
     }
+  } catch (e) {
+    console.warn('Impossible de lire altitude depuis _volMode', e);
+    planeAlt = null;
+  }
+
+  function roundToHundred(x) {
+    if (typeof x !== 'number' || isNaN(x)) return null;
+    return Math.round(x / 100) * 100;
+  }
+  const altFromPlaneur = roundToHundred(planeAlt);
+
+  terrains.forEach(t => {
+    const hMin = allVal ? 0 : h;
+    const hMax = allVal ? 3000 : h;
+
+    for (let hh = hMin; hh <= hMax; hh += 100) {
+      let altitudeEffective;
+      if (altFromPlaneur !== null) {
+        if (modeVal === "QFE") altitudeEffective = altFromPlaneur;
+        else if (modeVal === "QNH") altitudeEffective = altFromPlaneur - t.alt;
+        else altitudeEffective = altFromPlaneur - (t.alt - refAlt);
+      } else {
+        if (modeVal === "QFE") altitudeEffective = hh;
+        else if (modeVal === "QNH") altitudeEffective = hh - t.alt;
+        else altitudeEffective = hh - (t.alt - refAlt);
+      }
+
+      if (altitudeEffective <= 0) continue;
+
+      const finesseUse = (altitudeEffective <= seuilVal) ? fbVal : f;
+      const h_util = altitudeEffective - margeVal;
+      if (h_util <= 0) continue;
+
+      const d = h_util * finesseUse; // portée en mètres
+
+      if (!useWind) {
+        const circle = L.circle([t.lat, t.lon], { radius: d, color: color(hh), weight: 2, fill: false }).addTo(map);
+        objs.push(circle);
+
+        if (showLabels) {
+          [0, 180].forEach(a => {
+            const rad = a * Math.PI / 180;
+            const latOff = (d / 111000) * Math.cos(rad);
+            const lonOff = (d / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(rad);
+            objs.push(L.marker([t.lat + latOff, t.lon + lonOff], {
+              icon: L.divIcon({ className: 'label', html: hh + "m-F" + Math.round(finesseUse) + "-" + t.id })
+            }).addTo(map));
+          });
+        }
+      } else {
+        const polyPts = [];
+        const step = 6;
+        for (let a = 0; a < 360; a += step) {
+          const alphaRad = a * Math.PI / 180;
+          let layerIdx = Math.floor(hh / 500);
+          if (layerIdx > windLayers.length - 1) layerIdx = windLayers.length - 1;
+          const wind = getWindForLayer(layerIdx);
+          const W = wind.v;
+          const dir = wind.d;
+          const dirRad = (dir + 180) * Math.PI / 180;
+          const projWind = W * Math.cos(alphaRad - dirRad);
+          let denom = vCruise - projWind;
+          if (denom < 5) denom = 5;
+          const effDist = d * (vCruise / denom);
+          const latOff = (effDist / 111000) * Math.cos(alphaRad);
+          const lonOff = (effDist / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(alphaRad);
+          polyPts.push([t.lat + latOff, t.lon + lonOff]);
+        }
+        const poly = L.polygon(polyPts, { color: color(hh), weight: 2, fill: false }).addTo(map);
+        objs.push(poly);
+
+        if (showLabels) {
+          [0, 180].forEach(a => {
+            const rad = a * Math.PI / 180;
+            const latOff = (d / 111000) * Math.cos(rad);
+            const lonOff = (d / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(rad);
+            objs.push(L.marker([t.lat + latOff, t.lon + lonOff], {
+              icon: L.divIcon({ className: 'label', html: hh + "m-F" + Math.round(finesseUse) + "-" + t.id })
+            }).addTo(map));
+          });
+        }
+      }
+    }
+
+    objs.push(L.marker([t.lat, t.lon]).addTo(map));
+  });
+})();
 
     // initial update
     update();
