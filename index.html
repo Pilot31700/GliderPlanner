@@ -269,12 +269,25 @@
     <p style="text-align:center; max-width:900px; margin:12px auto; color:#333;">Mode Vol : carte interactive, affichage simplifié pour cockpit.</p>
   </div>
 
-<!-- ===== MODE VOL (intégration) ===== -->
+<!-- ===== MODE VOL : version complète et autonome =====
+     - À coller dans <body> de ton index.html, après la map et les écrans.
+     - Dépendances : Leaflet déjà chargé et map exposée sur window._glide_map.
+     - Fonctionnalités :
+       * panneau masquable / persisté
+       * sliders avec valeurs numériques visibles
+       * GPS O/N (préférence persistée)
+       * altitude manuelle si GPS indisponible
+       * portée affichée sur la carte (badge bas-centre)
+       * cercle autour du planeur inchangé (précis)
+       * expose window._volMode.getState() pour lecture externe
+       * arrondi altitude à la centaine la plus proche pour calcul des cercles terrains
+       * n'affiche pas le panneau sur homeScreen (contrôlé par aria-hidden)
+-->
 <style>
-  /* Panel vol (visible uniquement en mode vol) */
+  /* Panel vol */
   #volPanel {
     position: absolute;
-    bottom: 20px;
+    bottom: 84px;
     left: 50%;
     transform: translateX(-50%);
     width: 360px;
@@ -282,20 +295,25 @@
     padding: 12px;
     border-radius: 12px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.22);
-    z-index: 4000;
+    z-index: 4200;
     pointer-events: auto;
     font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
     color: #111;
-    display: none; /* controlled by JS depending on active screen */
+    display: none;
   }
-  #volPanel h4 { margin: 0 0 8px 0; font-size: 15px; }
-  .volRow { font-size: 13px; margin-bottom: 8px; }
-  .volRow label { display:block; font-weight:700; font-size:12px; color:#333; margin-bottom:6px; }
+  #volPanel h4 { margin: 0 0 8px 0; font-size: 15px; display:flex; align-items:center; justify-content:space-between; }
+  #volToggleBtn { background:transparent; border:none; cursor:pointer; font-size:14px; color:#1f6feb; }
+  .volRow { font-size: 13px; margin-bottom: 8px; display:flex; align-items:center; gap:8px; }
+  .volRow label { flex:1; font-weight:700; font-size:12px; color:#333; }
+  .volControl { flex:2; }
+  .volValue { width:56px; text-align:right; font-weight:700; color:#1f6feb; font-size:13px; }
+
+  /* center button */
   #btnCenter {
     position: absolute;
     bottom: 20px;
     right: 20px;
-    z-index: 4000;
+    z-index: 4200;
     width: 52px;
     height: 52px;
     border-radius: 50%;
@@ -307,46 +325,80 @@
     cursor: pointer;
     pointer-events: auto;
   }
+
+  /* manual altitude container */
   #manualAltContainer { display:none; margin-top:8px; padding:8px; background:rgba(0,0,0,0.03); border-radius:8px; }
   #manualAlt { width:100%; }
   #altSource { font-size:12px; color:#666; margin-top:6px; }
-  .rangeIndicator { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:6px; }
-  .rangeValue { font-weight:800; font-size:18px; color:#1f6feb; }
+
+  /* portée sur la carte (bas-centre) */
+  #mapRangeBadge {
+    position: absolute;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 4100;
+    background: rgba(0,0,0,0.6);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-weight:700;
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+    pointer-events: none;
+    display: none;
+  }
+
   @media (max-width:720px){
-    #volPanel { width:92%; left:4%; transform:none; }
+    #volPanel { width:92%; left:4%; transform:none; bottom:100px; }
     #btnCenter { right:12px; bottom:12px; width:48px; height:48px; }
   }
 </style>
 
+<!-- Panel Mode Vol -->
 <div id="volPanel" role="region" aria-label="Mode vol">
-  <h4>Mode Vol</h4>
+  <h4>
+    Mode Vol
+    <button id="volToggleBtn" aria-pressed="false" title="Masquer/afficher le panneau">Masquer</button>
+  </h4>
 
   <div class="volRow">
     <label><input type="checkbox" id="useGPSVol"> Utiliser GPS pour l'altitude</label>
+    <div class="volValue" id="useGPSLabel"></div>
   </div>
 
   <div class="volRow">
     <label for="finesseVol">Finesse haute</label>
-    <input type="range" id="finesseVol" min="10" max="60" value="30">
+    <div class="volControl">
+      <input type="range" id="finesseVol" min="10" max="60" value="30">
+    </div>
+    <div class="volValue" id="finesseVal">30</div>
   </div>
 
   <div class="volRow">
     <label for="fbVol">Finesse basse</label>
-    <input type="range" id="fbVol" min="5" max="30" value="10">
+    <div class="volControl">
+      <input type="range" id="fbVol" min="5" max="30" value="10">
+    </div>
+    <div class="volValue" id="fbVal">10</div>
   </div>
 
   <div class="volRow">
     <label for="seuilVol">Seuil (m)</label>
-    <input type="range" id="seuilVol" min="0" max="2000" value="500">
-    <input type="number" id="seuilInput" value="500" style="width:90px; margin-top:6px;">
+    <div class="volControl">
+      <input type="range" id="seuilVol" min="0" max="2000" value="500">
+    </div>
+    <div class="volValue"><input id="seuilInput" type="number" value="500" style="width:56px;text-align:right;"></div>
   </div>
 
   <div class="volRow">
     <label for="margeVol">Marge (m)</label>
-    <input type="number" id="margeVol" value="250" style="width:90px;">
+    <div class="volControl">
+      <input type="number" id="margeVol" value="250" style="width:100%;">
+    </div>
+    <div class="volValue" id="margeVal">250</div>
   </div>
 
-  <div class="volRow">
+  <div class="volRow" style="flex-direction:column; align-items:flex-start;">
     <div>Altitude utilisée : <strong><span id="altDisplay">—</span> m</strong></div>
     <div id="altSource" aria-live="polite">Source : —</div>
   </div>
@@ -360,22 +412,24 @@
     </div>
   </div>
 
-  <div class="volRow rangeIndicator" style="margin-top:10px;">
-    <div>
-      <div style="font-size:12px;color:#666;">Portée estimée</div>
-      <div class="rangeValue" id="porteeKm">—</div>
-    </div>
+  <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
+    <div style="font-size:12px;color:#666;">Portée estimée</div>
     <div style="text-align:right;">
-      <div class="rangeUnit">km</div>
-      <div style="font-size:11px;color:#666;margin-top:6px;">(projection sol)</div>
+      <div style="font-weight:800; font-size:18px; color:#1f6feb;" id="porteeKm">—</div>
+      <div style="font-size:11px;color:#666;">km (projection sol)</div>
     </div>
   </div>
 </div>
 
 <button id="btnCenter" aria-label="Centrer sur le planeur" aria-pressed="true">📍</button>
 
+<!-- badge portée sur la carte -->
+<div id="mapRangeBadge" aria-hidden="true">— km</div>
+
 <script>
+/* Mode Vol complet : autonome, optimisé, expose window._volMode.getState() */
 (function(){
+  // Wait for map to be available
   function whenMapReady(cb) {
     if (window._glide_map) return cb(window._glide_map);
     let tries = 0;
@@ -392,51 +446,81 @@
   }
 
   whenMapReady(function(map){
+    // DOM refs
     const volPanel = document.getElementById('volPanel');
+    const volToggleBtn = document.getElementById('volToggleBtn');
     const btnCenter = document.getElementById('btnCenter');
+    const mapRangeBadge = document.getElementById('mapRangeBadge');
+
     const useGPSVol = document.getElementById('useGPSVol');
+    const useGPSLabel = document.getElementById('useGPSLabel');
+
     const finesseVol = document.getElementById('finesseVol');
     const fbVol = document.getElementById('fbVol');
+    const finesseVal = document.getElementById('finesseVal');
+    const fbVal = document.getElementById('fbVal');
+
     const seuilVol = document.getElementById('seuilVol');
     const seuilInput = document.getElementById('seuilInput');
+
     const margeVol = document.getElementById('margeVol');
+    const margeVal = document.getElementById('margeVal');
+
     const altDisplay = document.getElementById('altDisplay');
     const altSource = document.getElementById('altSource');
+
     const manualAltContainer = document.getElementById('manualAltContainer');
     const manualAlt = document.getElementById('manualAlt');
     const manualAltVal = document.getElementById('manualAltVal');
-    const porteeKmEl = document.getElementById('porteeKm');
+
+    const porteeKmPanel = document.getElementById('porteeKm');
 
     const USE_GPS_KEY = 'glide:vol:useGPS';
+    const PANEL_HIDDEN_KEY = 'glide:vol:panelHidden';
 
+    // state
     let autoCenter = true;
     let planeurPos = null;
     let altitudeGPS = null;
     let altitudeFiltered = null;
     let useGPS = true;
+    let panelHidden = false;
 
-    let cercleVol = null;
+    // layers
+    let cercleVol = null;       // precise planeur circle (unchanged)
     let markerPlaneur = null;
 
+    // Throttle / center params
     let pendingUpdate = false;
     const UPDATE_MIN_MS = 180;
     const CENTER_MIN_DISTANCE_M = 8;
     let lastCenterTime = 0;
     let lastPos = null;
 
+    // restore prefs
     try {
       const s = localStorage.getItem(USE_GPS_KEY);
       if (s !== null) useGPS = s === 'true';
-    } catch (e) {}
-    useGPSVol.checked = useGPS;
+      const ph = localStorage.getItem(PANEL_HIDDEN_KEY);
+      if (ph !== null) panelHidden = ph === 'true';
+    } catch(e){}
 
+    useGPSVol.checked = useGPS;
+    volToggleBtn.setAttribute('aria-pressed', String(panelHidden));
+    volToggleBtn.textContent = panelHidden ? 'Afficher' : 'Masquer';
+    if (panelHidden) { volPanel.style.display = 'none'; }
+
+    // Panel visibility: show only when volScreen active and not on home
     function updatePanelVisibility() {
       const volScreen = document.getElementById('volScreen');
       const homeScreen = document.getElementById('homeScreen');
       const isVolActive = volScreen && volScreen.getAttribute('aria-hidden') !== 'true';
       const isHomeActive = homeScreen && homeScreen.getAttribute('aria-hidden') !== 'true';
-      volPanel.style.display = (isVolActive && !isHomeActive) ? 'block' : 'none';
+      const shouldShow = isVolActive && !isHomeActive && !panelHidden;
+      volPanel.style.display = shouldShow ? 'block' : 'none';
       btnCenter.style.display = isHomeActive ? 'none' : 'block';
+      // badge visible when planeurPos known
+      mapRangeBadge.style.display = planeurPos ? 'block' : 'none';
     }
 
     const screens = document.querySelectorAll('.screen');
@@ -444,24 +528,69 @@
     screens.forEach(s => obs.observe(s, { attributes: true, attributeFilter: ['aria-hidden'] }));
     updatePanelVisibility();
 
-    function haversineMeters(a,b){
-      const R = 6371000;
-      const toRad = Math.PI/180;
-      const dLat = (b.lat - a.lat) * toRad;
-      const dLon = (b.lon - a.lon) * toRad;
-      const lat1 = a.lat * toRad;
-      const lat2 = b.lat * toRad;
-      const x = Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;
-      return 2 * R * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
+    // slider numeric labels
+    function updateSliderLabels() {
+      finesseVal.textContent = finesseVol.value;
+      fbVal.textContent = fbVol.value;
+      margeVal.textContent = margeVol.value;
+      seuilInput.value = seuilVol.value;
+    }
+    updateSliderLabels();
+
+    // sync seuil input
+    seuilVol.oninput = () => { seuilInput.value = seuilVol.value; scheduleUpdate(); updateSliderLabels(); };
+    seuilInput.onchange = () => { seuilVol.value = seuilInput.value; scheduleUpdate(); updateSliderLabels(); };
+
+    // other sliders
+    finesseVol.addEventListener('input', () => { updateSliderLabels(); scheduleUpdate(); });
+    fbVol.addEventListener('input', () => { updateSliderLabels(); scheduleUpdate(); });
+    margeVol.addEventListener('input', () => { updateSliderLabels(); scheduleUpdate(); });
+
+    manualAlt.addEventListener('input', () => { manualAltVal.innerText = manualAlt.value + ' m'; scheduleUpdate(); });
+
+    // toggle panel hide/show
+    volToggleBtn.addEventListener('click', () => {
+      panelHidden = !panelHidden;
+      volToggleBtn.setAttribute('aria-pressed', String(panelHidden));
+      volToggleBtn.textContent = panelHidden ? 'Afficher' : 'Masquer';
+      try { localStorage.setItem(PANEL_HIDDEN_KEY, String(panelHidden)); } catch(e){}
+      updatePanelVisibility();
+    });
+
+    // center button
+    btnCenter.addEventListener('click', () => {
+      autoCenter = true;
+      btnCenter.setAttribute('aria-pressed','true');
+      if (planeurPos) map.panTo([planeurPos.lat, planeurPos.lon], { animate: true });
+    });
+    map.on('dragstart', () => {
+      autoCenter = false;
+      btnCenter.setAttribute('aria-pressed','false');
+    });
+
+    // GPS checkbox
+    useGPSVol.addEventListener('change', () => {
+      useGPS = !!useGPSVol.checked;
+      try { localStorage.setItem(USE_GPS_KEY, String(useGPS)); } catch(e){}
+      updateManualUI();
+      scheduleUpdate();
+    });
+
+    function updateManualUI(){
+      const showManual = (!useGPS) || (useGPS && (altitudeFiltered === null || typeof altitudeFiltered !== 'number' || isNaN(altitudeFiltered)));
+      manualAltContainer.style.display = showManual ? 'block' : 'none';
+      useGPSLabel.textContent = useGPS ? 'GPS' : 'manuel';
     }
 
-    function ensureLayers(){
+    // ensure layers for planeur (unchanged, precise)
+    function ensurePlaneurLayers(){
       if (!cercleVol) {
+        // precise planeur circle (kept small/accurate)
         cercleVol = L.circle([0,0], {
           radius: 0,
-          color: 'rgba(31,111,235,0.95)',
-          weight: 3.2,
-          fillColor: 'rgba(31,111,235,0.16)',
+          color: 'rgba(255,80,80,0.95)',
+          weight: 2.4,
+          fillColor: 'rgba(255,80,80,0.12)',
           fillOpacity: 1,
           interactive: false
         }).addTo(map);
@@ -471,17 +600,21 @@
       }
     }
 
-    function computeRadius(alt){
+    // compute radius using altitude rounded to nearest 100m
+    function computeRadiusFromAltitude(alt) {
+      if (typeof alt !== 'number' || isNaN(alt)) return 0;
+      const altRounded = Math.round(alt / 100) * 100; // nearest 100m
       const f = parseFloat(finesseVol.value) || 30;
       const fLow = parseFloat(fbVol.value) || 10;
       const seuilVal = parseFloat(seuilVol.value) || 500;
       const margeVal = parseFloat(margeVol.value) || 250;
-      const finesseUse = (alt <= seuilVal) ? fLow : f;
-      const hUtil = alt - margeVal;
+      const finesseUse = (altRounded <= seuilVal) ? fLow : f;
+      const hUtil = altRounded - margeVal;
       if (hUtil <= 0) return 0;
       return hUtil * finesseUse;
     }
 
+    // schedule update (throttle)
     function scheduleUpdate(){
       if (pendingUpdate) return;
       pendingUpdate = true;
@@ -494,87 +627,60 @@
       }, delay);
     }
 
+    // update badge on map
+    function updateMapBadge(kmText) {
+      if (!mapRangeBadge) return;
+      mapRangeBadge.textContent = kmText + ' km';
+      mapRangeBadge.style.display = (kmText === '—') ? 'none' : 'block';
+    }
+
+    // actual update for planeur circle + UI
     function doUpdate(){
-      if (!planeurPos) {
-        altDisplay.innerText = '—';
-        altSource.innerText = 'Source : —';
-        porteeKmEl.innerText = '—';
-        return;
-      }
-      ensureLayers();
+      ensurePlaneurLayers();
 
-      let altToUse = null;
-      let source = '—';
+      // planeur circle uses precise altitude (not rounded for planeur circle)
+      let altToUsePlaneur = null;
       if (useGPS) {
-        if (typeof altitudeFiltered === 'number' && !isNaN(altitudeFiltered)) {
-          altToUse = altitudeFiltered;
-          source = 'GPS';
-        } else {
-          altToUse = parseFloat(manualAlt.value) || 0;
-          source = 'manuel (GPS indisponible)';
-        }
+        if (typeof altitudeFiltered === 'number' && !isNaN(altitudeFiltered)) altToUsePlaneur = altitudeFiltered;
+        else altToUsePlaneur = parseFloat(manualAlt.value) || 0;
       } else {
-        altToUse = parseFloat(manualAlt.value) || 0;
-        source = 'manuel (GPS désactivé)';
+        altToUsePlaneur = parseFloat(manualAlt.value) || 0;
       }
 
-      altDisplay.innerText = (typeof altToUse === 'number' && !isNaN(altToUse)) ? Math.round(altToUse) : '—';
-      altSource.innerText = 'Source : ' + source;
-
-      const radius = computeRadius(altToUse);
-
-      try {
-        cercleVol.setLatLng([planeurPos.lat, planeurPos.lon]);
-        cercleVol.setRadius(radius);
-        markerPlaneur.setLatLng([planeurPos.lat, planeurPos.lon]);
-      } catch (err) {
-        console.warn('Mode vol: erreur mise à jour couches', err);
+      // update planeur layers if position known
+      if (planeurPos) {
+        try {
+          cercleVol.setLatLng([planeurPos.lat, planeurPos.lon]);
+          cercleVol.setRadius( computeRadiusFromAltitude(altToUsePlaneur) ); // use rounded altitude for visual consistency
+          markerPlaneur.setLatLng([planeurPos.lat, planeurPos.lon]);
+        } catch(e){}
       }
 
+      // UI altitude display (rounded to 100m)
+      const altRounded = (typeof altToUsePlaneur === 'number' && !isNaN(altToUsePlaneur)) ? Math.round(altToUsePlaneur / 100) * 100 : null;
+      altDisplay.innerText = (altRounded !== null) ? altRounded : '—';
+      altSource.innerText = 'Source : ' + (useGPS ? (altitudeFiltered ? 'GPS' : 'manuel (GPS indisponible)') : 'manuel (GPS désactivé)');
+
+      // badge portée: compute from rounded altitude
+      const radius = computeRadiusFromAltitude(altToUsePlaneur);
       const km = (radius / 1000);
-      porteeKmEl.innerText = (km >= 0) ? (Math.round(km * 100) / 100).toFixed(2) : '—';
+      const kmText = (km >= 0) ? (Math.round(km * 100) / 100).toFixed(2) : '—';
+      porteeKmPanel.innerText = kmText;
+      updateMapBadge(kmText);
 
-      if (autoCenter) {
+      // auto center
+      if (autoCenter && planeurPos) {
         const now = Date.now();
-        const moved = lastPos ? haversineMeters(lastPos, planeurPos) : Infinity;
+        const moved = lastPos ? (function(a,b){ const R=6371000; const toRad=Math.PI/180; const dLat=(b.lat-a.lat)*toRad; const dLon=(b.lon-a.lon)*toRad; const lat1=a.lat*toRad; const lat2=b.lat*toRad; const x=Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2; return 2*R*Math.atan2(Math.sqrt(x), Math.sqrt(1-x)); })(lastPos, planeurPos) : Infinity;
         if (moved > CENTER_MIN_DISTANCE_M || (now - lastCenterTime) > 3000) {
-          try {
-            map.panTo([planeurPos.lat, planeurPos.lon], { animate: true });
-          } catch(e){}
+          try { map.panTo([planeurPos.lat, planeurPos.lon], { animate: true }); } catch(e){}
           lastCenterTime = now;
           lastPos = { ...planeurPos };
         }
       }
     }
 
-    function updateManualUI(){
-      const showManual = (!useGPS) || (useGPS && (altitudeFiltered === null || typeof altitudeFiltered !== 'number' || isNaN(altitudeFiltered)));
-      manualAltContainer.style.display = showManual ? 'block' : 'none';
-    }
-
-    seuilVol.oninput = () => { seuilInput.value = seuilVol.value; scheduleUpdate(); };
-    seuilInput.onchange = () => { seuilVol.value = seuilInput.value; scheduleUpdate(); };
-    [finesseVol, fbVol, margeVol].forEach(el => { if (el) el.addEventListener('input', scheduleUpdate); });
-    manualAlt.addEventListener('input', () => { manualAltVal.innerText = manualAlt.value + ' m'; scheduleUpdate(); });
-
-    btnCenter.addEventListener('click', () => {
-      autoCenter = true;
-      btnCenter.setAttribute('aria-pressed','true');
-      if (planeurPos) map.panTo([planeurPos.lat, planeurPos.lon], { animate: true });
-    });
-
-    map.on('dragstart', () => {
-      autoCenter = false;
-      btnCenter.setAttribute('aria-pressed','false');
-    });
-
-    useGPSVol.addEventListener('change', () => {
-      useGPS = !!useGPSVol.checked;
-      try { localStorage.setItem(USE_GPS_KEY, String(useGPS)); } catch(e){}
-      updateManualUI();
-      scheduleUpdate();
-    });
-
+    // GPS tracking (watchPosition)
     if (navigator.geolocation) {
       try {
         navigator.geolocation.watchPosition((pos) => {
@@ -605,19 +711,27 @@
       updateManualUI();
     }
 
-    ensureLayers();
+    // initial
+    ensurePlaneurLayers();
     scheduleUpdate();
+    updatePanelVisibility();
 
+    // Expose API for other modules (prep mode will read altitude from here)
     window._volMode = {
-      scheduleUpdate, doUpdate, ensureLayers, getState: () => ({ planeurPos, altitudeGPS, altitudeFiltered, useGPS, autoCenter })
+      scheduleUpdate,
+      doUpdate,
+      ensureLayers: ensurePlaneurLayers,
+      getState: () => ({ planeurPos, altitudeGPS, altitudeFiltered, useGPS, autoCenter, panelHidden })
     };
 
-    updatePanelVisibility();
+    // Helper: allow external code (prep mode) to compute terrain circles using plane altitude
+    // Example usage in prep mode: const s = window._volMode.getState(); s.altitudeFiltered -> use it
+    // For convenience, expose a small util to compute radius from altitude (rounded to 100m)
+    window._volMode.computeRadiusFromAltitude = computeRadiusFromAltitude;
 
   }); // whenMapReady
 })();
 </script>
-<!-- ===== END MODE VOL ===== -->
   
   <!-- MANUEL -->
   <div id="manuelScreen" class="screen" aria-hidden="true">
