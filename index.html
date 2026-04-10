@@ -696,15 +696,21 @@ Glide Planner est une aide, pas un instrument certifié.
     }
 
     // --- TERRAINS ---
-    let terrainsAll = [
-      { id: "LFDA", lat: 43.709, lon: -0.249, alt: 80 },
-      { id: "LFID", lat: 43.955, lon: 0.373, alt: 130 },
-      { id: "LFCN", lat: 43.762, lon: -0.036, alt: 100 },
-      { id: "LFDH", lat: 43.646, lon: 0.601, alt: 130 },
-      { id: "LFBM", lat: 43.911, lon: -0.507, alt: 52 },
-      { id: "LFCL", lat: 43.586, lon: 1.499, alt: 152 }
-    ];
-    let terrains = [];
+let terrainsAll = [];
+let terrains = [];
+
+fetch("terrains.json")
+  .then(r => r.json())
+  .then(data => {
+    terrainsAll = data;
+    terrains = data;
+
+    // Appelle ici ta fonction d'initialisation du Mode Prep
+    // Exemple :
+    initPrepTerrains(); 
+    updatePrep(); 
+  })
+  .catch(err => console.error("Erreur chargement terrains.json :", err));
 
     function populateRef() {
       if (!refSelect) return;
