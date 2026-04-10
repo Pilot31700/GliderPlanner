@@ -1,4 +1,3 @@
- <style>
     :root{
       --accent:#1f6feb;
       --panel-bg: rgba(250,250,250,0.96);
@@ -177,4 +176,4 @@
       .menuBtn { min-width:160px; }
       #homeTitle { font-size:28px; }
     }
-  </style>
+
