@@ -275,14 +275,267 @@
     <button class="backBtn" id="backFromManuel">← Menu</button>
 
     <div id="manuelCard">
-      <h2>Manuel</h2>
-      <p>Documentation et explications sur les paramètres et le modèle.</p>
-      <h3>Paramètres</h3>
-      <ul>
-        <li><b>Finesse</b> : rapport de plané</li>
-        <li><b>Marge</b> : sécurité en mètres</li>
-        <li><b>Mode QFE/QNH</b> : référence d'altitude</li>
-      </ul>
+<h2>📘 Glide Planner – Manuel utilisateur</h2>
+
+<p>
+Glide Planner est une aide à la décision pour le vol en planeur.  
+Elle permet d’estimer rapidement les zones atteignables en fonction de votre altitude, de votre finesse et des conditions de vent.
+</p>
+
+<hr>
+
+<h3>🧭 1. Philosophie de l’application</h3>
+
+<p>
+Glide Planner répond à une question simple :
+</p>
+
+<p style="font-weight:bold; text-align:center;">
+👉 "Jusqu’où puis-je aller sans moteur ?"
+</p>
+
+<p>
+L’application calcule une distance théorique atteignable en tenant compte :
+</p>
+
+<ul>
+  <li>de votre altitude disponible</li>
+  <li>de votre finesse</li>
+  <li>du vent</li>
+  <li>d’une marge de sécurité</li>
+</ul>
+
+---
+
+<h3>🧩 2. Les modes</h3>
+
+<h4>🔧 Mode Préparation</h4>
+<p>
+Permet d’anticiper un vol ou d’analyser une zone.
+</p>
+
+<ul>
+  <li>Visualisation des zones atteignables depuis plusieurs terrains</li>
+  <li>Simulation à différentes altitudes</li>
+  <li>Prise en compte du vent par couche</li>
+  <li>Ajout de terrains personnalisés (clic sur la carte)</li>
+</ul>
+
+<p><b>Utilisation typique :</b> préparation de navigation, briefing.</p>
+
+---
+
+<h4>✈️ Mode Vol</h4>
+<p>
+Interface simplifiée pour utilisation en cockpit.
+</p>
+
+<ul>
+  <li>Position GPS en temps réel</li>
+  <li>Cercle de finesse centré sur le planeur</li>
+  <li>Recentrage automatique (désactivé si déplacement manuel)</li>
+</ul>
+
+<p><b>Utilisation typique :</b> aide en vol, conscience de la marge.</p>
+
+---
+
+<h3>⚙️ 3. Paramètres de vol</h3>
+
+<h4>📏 Finesse</h4>
+<p>
+Rapport distance / altitude.
+</p>
+
+<p>
+Exemple :
+<ul>
+  <li>Finesse 30 → 30 km pour 1000 m</li>
+</ul>
+</p>
+
+<p>
+👉 À adapter selon :
+<ul>
+  <li>type de planeur</li>
+  <li>conditions (air calme vs turbulent)</li>
+</ul>
+</p>
+
+---
+
+<h4>📉 Finesse basse</h4>
+<p>
+Finesse dégradée utilisée à basse altitude.
+</p>
+
+<p>
+👉 Représente :
+<ul>
+  <li>stress pilote</li>
+  <li>approche terrain</li>
+  <li>conditions dégradées</li>
+</ul>
+</p>
+
+---
+
+<h4>📊 Seuil de finesse basse</h4>
+<p>
+Altitude à partir de laquelle la finesse se dégrade automatiquement.
+</p>
+
+<p style="text-align:center;">
+Au-dessus → finesse normale<br>
+En dessous → finesse basse
+</p>
+
+---
+
+<h4>🛟 Marge de sécurité</h4>
+<p>
+Altitude volontairement retirée du calcul.
+</p>
+
+<p>
+👉 Sert à couvrir :
+</p>
+
+<ul>
+  <li>erreurs de pilotage</li>
+  <li>variations aérologiques</li>
+  <li>incertitudes GPS</li>
+</ul>
+
+<p>
+<b>Conseil :</b> ne jamais voler sans marge.
+</p>
+
+---
+
+<h3>🌬️ 4. Effet du vent</h3>
+
+<p>
+Le vent est défini par :
+</p>
+
+<ul>
+  <li><b>Direction</b> : d’où vient le vent</li>
+  <li><b>Vitesse</b> : en km/h</li>
+</ul>
+
+---
+
+<h4>Effets sur la trajectoire</h4>
+
+<ul>
+  <li>🌬️ Vent de face → distance réduite</li>
+  <li>🌬️ Vent arrière → distance augmentée</li>
+  <li>🌬️ Vent de travers → dérive latérale</li>
+</ul>
+
+<p>
+👉 Résultat : la zone atteignable devient une forme déformée ("patatoïde").
+</p>
+
+---
+
+<h4>Vent par couches</h4>
+
+<p>
+Le vent peut varier avec l’altitude.
+</p>
+
+<p>
+Glide Planner applique :
+<ul>
+  <li>un vent différent selon la tranche d’altitude</li>
+</ul>
+</p>
+
+---
+
+<h3>📏 5. Références d’altitude</h3>
+
+<h4>QFE</h4>
+<p>
+Altitude relative au terrain visé.
+</p>
+
+<h4>QNH</h4>
+<p>
+Altitude absolue (MSL).
+</p>
+
+<h4>QFE Référence</h4>
+<p>
+Altitude relative à un terrain choisi comme référence.
+</p>
+
+---
+
+<h3>🗺️ 6. Utilisation de la carte</h3>
+
+<ul>
+  <li>Glisser → déplacer la carte</li>
+  <li>Pincer / molette → zoom</li>
+  <li>Clic → ajouter un terrain</li>
+</ul>
+
+---
+
+<h3>✈️ 7. Lecture du cercle de finesse</h3>
+
+<p>
+Le cercle représente la distance maximale atteignable dans toutes les directions.
+</p>
+
+<p>
+👉 À interpréter comme :
+</p>
+
+<ul>
+  <li>zone théorique atteignable</li>
+  <li>sans ascendances</li>
+  <li>en conditions constantes</li>
+</ul>
+
+---
+
+<h3>⚠️ 8. Limites du modèle</h3>
+
+<p>
+Le calcul est simplifié et ne prend pas en compte :
+</p>
+
+<ul>
+  <li>ascendances</li>
+  <li>descendances</li>
+  <li>variations de masse d’air</li>
+  <li>pilotage réel</li>
+</ul>
+
+<p>
+L’altitude GPS peut également être imprécise.
+</p>
+
+---
+
+<h3>🛑 9. Sécurité</h3>
+
+<p style="font-weight:bold;">
+Glide Planner est une aide, pas un instrument certifié.
+</p>
+
+<ul>
+  <li>Le pilote reste responsable</li>
+  <li>Ne jamais voler sans solution de secours</li>
+  <li>Conserver une marge suffisante</li>
+</ul>
+
+<p style="text-align:center; margin-top:20px;">
+✈️ Anticiper – Vérifier – Décider
+</p>
       <p style="color:#666; font-size:13px;">La carte est affichée en arrière-plan, floutée et non interactive pour faciliter la lecture.</p>
     </div>
   </div>
