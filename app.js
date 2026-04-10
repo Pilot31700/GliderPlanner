@@ -1,4 +1,3 @@
-  <script>
     /* Robust helpers to enable/disable Leaflet interactions */
     function enableMapInteractions(map) {
       try {
@@ -95,9 +94,8 @@
       // show home by default
       goTo('homeScreen');
     });
-  </script>
+
 <!-- Main app script (map, controls, calculations) -->
-  <script>
   document.addEventListener('DOMContentLoaded', function () {
     // DOM elements
     const panel = document.getElementById('panel');
@@ -432,4 +430,4 @@ fetch("terrains.json")
     window._glide_update = update;
     window._glide_map = map;
   });
-  </script>
+
