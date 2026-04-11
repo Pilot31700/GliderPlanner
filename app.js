@@ -150,7 +150,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const rangeKm = document.getElementById('rangeKm');
   const applyWind = document.getElementById('applyWind');
 
- /* MAP */
+/* MAP */
 const map = L.map('map', { preferCanvas: true, tap: true }).setView([43.8, 0.1], 9);
 window._glide_map = map;
 
@@ -200,6 +200,13 @@ if (typeof disableMapInteractions === 'function') {
   disableMapInteractions(map);
 }
 
+// position utilisateur et écoute du déplacement
+let userPos = { lat: 43.8, lon: 0.1 };
+map.on('moveend', () => {
+  const c = map.getCenter();
+  userPos = { lat: c.lat, lon: c.lng };
+  if (typeof update === 'function') update();
+});
 // position utilisateur et écoute du déplacement
 let userPos = { lat: 43.8, lon: 0.1 };
 map.on('moveend', () => {
