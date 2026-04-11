@@ -229,6 +229,18 @@
   color: white;
 }
 
+.layer-select {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1500;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background: white;
+  font-size: 14px;
+}
+
     @media (max-width:720px){
       .panel { width:90%; left:5% !important; right:5% !important; top:12px !important; }
       .menuBtn { min-width:160px; }
