@@ -170,14 +170,14 @@ const openAIPLayer = L.tileLayer(
 );
 
 // --- UI LOGIC ---
-const panel = document.getElementById("layerPanel");
+const layerpanel = document.getElementById("layerPanel");
 const btn = document.getElementById("layerToggleBtn");
 const toggleAIP = document.getElementById("toggleAIP");
 const opacityAIP = document.getElementById("opacityAIP");
 
 // Ouvrir / fermer panneau
 btn.addEventListener("click", () => {
-  panel.style.display = panel.style.display === "none" ? "block" : "none";
+  layerpanel.style.display = layerpanel.style.display === "none" ? "block" : "none";
 });
 
 // Activer / désactiver OpenAIP Aviation
