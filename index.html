@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
-  <title>Glide Planner v1.2</title>
+  <title>Glide Planner v2.0</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <!-- Leaflet CSS -->
@@ -45,7 +45,7 @@
     <button id="btnVent" class="toggleBtn second" title="Vent">🌬</button>
 
     <div id="panel" class="panel" style="left:12px; top:72px; display:none;">
-      <h4>Glide Planner v1.2</h4>
+      <h4>Glide Planner v2.0</h4>
 
       <div class="field">Finesse: <input id="finesse" type="number" value="30"></div>
       <div class="field">Finesse basse: <input id="fb" type="number" value="10"></div>
@@ -91,12 +91,54 @@
     </div>
   </div>
 
-  <!-- MODE VOL -->
-  <div id="volScreen" class="screen" aria-hidden="true">
-    <button class="backBtn" id="backFromVol">← Menu</button>
-    <h2 style="margin-top:60px; text-align:center;">Mode Vol</h2>
-    <p style="text-align:center; max-width:900px; margin:12px auto; color:#333;">Mode Vol : EN COURS DE DEV. carte interactive, affichage simplifié pour cockpit.</p>
+<!-- MODE VOL -->
+<div id="volScreen" class="screen" aria-hidden="true">
+  <!-- Bouton retour -->
+  <button class="backBtn" id="backFromVol">← Menu</button>
+  <!-- Bouton pour afficher/masquer le menu VOL -->
+  <button id="btnVolMenu" class="toggleBtn top" title="Réglages Vol">⚙</button>
+  <!-- PANEL VOL (déplaçable) -->
+  <div id="volPanel" class="panel" style="left:12px; top:72px; display:none;">
+    <h4>Mode Vol – Réglages</h4>
+    <div class="field">
+      Finesse : <span id="volFinesseVal">30</span>
+      <input id="volFinesse" type="range" min="10" max="60" value="30">
+    </div>
+    <div class="field">
+      Finesse basse : <span id="volFbVal">10</span>
+      <input id="volFb" type="range" min="5" max="30" value="10">
+    </div>
+    <div class="field">
+      Seuil finesse basse (m) : <span id="volSeuilVal">500</span>
+      <input id="volSeuil" type="range" min="100" max="1500" step="50" value="500">
+    </div>
+    <div class="field">
+      Marge (m) :
+      <input id="volMarge" type="number" value="250">
+    </div>
+    <hr>
+    <div class="field">
+      Altimétrie :
+      <select id="volAltMode">
+        <option value="QNH">QNH (GPS)</option>
+        <option value="QFE">QFE (terrain le plus proche)</option>
+        <option value="QFE_REF">QFE Référence</option>
+      </select>
+    </div>
+    <div class="field">
+      Terrain référence :
+      <select id="volRefSelect"></select>
+    </div>
+    <hr>
+    <div class="field">
+      <label><input type="checkbox" id="volGpsEnabled" checked> GPS actif</label>
+    </div>
+    <div class="field">
+      Altitude manuelle (m) :
+      <input id="volAltManual" type="number" value="1000">
+    </div>
   </div>
+</div>
 
   <!-- MANUEL -->
   <div id="manuelScreen" class="screen" aria-hidden="true">
