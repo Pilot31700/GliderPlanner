@@ -180,7 +180,17 @@ const layerpanel = document.getElementById("layerPanel");
 const btn = document.getElementById("layerToggleBtn");
 const toggleAIP = document.getElementById("toggleAIP");
 const opacityAIP = document.getElementById("opacityAIP");
+const filter4Letters = document.getElementById("filter4Letters");
 
+filter4Letters.addEventListener("change", () => {
+    if (filter4Letters.checked) {
+        allTerrainMarkers.forEach(m => window._glide_map.removeLayer(m));
+        filteredTerrainMarkers.forEach(m => m.addTo(window._glide_map));
+    } else {
+        filteredTerrainMarkers.forEach(m => window._glide_map.removeLayer(m));
+        allTerrainMarkers.forEach(m => m.addTo(window._glide_map));
+    }
+});
 // Ouvrir / fermer panneau
 btn.addEventListener("click", () => {
   layerpanel.style.display = layerpanel.style.display === "none" ? "block" : "none";
@@ -206,7 +216,7 @@ const filter4Letters = document.getElementById("filter4Letters");
 if (filter4Letters) {
   filter4Letters.addEventListener("change", () => {
     filterOnly4Letters = filter4Letters.checked;
-    update(); // redessine cercles + marqueurs
+    update(); // 🔥 redessine cercles + marqueurs
   });
 }
 
@@ -305,6 +315,16 @@ let _volInitialized = false;
       refSelect.appendChild(opt);
     });
   }
+
+ let allTerrainMarkers = [];
+let filteredTerrainMarkers = [];
+
+function createTerrainMarkers(terrains) {
+    allTerrainMarkers = terrains.map(t => {
+        return L.marker([t.lat, t.lon], {
+            title: t.id
+        });
+    });
 
     filteredTerrainMarkers = allTerrainMarkers.filter(m => {
         const id = m.options.title;
