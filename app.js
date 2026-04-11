@@ -296,15 +296,29 @@ let _volInitialized = false;
     });
   }
 
-  fetch("terrains.json")
-    .then(r => r.json())
-    .then(data => {
-      terrainsAll = data;
-      terrains = data;
-      populateRef();
-      update();
-      initVolMode();
-    })
+ let allTerrainMarkers = [];
+let filteredTerrainMarkers = [];
+
+function createTerrainMarkers(terrains) {
+    allTerrainMarkers = terrains.map(t => {
+        return L.marker([t.lat, t.lon], {
+            title: t.id
+        });
+    });
+
+    filteredTerrainMarkers = allTerrainMarkers.filter(m => {
+        const id = m.options.title;
+        return /^[A-Z]{4}$/.test(id);
+    });
+
+    allTerrainMarkers.forEach(m => m.addTo(window._glide_map));
+}
+
+fetch("terrains.json")
+  .then(r => r.json())
+  .then(data => {
+      createTerrainMarkers(data);
+  });
     .catch(err => console.error("Erreur chargement terrains.json :", err));
 
   /* VENT */
