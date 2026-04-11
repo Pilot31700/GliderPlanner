@@ -162,6 +162,7 @@ document.addEventListener('DOMContentLoaded', function () {
       terrains = data;
       populateRef();
       update();
+      initVolMode();
     })
     .catch(err => console.error("Erreur chargement terrains.json :", err));
 
