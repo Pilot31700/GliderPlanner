@@ -207,13 +207,6 @@ map.on('moveend', () => {
   userPos = { lat: c.lat, lon: c.lng };
   if (typeof update === 'function') update();
 });
-// position utilisateur et écoute du déplacement
-let userPos = { lat: 43.8, lon: 0.1 };
-map.on('moveend', () => {
-  const c = map.getCenter();
-  userPos = { lat: c.lat, lon: c.lng };
-  if (typeof update === 'function') update();
-});
 
 // now that map exists, show home
 if (typeof goTo === 'function') goTo('homeScreen');
