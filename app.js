@@ -1,11 +1,6 @@
 /****************************************************
  *  Glide Planner – APP.JS (Version A fidèle corrigée)
  ****************************************************/
-// --- GLOBAUX DE SÉCURITÉ ---
-if (typeof window._volInitialized === 'undefined') window._volInitialized = false;
-if (typeof window.volGpsWatchId === 'undefined') window.volGpsWatchId = null;
-if (typeof window.terrainsAll === 'undefined') window.terrainsAll = []; // évite ReferenceError
-// ------------------------------------------------
 
 /* HELPERS – Enable / Disable map interactions */
 function enableMapInteractions(map) {
@@ -676,30 +671,3 @@ function updateVolCircle() {
     }
   });
 }
-
-// Patch de secours : toggle du panneau VOL et appel sûr d'initVolMode
-document.addEventListener('DOMContentLoaded', function () {
-  try {
-    const btn = document.getElementById('btnVolMenu');
-    const panel = document.getElementById('volPanel');
-    if (!btn || !panel) return;
-
-    // toggle visuel simple (toujours fonctionnel)
-    btn.addEventListener('click', function () {
-      try {
-        panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none';
-        // appeler initVolMode() la première fois si disponible
-        if (typeof initVolMode === 'function' && !window._volInitialized) {
-          try { initVolMode(); } catch (e) { console.warn('initVolMode error', e); }
-        }
-      } catch (e) {
-        console.warn('Erreur toggle volPanel', e);
-      }
-    });
-
-    // s'assurer que le panel est au-dessus (z-index)
-    try { panel.style.zIndex = panel.style.zIndex || '1200'; } catch (e) {}
-  } catch (e) {
-    console.warn('Patch toggle volPanel failed', e);
-  }
-});
