@@ -1,31 +1,21 @@
 /****************************************************
- *  Glide Planner – APP.JS (Version B optimisée)
- *  Structure :
- *   1. Navigation & interactions globales
- *   2. Helpers (enable/disable map, goTo)
- *   3. DOMContentLoaded → initialisation complète
- *   4. Carte Leaflet
- *   5. Terrains (JSON)
- *   6. Vent
- *   7. Calculs & update()
- *   8. UI events
- *   9. Draggable panels
+ *  Glide Planner – APP.JS (Version A fidèle corrigée)
  ****************************************************/
 
 
 /* ============================================================
-   1. HELPERS – Enable / Disable map interactions
+   HELPERS – Enable / Disable map interactions
    ============================================================ */
 function enableMapInteractions(map) {
   try {
     if (!map) return;
-    if (map.dragging?.enable) map.dragging.enable();
-    if (map.scrollWheelZoom?.enable) map.scrollWheelZoom.enable();
-    if (map.touchZoom?.enable) map.touchZoom.enable();
-    if (map.doubleClickZoom?.enable) map.doubleClickZoom.enable();
-    if (map.boxZoom?.enable) map.boxZoom.enable();
-    if (map.keyboard?.enable) map.keyboard.enable();
-    if (map.tap?.enable) map.tap.enable();
+    if (map.dragging && map.dragging.enable) map.dragging.enable();
+    if (map.scrollWheelZoom && map.scrollWheelZoom.enable) map.scrollWheelZoom.enable();
+    if (map.touchZoom && map.touchZoom.enable) map.touchZoom.enable();
+    if (map.doubleClickZoom && map.doubleClickZoom.enable) map.doubleClickZoom.enable();
+    if (map.boxZoom && map.boxZoom.enable) map.boxZoom.enable();
+    if (map.keyboard && map.keyboard.enable) map.keyboard.enable();
+    if (map.tap && map.tap.enable) map.tap.enable();
 
     const el = map.getContainer();
     if (el) {
@@ -38,13 +28,13 @@ function enableMapInteractions(map) {
 function disableMapInteractions(map) {
   try {
     if (!map) return;
-    if (map.dragging?.disable) map.dragging.disable();
-    if (map.scrollWheelZoom?.disable) map.scrollWheelZoom.disable();
-    if (map.touchZoom?.disable) map.touchZoom.disable();
-    if (map.doubleClickZoom?.disable) map.doubleClickZoom.disable();
-    if (map.boxZoom?.disable) map.boxZoom.disable();
-    if (map.keyboard?.disable) map.keyboard.disable();
-    if (map.tap?.disable) map.tap.disable();
+    if (map.dragging && map.dragging.disable) map.dragging.disable();
+    if (map.scrollWheelZoom && map.scrollWheelZoom.disable) map.scrollWheelZoom.disable();
+    if (map.touchZoom && map.touchZoom.disable) map.touchZoom.disable();
+    if (map.doubleClickZoom && map.doubleClickZoom.disable) map.doubleClickZoom.disable();
+    if (map.boxZoom && map.boxZoom.disable) map.boxZoom.disable();
+    if (map.keyboard && map.keyboard.disable) map.keyboard.disable();
+    if (map.tap && map.tap.disable) map.tap.disable();
 
     const el = map.getContainer();
     if (el) {
@@ -56,10 +46,10 @@ function disableMapInteractions(map) {
 
 
 /* ============================================================
-   2. NAVIGATION – goTo()
+   NAVIGATION – goTo()
    ============================================================ */
 function goTo(screenId) {
-  const screens = ['homeScreen', 'prepScreen', 'volScreen', 'manuelScreen'];
+  const screens = ['homeScreen','prepScreen','volScreen','manuelScreen'];
   const mapEl = document.getElementById('map');
 
   screens.forEach(id => {
@@ -70,11 +60,13 @@ function goTo(screenId) {
       el.removeAttribute('aria-hidden');
     } else {
       el.style.display = 'none';
-      el.setAttribute('aria-hidden', 'true');
+      el.setAttribute('aria-hidden','true');
     }
   });
 
   if (!mapEl) return;
+
+  const map = window._glide_map || null;
 
   if (screenId === 'prepScreen' || screenId === 'volScreen') {
     mapEl.classList.remove('map-blurred');
@@ -83,8 +75,10 @@ function goTo(screenId) {
     const prep = document.getElementById('prepScreen');
     if (prep) prep.style.pointerEvents = 'none';
 
-    enableMapInteractions(window._glide_map);
-    setTimeout(() => window._glide_map.invalidateSize(), 120);
+    if (map) {
+      enableMapInteractions(map);
+      setTimeout(() => map.invalidateSize(), 120);
+    }
 
   } else {
     mapEl.classList.add('map-blurred');
@@ -93,18 +87,18 @@ function goTo(screenId) {
     const prep = document.getElementById('prepScreen');
     if (prep) prep.style.pointerEvents = 'auto';
 
-    disableMapInteractions(window._glide_map);
+    if (map) disableMapInteractions(map);
   }
 }
 
 
 /* ============================================================
-   3. DOMContentLoaded – INITIALISATION GLOBALE
+   DOMContentLoaded – INITIALISATION GLOBALE
    ============================================================ */
 document.addEventListener('DOMContentLoaded', function () {
 
   /* ------------------------------
-     3.1 Navigation buttons
+     NAVIGATION BUTTONS
      ------------------------------ */
   const btnGoPrep = document.getElementById('btnGoPrep');
   const btnGoVol = document.getElementById('btnGoVol');
@@ -113,19 +107,17 @@ document.addEventListener('DOMContentLoaded', function () {
   const backFromVol = document.getElementById('backFromVol');
   const backFromManuel = document.getElementById('backFromManuel');
 
-  btnGoPrep?.addEventListener('click', e => { e.preventDefault(); goTo('prepScreen'); });
-  btnGoVol?.addEventListener('click', e => { e.preventDefault(); goTo('volScreen'); });
-  btnGoManuel?.addEventListener('click', e => { e.preventDefault(); goTo('manuelScreen'); });
+  btnGoPrep && btnGoPrep.addEventListener('click', e => { e.preventDefault(); goTo('prepScreen'); });
+  btnGoVol && btnGoVol.addEventListener('click', e => { e.preventDefault(); goTo('volScreen'); });
+  btnGoManuel && btnGoManuel.addEventListener('click', e => { e.preventDefault(); goTo('manuelScreen'); });
 
-  backFromPrep?.addEventListener('click', e => { e.preventDefault(); goTo('homeScreen'); });
-  backFromVol?.addEventListener('click', e => { e.preventDefault(); goTo('homeScreen'); });
-  backFromManuel?.addEventListener('click', e => { e.preventDefault(); goTo('homeScreen'); });
-
-  goTo('homeScreen'); // default
+  backFromPrep && backFromPrep.addEventListener('click', e => { e.preventDefault(); goTo('homeScreen'); });
+  backFromVol && backFromVol.addEventListener('click', e => { e.preventDefault(); goTo('homeScreen'); });
+  backFromManuel && backFromManuel.addEventListener('click', e => { e.preventDefault(); goTo('homeScreen'); });
 
 
   /* ============================================================
-     4. MAP INITIALISATION
+     MAP INITIALISATION
      ============================================================ */
   const map = L.map('map', { preferCanvas: true, tap: true }).setView([43.8, 0.1], 9);
   window._glide_map = map;
@@ -144,9 +136,12 @@ document.addEventListener('DOMContentLoaded', function () {
     update();
   });
 
+  // 👉 IMPORTANT : maintenant que la map existe, on peut appeler goTo
+  goTo('homeScreen');
+
 
   /* ============================================================
-     5. TERRAINS – JSON
+     TERRAINS JSON
      ============================================================ */
   let terrainsAll = [];
   let terrains = [];
@@ -176,7 +171,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
   /* ============================================================
-     6. VENT
+     VENT
      ============================================================ */
   const windLayers = [
     { label: "0-500", v: "v0", d: "d0" },
@@ -206,7 +201,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
       const slider = block.querySelector(`#${w.v}`);
       const label = block.querySelector(`#${w.v}_label`);
-      slider?.addEventListener('input', () => { label.innerText = slider.value + ' km/h'; });
+      slider && label && slider.addEventListener('input', () => { label.innerText = slider.value + ' km/h'; });
     });
   }
   initWindMenu();
@@ -215,14 +210,14 @@ document.addEventListener('DOMContentLoaded', function () {
     const layer = windLayers[Math.max(0, Math.min(windLayers.length - 1, idx))];
     const vEl = document.getElementById(layer.v);
     const dEl = document.getElementById(layer.d);
-    const v = parseFloat(vEl?.value ?? 0);
-    const d = parseFloat(dEl?.value ?? 0);
+    const v = vEl ? parseFloat(vEl.value) : 0;
+    const d = dEl ? parseFloat(dEl.value) : 0;
     return { v: isNaN(v) ? 0 : v, d: isNaN(d) ? 0 : d };
   }
 
 
   /* ============================================================
-     7. CALCULS – UPDATE()
+     UPDATE
      ============================================================ */
   const panel = document.getElementById('panel');
   const menuVent = document.getElementById('menuVent');
@@ -371,33 +366,33 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
   /* ============================================================
-     8. UI EVENTS
+     UI EVENTS
      ============================================================ */
   const btnPanel = document.getElementById('btnPanel');
   const btnVent = document.getElementById('btnVent');
   const btnRecalc = document.getElementById('btnRecalc');
   const btnRecalcWind = document.getElementById('btnRecalcWind');
 
-  slider?.addEventListener('input', () => { hVal.innerText = slider.value; update(); });
-  btnRecalc?.addEventListener('click', e => { e.preventDefault(); update(); });
-  btnRecalcWind?.addEventListener('click', e => { e.preventDefault(); update(); });
+  slider && slider.addEventListener('input', () => { hVal.innerText = slider.value; update(); });
+  btnRecalc && btnRecalc.addEventListener('click', e => { e.preventDefault(); update(); });
+  btnRecalcWind && btnRecalcWind.addEventListener('click', e => { e.preventDefault(); update(); });
 
   [
     finesse, fb, seuil, marge, vCruiseInput,
     mode, labels, all, rangeKm, refSelect, applyWind
-  ].forEach(el => el?.addEventListener('change', update));
+  ].forEach(el => el && el.addEventListener('change', update));
 
-  btnPanel?.addEventListener('click', () => {
+  btnPanel && btnPanel.addEventListener('click', () => {
     panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none';
   });
 
-  btnVent?.addEventListener('click', () => {
+  btnVent && btnVent.addEventListener('click', () => {
     menuVent.style.display = (menuVent.style.display === 'none' || menuVent.style.display === '') ? 'block' : 'none';
   });
 
 
   /* ============================================================
-     9. DRAGGABLE PANELS
+     DRAGGABLE PANELS
      ============================================================ */
   function makeDraggable(el) {
     if (!el) return;
@@ -411,14 +406,4 @@ document.addEventListener('DOMContentLoaded', function () {
 
     el.addEventListener('pointerdown', e => {
       if (e.button && e.button !== 0) return;
-      if (isFormControl(e.target)) return;
-
-      dragging = true;
-      try { el.setPointerCapture(e.pointerId); } catch (err) {}
-      offsetX = e.clientX - el.offsetLeft;
-      offsetY = e.clientY - el.offsetTop;
-      el.style.cursor = 'grabbing';
-      e.preventDefault();
-    });
-
-    el.add
+      if (isFormControl
