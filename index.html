@@ -2,16 +2,20 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
-  <title>Glide Planner v1.1 </title>
+  <title>Glide Planner v1.2</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- CSS -->
+  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="styles.css">
 
-  <!-- JS -->
+  <!-- Ton CSS -->
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- Leaflet JS (doit être chargé avant app.js) -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="app.js"></script>
+
+  <!-- Ton JS : defer pour s'assurer que le DOM et Leaflet sont prêts -->
+  <script src="app.js" defer></script>
 </head>
 
 <body>
@@ -41,7 +45,7 @@
     <button id="btnVent" class="toggleBtn second" title="Vent">🌬</button>
 
     <div id="panel" class="panel" style="left:12px; top:72px; display:none;">
-      <h4>Glide Planner v1.1</h4>
+      <h4>Glide Planner v1.2</h4>
 
       <div class="field">Finesse: <input id="finesse" type="number" value="30"></div>
       <div class="field">Finesse basse: <input id="fb" type="number" value="10"></div>
