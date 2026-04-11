@@ -57,20 +57,23 @@ function goTo(screenId){
     }
   });
 
+  // 👉 PATCH : affichage du bouton Carte
+  const btnCarte = document.getElementById("layerToggleBtn");
+  const panelCarte = document.getElementById("layerPanel");
+
+  if (screenId === "prepScreen" || screenId === "volScreen") {
+      btnCarte.style.display = "block";
+      panelCarte.style.display = "none";
+  } else {
+      btnCarte.style.display = "none";
+      panelCarte.style.display = "none";
+  }
+  // 👈 FIN PATCH
+
   if (!mapEl) return;
 
   const map = window._glide_map || null;
-// Gestion de l'affichage du menu Carte
-const btnCarte = document.getElementById("layerToggleBtn");
-const panelCarte = document.getElementById("layerPanel");
 
-if (screenId === "prepScreen" || screenId === "volScreen") {
-    btnCarte.style.display = "block";
-    panelCarte.style.display = "none"; // fermé par défaut
-} else {
-    btnCarte.style.display = "none";
-    panelCarte.style.display = "none";
-}
   // gérer l'affichage du volRadiusDisplay uniquement en Mode VOL
   const volRadiusEl = document.getElementById('volRadiusDisplay');
   if (volRadiusEl) {
@@ -82,13 +85,11 @@ if (screenId === "prepScreen" || screenId === "volScreen") {
     mapEl.classList.remove('map-blurred');
     mapEl.classList.add('map-absolute');
 
-    // quand on est en prepScreen, on veut que le panneau prep ne capte pas les interactions sur la carte
     const prep = document.getElementById('prepScreen');
     if (prep) prep.style.pointerEvents = 'none';
 
     if (map) {
       enableMapInteractions(map);
-      // invalide la taille après un court délai pour Leaflet
       setTimeout(()=> map.invalidateSize(), 120);
     }
   } else {
@@ -103,13 +104,9 @@ if (screenId === "prepScreen" || screenId === "volScreen") {
 
   // initialisation / arrêt spécifiques au Mode VOL
   if (screenId === 'volScreen') {
-    // initVolMode est idempotent (protégé par _volInitialized)
     try { initVolMode(); } catch (e) { console.warn('initVolMode error', e); }
-
-    // démarrer GPS watch si nécessaire (startVolGps gère l'idempotence)
     try { startVolGps(); } catch (e) { console.warn('startVolGps error', e); }
   } else {
-    // quitter le mode vol : arrêter le watch GPS pour économiser la batterie/ressources
     try {
       if (typeof volGpsWatchId === 'number' && volGpsWatchId !== null) {
         navigator.geolocation.clearWatch(volGpsWatchId);
@@ -118,7 +115,6 @@ if (screenId === "prepScreen" || screenId === "volScreen") {
     } catch (e) { /* ignore */ }
   }
 }
-
 /* DOMContentLoaded – INITIALISATION GLOBALE */
 document.addEventListener('DOMContentLoaded', function () {
 
