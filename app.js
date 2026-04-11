@@ -154,58 +154,46 @@ document.addEventListener('DOMContentLoaded', function () {
 const map = L.map('map', { preferCanvas: true, tap: true }).setView([43.8, 0.1], 9);
 window._glide_map = map;
 
-// --- LAYERS OPENAIP ---
+// --- LAYER SYSTEM OSM + OpenAIP Aviation ---
 const API_KEY = "e21af8d83997e96b1f6e68551e8c2a78";
 
-const layers = {
-  osm: L.tileLayer(
-    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    { maxZoom: 19, attribution: "© OpenStreetMap" }
-  ),
+// Fond OSM (toujours visible)
+const osmLayer = L.tileLayer(
+  "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+  { maxZoom: 19, attribution: "© OpenStreetMap" }
+).addTo(map);
 
-  openaip: L.tileLayer(
-    `https://api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y}.png?apiKey=${API_KEY}`,
-    { maxZoom: 14, attribution: "© OpenAIP" }
-  ),
+// OpenAIP Aviation (overlay)
+const openAIPLayer = L.tileLayer(
+  `https://api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y}.png?apiKey=${API_KEY}`,
+  { maxZoom: 14, opacity: 1 }
+);
 
-  terrain: L.tileLayer(
-    `https://api.tiles.openaip.net/api/data/terrain/{z}/{x}/{y}.png?apiKey=${API_KEY}`,
-    { maxZoom: 14, attribution: "© OpenAIP Terrain" }
-  ),
+// --- UI LOGIC ---
+const panel = document.getElementById("layerPanel");
+const btn = document.getElementById("layerToggleBtn");
+const toggleAIP = document.getElementById("toggleAIP");
+const opacityAIP = document.getElementById("opacityAIP");
 
-  airspaces: L.tileLayer(
-    `https://api.tiles.openaip.net/api/data/airspaces/{z}/{x}/{y}.png?apiKey=${API_KEY}`,
-    { maxZoom: 14, attribution: "© OpenAIP Airspaces" }
-  ),
+// Ouvrir / fermer panneau
+btn.addEventListener("click", () => {
+  panel.style.display = panel.style.display === "none" ? "block" : "none";
+});
 
-  obstacles: L.tileLayer(
-    `https://api.tiles.openaip.net/api/data/obstacles/{z}/{x}/{y}.png?apiKey=${API_KEY}`,
-    { maxZoom: 14, attribution: "© OpenAIP Obstacles" }
-  )
-};
+// Activer / désactiver OpenAIP Aviation
+toggleAIP.addEventListener("change", () => {
+  if (toggleAIP.checked) {
+    openAIPLayer.addTo(map);
+  } else {
+    map.removeLayer(openAIPLayer);
+  }
+});
 
-// couche par défaut (doit être ajoutée après la création de map)
-layers.osm.addTo(map);
-
-// Sélecteur (assure-toi que <select id="layerSelect"> existe dans le DOM)
-const layerSelect = document.getElementById("layerSelect");
-if (layerSelect) {
-  layerSelect.addEventListener("change", (e) => {
-    const selected = e.target.value;
-
-    // retirer toutes les couches
-    Object.values(layers).forEach(layer => {
-      try { map.removeLayer(layer); } catch {}
-    });
-
-    // ajouter la couche choisie (sécurité : vérifier existence)
-    if (layers[selected]) {
-      layers[selected].addTo(map);
-    }
-  });
-} else {
-  console.warn("layerSelect introuvable dans le DOM.");
-}
+// Régler la transparence
+opacityAIP.addEventListener("input", () => {
+  const value = opacityAIP.value / 100;
+  openAIPLayer.setOpacity(value);
+});
 
 // Désactiver interactions si tu utilises cette fonction (doit recevoir map)
 if (typeof disableMapInteractions === 'function') {
