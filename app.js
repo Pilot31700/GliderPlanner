@@ -386,6 +386,40 @@ document.addEventListener('DOMContentLoaded', function () {
   makeDraggable(panel);
   makeDraggable(menuVent);
 
+// charger manuel externe et l'insérer dans #manuelCard
+function loadManuel() {
+  fetch('manuel.html')
+    .then(response => {
+      if (!response.ok) throw new Error('manuel.html non trouvé');
+      return response.text();
+    })
+    .then(html => {
+      const container = document.getElementById('manuelCard');
+      if (!container) return;
+      container.innerHTML = html;
+
+      // exécuter les scripts éventuels contenus dans manuel.html
+      const scripts = container.querySelectorAll('script');
+      scripts.forEach(oldScript => {
+        const s = document.createElement('script');
+        if (oldScript.src) {
+          s.src = oldScript.src;
+          s.async = false;
+        } else {
+          s.textContent = oldScript.textContent;
+        }
+        document.body.appendChild(s);
+        s.remove();
+      });
+    })
+    .catch(err => {
+      console.error('Erreur chargement manuel:', err);
+    });
+}
+
+// appeler après l'initialisation (par exemple à la fin de DOMContentLoaded)
+loadManuel();
+  
   // initialize wind labels
   windLayers.forEach(w => {
     const s = document.getElementById(w.v);
