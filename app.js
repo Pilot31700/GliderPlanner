@@ -2,10 +2,7 @@
  *  Glide Planner – APP.JS (Version A fidèle corrigée)
  ****************************************************/
 
-
-/* ============================================================
-   HELPERS – Enable / Disable map interactions
-   ============================================================ */
+/* HELPERS – Enable / Disable map interactions */
 function enableMapInteractions(map) {
   try {
     if (!map) return;
@@ -16,8 +13,7 @@ function enableMapInteractions(map) {
     if (map.boxZoom && map.boxZoom.enable) map.boxZoom.enable();
     if (map.keyboard && map.keyboard.enable) map.keyboard.enable();
     if (map.tap && map.tap.enable) map.tap.enable();
-
-    const el = map.getContainer();
+    const el = map.getContainer ? map.getContainer() : document.getElementById('map');
     if (el) {
       el.style.pointerEvents = 'auto';
       el.style.touchAction = 'pan-x pan-y pinch-zoom';
@@ -35,8 +31,7 @@ function disableMapInteractions(map) {
     if (map.boxZoom && map.boxZoom.disable) map.boxZoom.disable();
     if (map.keyboard && map.keyboard.disable) map.keyboard.disable();
     if (map.tap && map.tap.disable) map.tap.disable();
-
-    const el = map.getContainer();
+    const el = map.getContainer ? map.getContainer() : document.getElementById('map');
     if (el) {
       el.style.pointerEvents = 'none';
       el.style.touchAction = 'none';
@@ -44,11 +39,8 @@ function disableMapInteractions(map) {
   } catch (e) { console.warn('disableMapInteractions', e); }
 }
 
-
-/* ============================================================
-   NAVIGATION – goTo()
-   ============================================================ */
-function goTo(screenId) {
+/* NAVIGATION – goTo() */
+function goTo(screenId){
   const screens = ['homeScreen','prepScreen','volScreen','manuelScreen'];
   const mapEl = document.getElementById('map');
 
@@ -71,35 +63,25 @@ function goTo(screenId) {
   if (screenId === 'prepScreen' || screenId === 'volScreen') {
     mapEl.classList.remove('map-blurred');
     mapEl.classList.add('map-absolute');
-
     const prep = document.getElementById('prepScreen');
     if (prep) prep.style.pointerEvents = 'none';
-
     if (map) {
       enableMapInteractions(map);
-      setTimeout(() => map.invalidateSize(), 120);
+      setTimeout(()=> map.invalidateSize(), 120);
     }
-
   } else {
     mapEl.classList.add('map-blurred');
     mapEl.classList.remove('map-absolute');
-
     const prep = document.getElementById('prepScreen');
     if (prep) prep.style.pointerEvents = 'auto';
-
     if (map) disableMapInteractions(map);
   }
 }
 
-
-/* ============================================================
-   DOMContentLoaded – INITIALISATION GLOBALE
-   ============================================================ */
+/* DOMContentLoaded – INITIALISATION GLOBALE */
 document.addEventListener('DOMContentLoaded', function () {
 
-  /* ------------------------------
-     NAVIGATION BUTTONS
-     ------------------------------ */
+  /* NAVIGATION BUTTONS */
   const btnGoPrep = document.getElementById('btnGoPrep');
   const btnGoVol = document.getElementById('btnGoVol');
   const btnGoManuel = document.getElementById('btnGoManuel');
@@ -107,18 +89,37 @@ document.addEventListener('DOMContentLoaded', function () {
   const backFromVol = document.getElementById('backFromVol');
   const backFromManuel = document.getElementById('backFromManuel');
 
-  btnGoPrep && btnGoPrep.addEventListener('click', e => { e.preventDefault(); goTo('prepScreen'); });
-  btnGoVol && btnGoVol.addEventListener('click', e => { e.preventDefault(); goTo('volScreen'); });
-  btnGoManuel && btnGoManuel.addEventListener('click', e => { e.preventDefault(); goTo('manuelScreen'); });
+  if(btnGoPrep) btnGoPrep.addEventListener('click', (e) => { e.preventDefault(); goTo('prepScreen'); });
+  if(btnGoVol) btnGoVol.addEventListener('click', (e) => { e.preventDefault(); goTo('volScreen'); });
+  if(btnGoManuel) btnGoManuel.addEventListener('click', (e) => { e.preventDefault(); goTo('manuelScreen'); });
 
-  backFromPrep && backFromPrep.addEventListener('click', e => { e.preventDefault(); goTo('homeScreen'); });
-  backFromVol && backFromVol.addEventListener('click', e => { e.preventDefault(); goTo('homeScreen'); });
-  backFromManuel && backFromManuel.addEventListener('click', e => { e.preventDefault(); goTo('homeScreen'); });
+  if(backFromPrep) backFromPrep.addEventListener('click', (e) => { e.preventDefault(); goTo('homeScreen'); });
+  if(backFromVol) backFromVol.addEventListener('click', (e) => { e.preventDefault(); goTo('homeScreen'); });
+  if(backFromManuel) backFromManuel.addEventListener('click', (e) => { e.preventDefault(); goTo('homeScreen'); });
 
+  /* DOM ELEMENTS */
+  const panel = document.getElementById('panel');
+  const menuVent = document.getElementById('menuVent');
+  const btnPanel = document.getElementById('btnPanel');
+  const btnVent = document.getElementById('btnVent');
+  const btnRecalc = document.getElementById('btnRecalc');
+  const btnRecalcWind = document.getElementById('btnRecalcWind');
 
-  /* ============================================================
-     MAP INITIALISATION
-     ============================================================ */
+  const hVal = document.getElementById('hVal');
+  const slider = document.getElementById('slider');
+  const finesse = document.getElementById('finesse');
+  const fb = document.getElementById('fb');
+  const seuil = document.getElementById('seuil');
+  const marge = document.getElementById('marge');
+  const vCruiseInput = document.getElementById('vCruise');
+  const mode = document.getElementById('mode');
+  const labels = document.getElementById('labels');
+  const all = document.getElementById('all');
+  const refSelect = document.getElementById('refSelect');
+  const rangeKm = document.getElementById('rangeKm');
+  const applyWind = document.getElementById('applyWind');
+
+  /* MAP */
   const map = L.map('map', { preferCanvas: true, tap: true }).setView([43.8, 0.1], 9);
   window._glide_map = map;
 
@@ -136,17 +137,12 @@ document.addEventListener('DOMContentLoaded', function () {
     update();
   });
 
-  // 👉 IMPORTANT : maintenant que la map existe, on peut appeler goTo
+  // now that map exists, show home
   goTo('homeScreen');
 
-
-  /* ============================================================
-     TERRAINS JSON
-     ============================================================ */
+  /* TERRAINS JSON */
   let terrainsAll = [];
   let terrains = [];
-
-  const refSelect = document.getElementById('refSelect');
 
   function populateRef() {
     if (!refSelect) return;
@@ -169,10 +165,7 @@ document.addEventListener('DOMContentLoaded', function () {
     })
     .catch(err => console.error("Erreur chargement terrains.json :", err));
 
-
-  /* ============================================================
-     VENT
-     ============================================================ */
+  /* VENT */
   const windLayers = [
     { label: "0-500", v: "v0", d: "d0" },
     { label: "500-1000", v: "v1", d: "d1" },
@@ -185,9 +178,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function initWindMenu() {
     const container = document.getElementById('windControls');
     if (!container) return;
-
     container.innerHTML = '';
-
     windLayers.forEach(w => {
       const block = document.createElement('div');
       block.className = 'wind-row';
@@ -198,10 +189,9 @@ document.addEventListener('DOMContentLoaded', function () {
         <input type="number" id="${w.d}" value="0" style="width:70px;">
       `;
       container.appendChild(block);
-
-      const slider = block.querySelector(`#${w.v}`);
+      const sliderEl = block.querySelector(`#${w.v}`);
       const label = block.querySelector(`#${w.v}_label`);
-      slider && label && slider.addEventListener('input', () => { label.innerText = slider.value + ' km/h'; });
+      if (sliderEl && label) sliderEl.addEventListener('input', () => { label.innerText = sliderEl.value + ' km/h'; });
     });
   }
   initWindMenu();
@@ -215,26 +205,7 @@ document.addEventListener('DOMContentLoaded', function () {
     return { v: isNaN(v) ? 0 : v, d: isNaN(d) ? 0 : d };
   }
 
-
-  /* ============================================================
-     UPDATE
-     ============================================================ */
-  const panel = document.getElementById('panel');
-  const menuVent = document.getElementById('menuVent');
-
-  const hVal = document.getElementById('hVal');
-  const slider = document.getElementById('slider');
-  const finesse = document.getElementById('finesse');
-  const fb = document.getElementById('fb');
-  const seuil = document.getElementById('seuil');
-  const marge = document.getElementById('marge');
-  const vCruiseInput = document.getElementById('vCruise');
-  const mode = document.getElementById('mode');
-  const labels = document.getElementById('labels');
-  const all = document.getElementById('all');
-  const rangeKm = document.getElementById('rangeKm');
-  const applyWind = document.getElementById('applyWind');
-
+  /* UPDATE */
   let objs = [];
 
   function clearObjs() {
@@ -261,13 +232,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function update() {
     clearObjs();
-
     const range = parseFloat(rangeKm?.value ?? 100);
     terrains = terrainsAll.filter(t => distanceKm(userPos, t) <= range);
-
     const h = parseInt(slider?.value ?? 0, 10);
     if (hVal) hVal.innerText = h;
-
     const f = parseFloat(finesse?.value ?? 30);
     const fbVal = parseFloat(fb?.value ?? 10);
     const seuilVal = parseFloat(seuil?.value ?? 500);
@@ -277,32 +245,26 @@ document.addEventListener('DOMContentLoaded', function () {
     const showLabels = labels?.checked ?? false;
     const allVal = all?.checked ?? false;
     const useWind = applyWind?.checked ?? false;
-
     const ref = terrainsAll.find(t => refSelect && t.id === refSelect.value);
     const refAlt = ref ? ref.alt : 0;
 
     terrains.forEach(t => {
       const hMin = allVal ? 0 : h;
       const hMax = allVal ? 3000 : h;
-
       for (let hh = hMin; hh <= hMax; hh += 100) {
         let h_rel;
         if (modeVal === "QFE") h_rel = hh;
         else if (modeVal === "QNH") h_rel = hh - t.alt;
         else h_rel = hh - (t.alt - refAlt);
-
         if (h_rel <= 0) continue;
-
         const finesseUse = (h_rel <= seuilVal) ? fbVal : f;
         const h_util = h_rel - margeVal;
         if (h_util <= 0) continue;
-
         const d = h_util * finesseUse;
 
         if (!useWind) {
           const circle = L.circle([t.lat, t.lon], { radius: d, color: color(hh), weight: 2, fill: false }).addTo(map);
           objs.push(circle);
-
           if (showLabels) {
             [0, 180].forEach(a => {
               const rad = a * Math.PI / 180;
@@ -313,38 +275,27 @@ document.addEventListener('DOMContentLoaded', function () {
               }).addTo(map));
             });
           }
-
         } else {
           const polyPts = [];
           const step = 6;
-
           for (let a = 0; a < 360; a += step) {
             const alphaRad = a * Math.PI / 180;
-
             let layerIdx = Math.floor(hh / 500);
             if (layerIdx > windLayers.length - 1) layerIdx = windLayers.length - 1;
-
             const wind = getWindForLayer(layerIdx);
             const W = wind.v;
             const dir = wind.d;
             const dirRad = (dir + 180) * Math.PI / 180;
-
             const projWind = W * Math.cos(alphaRad - dirRad);
-
             let denom = vCruise - projWind;
             if (denom < 5) denom = 5;
-
             const effDist = d * (vCruise / denom);
-
             const latOff = (effDist / 111000) * Math.cos(alphaRad);
             const lonOff = (effDist / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(alphaRad);
-
             polyPts.push([t.lat + latOff, t.lon + lonOff]);
           }
-
           const poly = L.polygon(polyPts, { color: color(hh), weight: 2, fill: false }).addTo(map);
           objs.push(poly);
-
           if (showLabels) {
             [0, 180].forEach(a => {
               const rad = a * Math.PI / 180;
@@ -357,43 +308,36 @@ document.addEventListener('DOMContentLoaded', function () {
           }
         }
       }
-
       objs.push(L.marker([t.lat, t.lon]).addTo(map));
     });
   }
 
   update();
 
-
-  /* ============================================================
-     UI EVENTS
-     ============================================================ */
-  const btnPanel = document.getElementById('btnPanel');
-  const btnVent = document.getElementById('btnVent');
-  const btnRecalc = document.getElementById('btnRecalc');
-  const btnRecalcWind = document.getElementById('btnRecalcWind');
-
-  slider && slider.addEventListener('input', () => { hVal.innerText = slider.value; update(); });
-  btnRecalc && btnRecalc.addEventListener('click', e => { e.preventDefault(); update(); });
-  btnRecalcWind && btnRecalcWind.addEventListener('click', e => { e.preventDefault(); update(); });
+  /* UI EVENTS */
+  slider && slider.addEventListener('input', () => { if (hVal) hVal.innerText = slider.value; update(); });
+  btnRecalc && btnRecalc.addEventListener('click', (e) => { e.preventDefault(); update(); });
+  btnRecalcWind && btnRecalcWind.addEventListener('click', (e) => { e.preventDefault(); update(); });
 
   [
     finesse, fb, seuil, marge, vCruiseInput,
     mode, labels, all, rangeKm, refSelect, applyWind
-  ].forEach(el => el && el.addEventListener('change', update));
+  ].forEach(el => {
+    if (!el) return;
+    el.addEventListener('change', update);
+  });
 
   btnPanel && btnPanel.addEventListener('click', () => {
+    if (!panel) return;
     panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none';
   });
 
   btnVent && btnVent.addEventListener('click', () => {
+    if (!menuVent) return;
     menuVent.style.display = (menuVent.style.display === 'none' || menuVent.style.display === '') ? 'block' : 'none';
   });
 
-
-  /* ============================================================
-     DRAGGABLE PANELS
-     ============================================================ */
+  /* DRAGGABLE PANELS */
   function makeDraggable(el) {
     if (!el) return;
     let dragging = false;
@@ -401,9 +345,55 @@ document.addEventListener('DOMContentLoaded', function () {
     let offsetY = 0;
 
     function isFormControl(target) {
+      if (!target) return false;
       return !!target.closest('input, select, textarea, button, label, [role="slider"], .no-drag');
     }
 
-    el.addEventListener('pointerdown', e => {
+    el.addEventListener('pointerdown', function (e) {
       if (e.button && e.button !== 0) return;
-      if (isFormControl
+      if (isFormControl(e.target)) return;
+      dragging = true;
+      try { el.setPointerCapture(e.pointerId); } catch (err) {}
+      offsetX = e.clientX - el.offsetLeft;
+      offsetY = e.clientY - el.offsetTop;
+      el.style.cursor = 'grabbing';
+      e.preventDefault();
+    });
+
+    el.addEventListener('pointermove', function (e) {
+      if (!dragging) return;
+      let left = e.clientX - offsetX;
+      let top = e.clientY - offsetY;
+      left = Math.max(0, Math.min(window.innerWidth - el.offsetWidth, left));
+      top = Math.max(0, Math.min(window.innerHeight - el.offsetHeight, top));
+      el.style.left = left + 'px';
+      el.style.top = top + 'px';
+    });
+
+    el.addEventListener('pointerup', function (e) {
+      if (!dragging) return;
+      dragging = false;
+      try { el.releasePointerCapture(e.pointerId); } catch (err) {}
+      el.style.cursor = 'default';
+    });
+
+    el.addEventListener('pointercancel', function () {
+      dragging = false;
+      el.style.cursor = 'default';
+    });
+  }
+
+  makeDraggable(panel);
+  makeDraggable(menuVent);
+
+  // initialize wind labels
+  windLayers.forEach(w => {
+    const s = document.getElementById(w.v);
+    const lbl = document.getElementById(w.v + '_label');
+    if (s && lbl) lbl.innerText = s.value + ' km/h';
+  });
+
+  // expose update and map for debugging
+  window._glide_update = update;
+  window._glide_map = map;
+}); 
