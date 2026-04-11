@@ -11,10 +11,10 @@
   <!-- Ton CSS -->
   <link rel="stylesheet" href="styles.css" />
 
-  <!-- Leaflet JS (doit être chargé avant app.js) -->
+  <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- Ton JS : defer pour s'assurer que le DOM et Leaflet sont prêts -->
+  <!-- Ton JS -->
   <script src="app.js" defer></script>
 </head>
 
@@ -28,7 +28,6 @@
     <div id="homeInner">
       <h2 id="homeTitle">Glide Planner</h2>
       <p id="homeSubtitle">Prépare tes vols, visualise les zones atteignables et pilote en toute confiance.</p>
-
       <div class="menuGrid">
         <button id="btnGoPrep" class="menuBtn">Préparation</button>
         <button id="btnGoVol" class="menuBtn">Mode Vol</button>
@@ -40,32 +39,24 @@
   <!-- PREPARATION -->
   <div id="prepScreen" class="screen" aria-hidden="true">
     <button class="backBtn" id="backFromPrep">← Menu</button>
-
     <button id="btnPanel" class="toggleBtn top" title="Paramètres">⚙</button>
     <button id="btnVent" class="toggleBtn second" title="Vent">🌬</button>
 
     <div id="panel" class="panel" style="left:12px; top:72px; display:none;">
       <h4>Glide Planner v2.0</h4>
-
       <div class="field">Finesse: <input id="finesse" type="number" value="30"></div>
       <div class="field">Finesse basse: <input id="fb" type="number" value="10"></div>
       <div class="field">Seuil finesse basse (m): <input id="seuil" type="number" value="500"></div>
       <div class="field">Marge (m): <input id="marge" type="number" value="250"></div>
       <div class="field">Vitesse de croisière (km/h): <input id="vCruise" type="number" value="100"></div>
-
       <div class="field"><button id="btnRecalc" style="width:100%; padding:10px; border-radius:8px; border:none; background:var(--accent); color:white; font-weight:700;">Recalculer</button></div>
-
       <hr>
-
       <div class="field">Hauteur: <span id="hVal">600</span> m</div>
       <div class="field"><input id="slider" type="range" min="0" max="3000" step="100" value="600"></div>
-
       <div class="field"><label><input type="checkbox" id="all"> Tous cercles 100m</label></div>
       <div class="field"><label><input type="checkbox" id="labels" checked> Labels</label></div>
       <div class="field"><label><input type="checkbox" id="showConn" checked> Afficher zones atteignables</label></div>
-
       <hr>
-
       <div class="field">Mode<br>
         <select id="mode">
           <option value="QFE">QFE (terrain)</option>
@@ -73,13 +64,10 @@
           <option value="QFE_REF">QFE référence</option>
         </select>
       </div>
-
       <div class="field">Terrain référence<br>
         <select id="refSelect"></select>
       </div>
-
       <hr>
-
       <div class="field">Distance filtre (km): <input id="rangeKm" type="number" value="100"></div>
     </div>
 
@@ -91,62 +79,58 @@
     </div>
   </div>
 
-<!-- MODE VOL -->
-<div id="volScreen" class="screen" aria-hidden="true">
-  <!-- Bouton retour -->
-  <button class="backBtn" id="backFromVol">← Menu</button>
-  <!-- Bouton pour afficher/masquer le menu VOL -->
-  <button id="btnVolMenu" class="toggleBtn top" title="Réglages Vol">⚙</button>
-  <!-- PANEL VOL (déplaçable) -->
-  <div id="volPanel" class="panel" style="left:12px; top:72px; display:none;">
-    <h4>Mode Vol – Réglages</h4>
-    <div class="field">
-      Finesse : <span id="volFinesseVal">30</span>
-      <input id="volFinesse" type="range" min="10" max="60" value="30">
-    </div>
-    <div class="field">
-      Finesse basse : <span id="volFbVal">10</span>
-      <input id="volFb" type="range" min="5" max="30" value="10">
-    </div>
-    <div class="field">
-      Seuil finesse basse (m) : <span id="volSeuilVal">500</span>
-      <input id="volSeuil" type="range" min="100" max="1500" step="50" value="500">
-    </div>
-    <div class="field">
-      Marge (m) :
-      <input id="volMarge" type="number" value="250">
-    </div>
-    <hr>
-    <div class="field">
-      Altimétrie :
-      <select id="volAltMode">
-        <option value="QNH">QNH (GPS)</option>
-        <option value="QFE">QFE (terrain le plus proche)</option>
-        <option value="QFE_REF">QFE Référence</option>
-      </select>
-    </div>
-    <div class="field">
-      Terrain référence :
-      <select id="volRefSelect"></select>
-    </div>
-    <hr>
-    <div class="field">
-      <label><input type="checkbox" id="volGpsEnabled" checked> GPS actif</label>
-    </div>
-    <div class="field">
-      Altitude manuelle (m) :
-      <input id="volAltManual" type="number" value="1000">
+  <!-- MODE VOL -->
+  <div id="volScreen" class="screen" aria-hidden="true">
+    <button class="backBtn" id="backFromVol">← Menu</button>
+    <button id="btnVolMenu" class="toggleBtn top" title="Réglages Vol">⚙</button>
+    <button id="btnRecenter" class="toggleBtn second" title="Recentrer">📍</button>
+
+    <div id="volPanel" class="panel" style="left:12px; top:72px; display:none;">
+      <h4>Mode Vol – Réglages</h4>
+      <div class="field">Finesse : <span id="volFinesseVal">30</span>
+        <input id="volFinesse" type="range" min="10" max="60" value="30">
+      </div>
+      <div class="field">Finesse basse : <span id="volFbVal">10</span>
+        <input id="volFb" type="range" min="5" max="30" value="10">
+      </div>
+      <div class="field">Seuil finesse basse (m) : <span id="volSeuilVal">500</span>
+        <input id="volSeuil" type="range" min="100" max="1500" step="50" value="500">
+      </div>
+      <div class="field">Marge (m) :
+        <input id="volMarge" type="number" value="250">
+      </div>
+      <hr>
+      <div class="field">Altimétrie :
+        <select id="volAltMode">
+          <option value="QNH">QNH (GPS)</option>
+          <option value="QFE">QFE (terrain le plus proche)</option>
+          <option value="QFE_REF">QFE Référence</option>
+        </select>
+      </div>
+      <div class="field">Terrain référence :
+        <select id="volRefSelect"></select>
+      </div>
+      <hr>
+      <div class="field">
+        <label><input type="checkbox" id="volGpsEnabled" checked> GPS actif</label>
+      </div>
+      <div class="field">Altitude manuelle (m) :
+        <input id="volAltManual" type="number" value="1000">
+      </div>
     </div>
   </div>
-</div>
 
   <!-- MANUEL -->
   <div id="manuelScreen" class="screen" aria-hidden="true">
     <button class="backBtn" id="backFromManuel">← Menu</button>
-
     <div id="manuelCard">
-      <!-- ton manuel inchangé -->
+      <!-- ton manuel ici -->
     </div>
+  </div>
+
+  <!-- Affichage distance franchissable -->
+  <div id="volRadiusDisplay" style="position:absolute; bottom:12px; left:12px; background:white; padding:6px 12px; border-radius:6px; font-size:14px; font-weight:bold; box-shadow:0 0 4px rgba(0,0,0,0.2); z-index:1000;">
+    Distance franchissable : 0 km
   </div>
 
 </body>
