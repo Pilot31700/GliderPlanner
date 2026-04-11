@@ -755,7 +755,6 @@ function updateVolCircle() {
     }
   });
 }
-}
 
 
 /* Fin du module VOL */
