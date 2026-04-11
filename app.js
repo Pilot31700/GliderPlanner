@@ -60,7 +60,17 @@ function goTo(screenId){
   if (!mapEl) return;
 
   const map = window._glide_map || null;
+// Gestion de l'affichage du menu Carte
+const btnCarte = document.getElementById("layerToggleBtn");
+const panelCarte = document.getElementById("layerPanel");
 
+if (screenId === "prepScreen" || screenId === "volScreen") {
+    btnCarte.style.display = "block";
+    panelCarte.style.display = "none"; // fermé par défaut
+} else {
+    btnCarte.style.display = "none";
+    panelCarte.style.display = "none";
+}
   // gérer l'affichage du volRadiusDisplay uniquement en Mode VOL
   const volRadiusEl = document.getElementById('volRadiusDisplay');
   if (volRadiusEl) {
