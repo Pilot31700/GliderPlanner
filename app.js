@@ -151,14 +151,51 @@ document.addEventListener('DOMContentLoaded', function () {
   const applyWind = document.getElementById('applyWind');
 
   /* MAP */
-  const map = L.map('map', { preferCanvas: true, tap: true }).setView([43.8, 0.1], 9);
-  window._glide_map = map;
+// --- LAYERS OPENAIP ---
+const API_KEY = "e21af8d83997e96b1f6e68551e8c2a78"; // <<< Mets ta clé OpenAIP ici
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; OpenStreetMap contributors'
-  }).addTo(map);
+const layers = {
+  osm: L.tileLayer(
+    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    { maxZoom: 19, attribution: "© OpenStreetMap" }
+  ),
 
+  openaip: L.tileLayer(
+    `https://api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y}.png?apiKey=${API_KEY}`,
+    { maxZoom: 14, attribution: "© OpenAIP" }
+  ),
+
+  terrain: L.tileLayer(
+    `https://api.tiles.openaip.net/api/data/terrain/{z}/{x}/{y}.png?apiKey=${API_KEY}`,
+    { maxZoom: 14, attribution: "© OpenAIP Terrain" }
+  ),
+
+  airspaces: L.tileLayer(
+    `https://api.tiles.openaip.net/api/data/airspaces/{z}/{x}/{y}.png?apiKey=${API_KEY}`,
+    { maxZoom: 14, attribution: "© OpenAIP Airspaces" }
+  ),
+
+  obstacles: L.tileLayer(
+    `https://api.tiles.openaip.net/api/data/obstacles/{z}/{x}/{y}.png?apiKey=${API_KEY}`,
+    { maxZoom: 14, attribution: "© OpenAIP Obstacles" }
+  )
+};
+
+// couche par défaut
+layers.osm.addTo(map);
+
+// Sélecteur
+document.getElementById("layerSelect").addEventListener("change", (e) => {
+  const selected = e.target.value;
+
+  // retirer toutes les couches
+  Object.values(layers).forEach(layer => {
+    try { map.removeLayer(layer); } catch {}
+  });
+
+  // ajouter la couche choisie
+  layers[selected].addTo(map);
+});
   disableMapInteractions(map);
 
   let userPos = { lat: 43.8, lon: 0.1 };
