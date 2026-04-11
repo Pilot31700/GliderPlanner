@@ -173,6 +173,7 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   goTo('homeScreen');
+ }); 
 /* ============================================================
    TERRAINS + FILTRE 4 LETTRES + UPDATE()
    ============================================================ */
