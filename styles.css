@@ -171,6 +171,64 @@
       pointer-events:auto; /* interactive when visible */
     }
 
+/* --- MODAL AJOUT TERRAIN --- */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 2000;
+  left: 0; top: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(3px);
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  width: 280px;
+  border-radius: 10px;
+  box-shadow: 0 0 12px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modal-content h3 {
+  margin: 0;
+  text-align: center;
+}
+
+.modal-content input {
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.modal-buttons button {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+#addTerrainCancel {
+  background: #ccc;
+}
+
+#addTerrainConfirm {
+  background: var(--accent);
+  color: white;
+}
+
     @media (max-width:720px){
       .panel { width:90%; left:5% !important; right:5% !important; top:12px !important; }
       .menuBtn { min-width:160px; }
