@@ -329,8 +329,8 @@ fetch("terrains.json")
   .then(data => {
       createTerrainMarkers(data);
   })
-    .catch(err => console.error("Erreur chargement terrains.json :", err));
-
+  .catch(err => console.error("Erreur chargement terrains.json :", err));
+  
   /* VENT */
   const windLayers = [
     { label: "0-500", v: "v0", d: "d0" },
