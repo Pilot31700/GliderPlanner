@@ -39,13 +39,20 @@
   <!-- MAP -->
   <div id="map" aria-hidden="true"></div>
 <!-- Sélecteur de couches -->
-<select id="layerSelect" class="layer-select">
-  <option value="osm">OSM Standard</option>
-  <option value="openaip">OpenAIP Aviation</option>
-  <option value="terrain">OpenAIP Terrain</option>
-  <option value="airspaces">OpenAIP Airspaces</option>
-  <option value="obstacles">OpenAIP Obstacles</option>
-</select>
+<!-- Bouton pour ouvrir le panneau -->
+<div id="layerToggleBtn">🗺️ Carte</div>
+
+<!-- Panneau de réglages -->
+<div id="layerPanel">
+  <label>
+    <input type="checkbox" id="toggleAIP">
+    Activer OpenAIP Aviation
+  </label>
+
+  <label for="opacityAIP">Transparence</label>
+  <input type="range" id="opacityAIP" min="0" max="100" value="100">
+</div>
+
 
   <!-- HOME -->
   <div id="homeScreen" class="screen" aria-hidden="false">
