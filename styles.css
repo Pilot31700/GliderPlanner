@@ -30,7 +30,40 @@
       filter: blur(6px) brightness(0.55) saturate(0.9);
       pointer-events:none;
     }
+#layerToggleBtn {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  z-index: 2000;
+  background: white;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
 
+#layerPanel {
+  position: absolute;
+  bottom: 70px;
+  left: 20px;
+  z-index: 2000;
+  background: white;
+  padding: 12px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  display: none;
+  width: 180px;
+}
+
+#layerPanel label {
+  display: block;
+  margin-bottom: 10px;
+}
+
+#opacityAIP {
+  width: 100%;
+}
     /* SCREENS
        Default: screens do not capture pointer events so clicks fall through to the map.
        Individual interactive elements inside screens (buttons, panels) explicitly enable pointer-events.
