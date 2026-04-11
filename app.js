@@ -150,9 +150,12 @@ document.addEventListener('DOMContentLoaded', function () {
   const rangeKm = document.getElementById('rangeKm');
   const applyWind = document.getElementById('applyWind');
 
-  /* MAP */
+ /* MAP */
+const map = L.map('map', { preferCanvas: true, tap: true }).setView([43.8, 0.1], 9);
+window._glide_map = map;
+
 // --- LAYERS OPENAIP ---
-const API_KEY = "e21af8d83997e96b1f6e68551e8c2a78"; // <<< Mets ta clé OpenAIP ici
+const API_KEY = "e21af8d83997e96b1f6e68551e8c2a78";
 
 const layers = {
   osm: L.tileLayer(
@@ -181,33 +184,44 @@ const layers = {
   )
 };
 
-// couche par défaut
+// couche par défaut (doit être ajoutée après la création de map)
 layers.osm.addTo(map);
 
-// Sélecteur
-document.getElementById("layerSelect").addEventListener("change", (e) => {
-  const selected = e.target.value;
+// Sélecteur (assure-toi que <select id="layerSelect"> existe dans le DOM)
+const layerSelect = document.getElementById("layerSelect");
+if (layerSelect) {
+  layerSelect.addEventListener("change", (e) => {
+    const selected = e.target.value;
 
-  // retirer toutes les couches
-  Object.values(layers).forEach(layer => {
-    try { map.removeLayer(layer); } catch {}
+    // retirer toutes les couches
+    Object.values(layers).forEach(layer => {
+      try { map.removeLayer(layer); } catch {}
+    });
+
+    // ajouter la couche choisie (sécurité : vérifier existence)
+    if (layers[selected]) {
+      layers[selected].addTo(map);
+    }
   });
+} else {
+  console.warn("layerSelect introuvable dans le DOM.");
+}
 
-  // ajouter la couche choisie
-  layers[selected].addTo(map);
-});
+// Désactiver interactions si tu utilises cette fonction (doit recevoir map)
+if (typeof disableMapInteractions === 'function') {
   disableMapInteractions(map);
+}
 
-  let userPos = { lat: 43.8, lon: 0.1 };
-  map.on('moveend', () => {
-    const c = map.getCenter();
-    userPos = { lat: c.lat, lon: c.lng };
-    update();
-  });
+// position utilisateur et écoute du déplacement
+let userPos = { lat: 43.8, lon: 0.1 };
+map.on('moveend', () => {
+  const c = map.getCenter();
+  userPos = { lat: c.lat, lon: c.lng };
+  if (typeof update === 'function') update();
+});
 
-  // now that map exists, show home
-  goTo('homeScreen');
-
+// now that map exists, show home
+if (typeof goTo === 'function') goTo('homeScreen');
   // --- MODE PREP : Ajout d'un terrain via popup stylé ---
 let pendingClickLatLon = null;
 
