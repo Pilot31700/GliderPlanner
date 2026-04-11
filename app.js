@@ -328,7 +328,7 @@ fetch("terrains.json")
   .then(r => r.json())
   .then(data => {
       createTerrainMarkers(data);
-  });
+  })
     .catch(err => console.error("Erreur chargement terrains.json :", err));
 
   /* VENT */
