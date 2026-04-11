@@ -44,6 +44,7 @@ function goTo(screenId){
   const screens = ['homeScreen','prepScreen','volScreen','manuelScreen'];
   const mapEl = document.getElementById('map');
 
+  // bascule les écrans
   screens.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -60,21 +61,51 @@ function goTo(screenId){
 
   const map = window._glide_map || null;
 
+  // gérer l'affichage du volRadiusDisplay uniquement en Mode VOL
+  const volRadiusEl = document.getElementById('volRadiusDisplay');
+  if (volRadiusEl) {
+    volRadiusEl.style.display = (screenId === 'volScreen') ? 'block' : 'none';
+  }
+
+  // comportement carte / interactions
   if (screenId === 'prepScreen' || screenId === 'volScreen') {
     mapEl.classList.remove('map-blurred');
     mapEl.classList.add('map-absolute');
+
+    // quand on est en prepScreen, on veut que le panneau prep ne capte pas les interactions sur la carte
     const prep = document.getElementById('prepScreen');
     if (prep) prep.style.pointerEvents = 'none';
+
     if (map) {
       enableMapInteractions(map);
+      // invalide la taille après un court délai pour Leaflet
       setTimeout(()=> map.invalidateSize(), 120);
     }
   } else {
     mapEl.classList.add('map-blurred');
     mapEl.classList.remove('map-absolute');
+
     const prep = document.getElementById('prepScreen');
     if (prep) prep.style.pointerEvents = 'auto';
+
     if (map) disableMapInteractions(map);
+  }
+
+  // initialisation / arrêt spécifiques au Mode VOL
+  if (screenId === 'volScreen') {
+    // initVolMode est idempotent (protégé par _volInitialized)
+    try { initVolMode(); } catch (e) { console.warn('initVolMode error', e); }
+
+    // démarrer GPS watch si nécessaire (startVolGps gère l'idempotence)
+    try { startVolGps(); } catch (e) { console.warn('startVolGps error', e); }
+  } else {
+    // quitter le mode vol : arrêter le watch GPS pour économiser la batterie/ressources
+    try {
+      if (typeof volGpsWatchId === 'number' && volGpsWatchId !== null) {
+        navigator.geolocation.clearWatch(volGpsWatchId);
+        volGpsWatchId = null;
+      }
+    } catch (e) { /* ignore */ }
   }
 }
 
@@ -140,6 +171,9 @@ document.addEventListener('DOMContentLoaded', function () {
   // now that map exists, show home
   goTo('homeScreen');
 
+// Evite double initialisation du Mode VOL
+let _volInitialized = false;
+  
   /* TERRAINS JSON */
   let terrainsAll = [];
   let terrains = [];
@@ -441,9 +475,18 @@ let volGpsWatchId = null;
 let volAutoCenter = true;
 
 function initVolMode() {
+  // Ne rien faire si déjà initialisé
+  if (_volInitialized) return;
+  _volInitialized = true;
+
+  // Vérifier que terrainsAll est prêt
+  if (typeof terrainsAll === 'undefined' || !Array.isArray(terrainsAll)) {
+    console.warn('initVolMode: terrainsAll non disponible, initialisation différée.');
+    return;
+  }
+
   const btnVolMenu = document.getElementById('btnVolMenu');
   const volPanel = document.getElementById('volPanel');
-
   const volFinesse = document.getElementById('volFinesse');
   const volFb = document.getElementById('volFb');
   const volSeuil = document.getElementById('volSeuil');
@@ -452,11 +495,15 @@ function initVolMode() {
   const volRefSelect = document.getElementById('volRefSelect');
   const volGpsEnabled = document.getElementById('volGpsEnabled');
   const volAltManual = document.getElementById('volAltManual');
-  const volRadiusDisplay = document.getElementById('volRadiusDisplay');
   const btnRecenter = document.getElementById('btnRecenter');
 
-  // remplir la liste des terrains
-  if (terrainsAll.length && volRefSelect && volRefSelect.children.length === 0) {
+  if (!btnVolMenu || !volPanel) {
+    console.warn('initVolMode: éléments DOM du Mode VOL manquants.');
+    return;
+  }
+
+  // remplir la liste des terrains si vide
+  if (volRefSelect && terrainsAll.length && volRefSelect.children.length === 0) {
     terrainsAll.forEach(t => {
       const opt = document.createElement("option");
       opt.value = t.id;
@@ -466,48 +513,43 @@ function initVolMode() {
   }
 
   // afficher / masquer panel
-  btnVolMenu?.addEventListener('click', () => {
+  btnVolMenu.addEventListener('click', () => {
     volPanel.style.display = (volPanel.style.display === 'none' || volPanel.style.display === '') ? 'block' : 'none';
   });
 
-  // sliders affichent leur valeur
+  // recentrage
+  btnRecenter?.addEventListener('click', () => {
+    volAutoCenter = true;
+    if (window._glide_plane_pos && window._glide_map) {
+      window._glide_map.setView([window._glide_plane_pos.lat, window._glide_plane_pos.lon]);
+    }
+  });
+
+  // sliders affichent leur valeur et déclenchent update
   volFinesse?.addEventListener('input', () => {
     document.getElementById('volFinesseVal').innerText = volFinesse.value;
     updateVolCircle();
   });
-
   volFb?.addEventListener('input', () => {
     document.getElementById('volFbVal').innerText = volFb.value;
     updateVolCircle();
   });
-
   volSeuil?.addEventListener('input', () => {
     document.getElementById('volSeuilVal').innerText = volSeuil.value;
     updateVolCircle();
   });
 
-  [
-    volMarge, volAltMode, volRefSelect,
-    volGpsEnabled, volAltManual
-  ].forEach(el => el?.addEventListener('change', updateVolCircle));
+  [volMarge, volAltMode, volRefSelect, volGpsEnabled, volAltManual].forEach(el => el?.addEventListener('change', updateVolCircle));
 
-  btnRecenter?.addEventListener('click', () => {
-    volAutoCenter = true;
-    if (window._glide_plane_pos) {
-      window._glide_map.setView([window._glide_plane_pos.lat, window._glide_plane_pos.lon]);
-    }
-  });
+  // rendre le panel déplaçable (assure-toi que makeDraggable existe)
+  try { makeDraggable(volPanel); } catch (e) { console.warn('makeDraggable absent', e); }
 
-  // rendre le panel déplaçable
-  makeDraggable(volPanel);
-
-  // activer GPS
+  // démarrer GPS si nécessaire
   startVolGps();
 
-  // lancer le calcul initial
+  // affichage initial
   updateVolCircle();
 }
-
 function startVolGps() {
   if (!navigator.geolocation) {
     console.warn("Géolocalisation non supportée");
