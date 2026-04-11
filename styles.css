@@ -61,6 +61,32 @@
   margin-bottom: 10px;
 }
 
+#layerToggleBtn {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+
+  background: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  z-index: 9999;
+}
+
+#layerPanel {
+  position: absolute;
+  bottom: 70px;   /* au-dessus du bouton */
+  right: 20px;
+
+  background: white;
+  padding: 12px;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  display: none; /* si tu l’ouvres via JS */
+  z-index: 9999;
+}
+
 #opacityAIP {
   width: 100%;
 }
