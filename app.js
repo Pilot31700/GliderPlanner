@@ -210,6 +210,15 @@ opacityAIP.addEventListener("input", () => {
   const value = opacityAIP.value / 100;
   openAIPLayer.setOpacity(value);
 });
+// Filtre terrains 4 lettres
+const filter4Letters = document.getElementById("filter4Letters");
+
+if (filter4Letters) {
+  filter4Letters.addEventListener("change", () => {
+    filterOnly4Letters = filter4Letters.checked;
+    update(); // 🔥 redessine cercles + marqueurs
+  });
+}
 
 // Désactiver interactions si tu utilises cette fonction (doit recevoir map)
 if (typeof disableMapInteractions === 'function') {
@@ -294,6 +303,7 @@ let _volInitialized = false;
   /* TERRAINS JSON */
   let terrainsAll = [];
   let terrains = [];
+  let filterOnly4Letters = false;
 
   function populateRef() {
     if (!refSelect) return;
@@ -399,7 +409,11 @@ fetch("terrains.json")
   function update() {
     clearObjs();
     const range = parseFloat(rangeKm?.value ?? 100);
-    terrains = terrainsAll.filter(t => distanceKm(userPos, t) <= range);
+    terrains = terrainsAll.filter(t => {
+  if (filterOnly4Letters && !/^[A-Z]{4}$/.test(t.id)) return false;
+  return distanceKm(userPos, t) <= range;
+});
+
     const h = parseInt(slider?.value ?? 0, 10);
     if (hVal) hVal.innerText = h;
     const f = parseFloat(finesse?.value ?? 30);
