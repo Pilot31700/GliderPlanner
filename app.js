@@ -171,6 +171,68 @@ document.addEventListener('DOMContentLoaded', function () {
   // now that map exists, show home
   goTo('homeScreen');
 
+  // --- MODE PREP : Ajout d'un terrain via popup stylé ---
+let pendingClickLatLon = null;
+
+map.on('click', function(e) {
+  const prepVisible = document.getElementById('prepScreen')?.style.display !== 'none';
+  if (!prepVisible) return;
+
+  pendingClickLatLon = { lat: e.latlng.lat, lon: e.latlng.lng };
+
+  document.getElementById('addTerrainModal').style.display = 'flex';
+  document.getElementById('newTerrainName').value = "";
+  document.getElementById('newTerrainAlt').value = "";
+});
+
+// Boutons popup
+document.getElementById('addTerrainCancel').addEventListener('click', () => {
+  document.getElementById('addTerrainModal').style.display = 'none';
+  pendingClickLatLon = null;
+});
+
+document.getElementById('addTerrainConfirm').addEventListener('click', () => {
+  const name = document.getElementById('newTerrainName').value.trim();
+  const alt = parseFloat(document.getElementById('newTerrainAlt').value);
+
+  if (!name) {
+    alert("Nom invalide");
+    return;
+  }
+  if (isNaN(alt)) {
+    alert("Altitude invalide");
+    return;
+  }
+
+  const id = name.toUpperCase().replace(/[^A-Z0-9]/g, "_");
+
+  const newTerrain = {
+    id: id,
+    lat: pendingClickLatLon.lat,
+    lon: pendingClickLatLon.lon,
+    alt: alt
+  };
+
+  terrainsAll.push(newTerrain);
+
+  // Ajout dans la liste de référence
+  if (refSelect) {
+    const opt = document.createElement("option");
+    opt.value = id;
+    opt.innerText = id;
+    refSelect.appendChild(opt);
+  }
+
+  // Marqueur visuel
+  L.marker([newTerrain.lat, newTerrain.lon]).addTo(map);
+
+  // Recalcul
+  update();
+
+  document.getElementById('addTerrainModal').style.display = 'none';
+  pendingClickLatLon = null;
+});
+
 // Evite double initialisation du Mode VOL
 let _volInitialized = false;
   
