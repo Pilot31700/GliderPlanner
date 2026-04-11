@@ -17,7 +17,23 @@
   <!-- Ton JS -->
   <script src="app.js" defer></script>
 </head>
+<!-- POPUP AJOUT TERRAIN -->
+<div id="addTerrainModal" class="modal">
+  <div class="modal-content">
+    <h3>Ajouter un point</h3>
 
+    <label>Nom du point</label>
+    <input type="text" id="newTerrainName" placeholder="Ex: PENTE_SUD">
+
+    <label>Altitude (m)</label>
+    <input type="number" id="newTerrainAlt" placeholder="Ex: 450">
+
+    <div class="modal-buttons">
+      <button id="addTerrainCancel">Annuler</button>
+      <button id="addTerrainConfirm">Créer</button>
+    </div>
+  </div>
+</div>
 <body>
 
   <!-- MAP -->
