@@ -1,7 +1,7 @@
 /****************************************************
  *  Glide Planner – APP.JS (Version A fidèle corrigée)
  ****************************************************/
-
+let _volInitialized = false;
 /* HELPERS – Enable / Disable map interactions */
 function enableMapInteractions(map) {
   try {
