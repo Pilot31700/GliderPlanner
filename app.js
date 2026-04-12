@@ -220,14 +220,26 @@ document.getElementById("filter4Letters")?.addEventListener("change", () => {
 });
 
 /* Chargement terrains.json */
+/* Chargement terrains.json (sécurisé vis-à-vis de l'initialisation de la map) */
+let terrainsLoaded = false;
+
 fetch("terrains.json")
-  .then(r => r.json())
+  .then(r => {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  })
   .then(data => {
     terrainsAll = data;
     terrains = data;
     populateRef();
-    update();
-    initVolMode(); // initialisation du Mode VOL après chargement
+    terrainsLoaded = true;
+
+    // Si la map est déjà initialisée, on lance update et initVolMode
+    if (window._glide_map) {
+      update();
+      initVolMode();
+    }
+    // Sinon, DOMContentLoaded déclenchera update (voir plus bas)
   })
   .catch(err => console.error("Erreur chargement terrains.json :", err));
 
@@ -389,11 +401,16 @@ document.getElementById('addTerrainCancel').addEventListener('click', () => {
 });
 
 document.getElementById('addTerrainConfirm').addEventListener('click', () => {
+  if (!pendingClickLatLon) {
+    return alert("Aucun emplacement sélectionné. Cliquez sur la carte en mode Préparation pour ajouter un terrain.");
+  }
+
   const name = document.getElementById('newTerrainName').value.trim();
   const alt = parseFloat(document.getElementById('newTerrainAlt').value);
 
   if (!name) return alert("Nom invalide");
   if (isNaN(alt)) return alert("Altitude invalide");
+  ...
 
   const id = name.toUpperCase().replace(/[^A-Z0-9]/g, "_");
 
