@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
-  <title>Glide Planner v2.1</title>
+  <title>Glide Planner v2.2</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <!-- Leaflet CSS -->
@@ -20,25 +20,30 @@
   <!-- Ton JS -->
   <script src="app.js" defer></script>
 </head>
-<!-- POPUP AJOUT TERRAIN -->
-<div id="addTerrainModal" class="modal">
-  <div class="modal-content">
-    <h3>Ajouter un point</h3>
-
-    <label>Nom du point</label>
-    <input type="text" id="newTerrainName" placeholder="Ex: PENTE_SUD">
-
-    <label>Altitude (m)</label>
-    <input type="number" id="newTerrainAlt" placeholder="Ex: 450">
-
-    <div class="modal-buttons">
-      <button id="addTerrainCancel">Annuler</button>
-      <button id="addTerrainConfirm">Créer</button>
-    </div>
-  </div>
-</div>
+<body>
 <body>
 
+  <!-- POPUP AJOUT TERRAIN (déplacé dans le body) -->
+  <div id="addTerrainModal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <h3>Ajouter un point</h3>
+
+      <label>Nom du point</label>
+      <input type="text" id="newTerrainName" placeholder="Ex: PENTE_SUD">
+
+      <label>Altitude (m)</label>
+      <input type="number" id="newTerrainAlt" placeholder="Ex: 450">
+
+      <div class="modal-buttons">
+        <button id="addTerrainCancel">Annuler</button>
+        <button id="addTerrainConfirm">Créer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAP -->
+  <div id="map" aria-hidden="true"></div>
+  ...
   <!-- MAP -->
   <div id="map" aria-hidden="true"></div>
 <!-- Sélecteur de couches -->
@@ -81,7 +86,7 @@
     <button id="btnVent" class="toggleBtn second" title="Vent">🌬</button>
 
     <div id="panel" class="panel" style="left:12px; top:72px; display:none;">
-      <h4>Glide Planner v2.1</h4>
+      <h4>Glide Planner v2.2</h4>
       <div class="field">Finesse: <input id="finesse" type="number" value="30"></div>
       <div class="field">Finesse basse: <input id="fb" type="number" value="10"></div>
       <div class="field">Seuil finesse basse (m): <input id="seuil" type="number" value="500"></div>
