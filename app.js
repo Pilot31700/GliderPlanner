@@ -412,11 +412,14 @@ document.getElementById('addTerrainConfirm').addEventListener('click', () => {
     return alert("Aucun emplacement sélectionné. Cliquez sur la carte en mode Préparation pour ajouter un terrain.");
   }
 
-  const name = document.getElementById('newTerrainName').value.trim();
-  const alt = parseFloat(document.getElementById('newTerrainAlt').value);
+  const nameEl = document.getElementById('newTerrainName');
+  const altEl = document.getElementById('newTerrainAlt');
+  const name = nameEl ? nameEl.value.trim() : "";
+  const alt = altEl ? parseFloat(altEl.value) : NaN;
 
   if (!name) return alert("Nom invalide");
   if (isNaN(alt)) return alert("Altitude invalide");
+
   const id = name.toUpperCase().replace(/[^A-Z0-9]/g, "_");
 
   const newTerrain = {
