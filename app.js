@@ -119,7 +119,14 @@ document.addEventListener('DOMContentLoaded', function () {
   const backFromPrep = document.getElementById('backFromPrep');
   const backFromVol = document.getElementById('backFromVol');
   const backFromManuel = document.getElementById('backFromManuel');
+  const filter4Letters = document.getElementById("filter4Letters");
 
+if (filter4Letters) {
+  filter4Letters.addEventListener("change", () => {
+    filterOnly4Letters = filter4Letters.checked;
+    update();
+  });
+}
   if(btnGoPrep) btnGoPrep.addEventListener('click', (e) => { e.preventDefault(); goTo('prepScreen'); });
   if(btnGoVol) btnGoVol.addEventListener('click', (e) => { e.preventDefault(); goTo('volScreen'); });
   if(btnGoManuel) btnGoManuel.addEventListener('click', (e) => { e.preventDefault(); goTo('manuelScreen'); });
@@ -278,7 +285,7 @@ let _volInitialized = false;
   /* TERRAINS JSON */
   let terrainsAll = [];
   let terrains = [];
-
+  let filterOnly4Letters = false;
   function populateRef() {
     if (!refSelect) return;
     refSelect.innerHTML = "";
@@ -369,7 +376,10 @@ let _volInitialized = false;
   function update() {
     clearObjs();
     const range = parseFloat(rangeKm?.value ?? 100);
-    terrains = terrainsAll.filter(t => distanceKm(userPos, t) <= range);
+    terrains = terrainsAll.filter(t => {
+  if (filterOnly4Letters && !/^[A-Z]{4}$/.test(t.id)) return false;
+  return distanceKm(userPos, t) <= range;
+});
     const h = parseInt(slider?.value ?? 0, 10);
     if (hVal) hVal.innerText = h;
     const f = parseFloat(finesse?.value ?? 30);
