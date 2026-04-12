@@ -203,9 +203,9 @@ goTo('homeScreen');/* ==========================================================
    TERRAINS + FILTRE 4 LETTRES + UPDATE()
    ============================================================ */
 
-let terrainsAll = [];
-let terrains = [];
-let filterOnly4Letters = false;
+terrains = [];
+filterOnly4Letters = false;
+
 
 /* Remplir la liste des terrains dans PREP */
 function populateRef() {
