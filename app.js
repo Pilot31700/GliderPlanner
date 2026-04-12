@@ -2,7 +2,7 @@
  *  Glide Planner – APP.JS (Version propre)
  ****************************************************/
 
-// Variables globales essentielles (doivent exister avant toute fonction)
+/* Variables globales essentielles (doivent exister avant toute fonction)*/
 let _volInitialized = false;
 let userPos = { lat: 43.8, lon: 0.1 };
 let terrainsAll = [];
