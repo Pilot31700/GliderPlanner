@@ -2,12 +2,15 @@
  *  Glide Planner – APP.JS (Version propre)
  ****************************************************/
 
+// Variables globales essentielles (doivent exister avant toute fonction)
 let _volInitialized = false;
 let userPos = { lat: 43.8, lon: 0.1 };
+let terrainsAll = [];
+let terrains = [];
+let terrainsLoaded = false;
 let volObjects = [];
 let volGpsWatchId = null;
 let volAutoCenter = true;
-
 
 
 /* HELPERS – Enable / Disable map interactions */
@@ -109,7 +112,11 @@ function goTo(screenId){
 
 /* DOMContentLoaded */
 document.addEventListener('DOMContentLoaded', function () {
-
+// si terrains ont été chargés avant le DOMContentLoaded
+if (terrainsLoaded) {
+  update();
+  initVolMode();
+}
   /* NAVIGATION BUTTONS */
   document.getElementById('btnGoPrep')?.addEventListener('click', e => { e.preventDefault(); goTo('prepScreen'); });
   document.getElementById('btnGoVol')?.addEventListener('click', e => { e.preventDefault(); goTo('volScreen'); });
@@ -231,15 +238,15 @@ fetch("terrains.json")
   .then(data => {
     terrainsAll = data;
     terrains = data;
-    populateRef();
     terrainsLoaded = true;
+    populateRef();
 
     // Si la map est déjà initialisée, on lance update et initVolMode
     if (window._glide_map) {
       update();
       initVolMode();
     }
-    // Sinon, DOMContentLoaded déclenchera update (voir plus bas)
+    // Sinon, DOMContentLoaded (ou l'initialisation de la map) déclenchera update
   })
   .catch(err => console.error("Erreur chargement terrains.json :", err));
 
@@ -772,7 +779,9 @@ function updateVolCircle() {
       volObjects.push(c);
     }
   });
-}
+window._glide_update = update;
+window._glide_updateVol = updateVolCircle;
+
 
 
 /* Fin du module VOL */
