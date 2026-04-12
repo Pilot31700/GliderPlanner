@@ -410,8 +410,6 @@ document.getElementById('addTerrainConfirm').addEventListener('click', () => {
 
   if (!name) return alert("Nom invalide");
   if (isNaN(alt)) return alert("Altitude invalide");
-  ...
-
   const id = name.toUpperCase().replace(/[^A-Z0-9]/g, "_");
 
   const newTerrain = {
