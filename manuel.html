@@ -16,11 +16,9 @@
       --danger:#ff6b6b;
     }
 
-    /* Layout root */
     html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
     .manual-root{display:flex;min-height:100vh;gap:20px;box-sizing:border-box}
 
-    /* Sidebar */
     .manual-sidebar{
       width:220px;
       padding:12px;
@@ -45,21 +43,18 @@
     }
     .manual-sidebar nav a:hover{color:var(--accent);background:rgba(77,163,255,0.06);transform:translateX(4px)}
 
-    /* Main area - container does NOT scroll */
     .manual-content{
       flex:1;
       padding:16px 20px;
       max-width:980px;
       margin:auto;
       box-sizing:border-box;
-      /* IMPORTANT: no overflow here, we keep the container static */
       overflow:visible;
       display:flex;
       flex-direction:column;
       gap:12px;
     }
 
-    /* Card wrapper (static) that will be placed near top menu */
     #manuelCard {
       margin: 8px 0 12px 0;
       padding: 14px;
@@ -70,23 +65,20 @@
       box-shadow: 0 8px 30px rgba(0,0,0,0.12);
       z-index:45;
       pointer-events:auto;
-      overflow: visible; /* card itself does not scroll */
+      overflow: visible;
       display:flex;
       flex-direction:column;
       box-sizing:border-box;
     }
 
-    /* Scrollable reading area inside the main content */
     .manual-reader{
-      /* limit height to viewport minus safe offsets (top UI + padding) */
       max-height: calc(100vh - 120px);
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
-      padding-right: 8px; /* avoid content hidden under scrollbar */
+      padding-right: 8px;
       box-sizing:border-box;
     }
 
-    /* Card style for sections (inside reader) */
     .card{
       background:transparent;
       padding:14px 0;
@@ -100,11 +92,9 @@
     .warning{border-left:4px solid var(--danger);padding-left:12px}
     .note{color:var(--muted);font-size:0.95rem}
 
-    /* Accessibility & smooth scroll */
     html{scroll-behavior:smooth}
     a:focus{outline:3px solid #ffd166;outline-offset:3px}
 
-    /* Responsive: sidebar becomes horizontal strip on small screens */
     @media (max-width:900px){
       .manual-root{flex-direction:column}
       .manual-sidebar{
@@ -112,35 +102,30 @@
       }
       .manual-sidebar nav{flex-direction:row;gap:10px}
       .manual-sidebar nav a{white-space:nowrap}
-      /* Reader height slightly larger on mobile */
       .manual-reader{max-height: calc(100vh - 140px)}
-      /* Manuel card full width on mobile */
       #manuelCard { margin: 6px 10px; padding: 12px; width: calc(100% - 20px); }
     }
 
-    /* Small helper to ensure long paragraphs wrap nicely */
     code{background:#f4f6fb;color:#0b1220;padding:2px 6px;border-radius:4px;font-family:monospace}
   </style>
 </head>
 <body>
-  <section id="manuel" class="manual-root" aria-labelledby="manuel-title">
+  <section id="manuel" class="manual-root">
 
-    <!-- Sidebar -->
-    <aside class="manual-sidebar" aria-label="Navigation du manuel">
+    <aside class="manual-sidebar">
       <div class="brand">
-        <!-- small SVG logo -->
-        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none">
           <rect x="2" y="3" width="20" height="16" rx="3" fill="#071226"/>
           <path d="M6 16c2-3 6-6 12-8" stroke="#4da3ff" stroke-width="1.6" stroke-linecap="round"/>
           <circle cx="6" cy="16" r="1.6" fill="#4da3ff"/>
         </svg>
         <div>
-          <h1 id="manuel-title">Glide Planner</h1>
+          <h1>Glide Planner</h1>
           <p class="subtitle">Manuel d'utilisation</p>
         </div>
       </div>
 
-      <nav aria-label="Table des matières">
+      <nav>
         <a href="#intro">Introduction</a>
         <a href="#install-pwa">Installer</a>
         <a href="#quickstart">Démarrage</a>
@@ -153,105 +138,145 @@
       </nav>
     </aside>
 
-    <!-- Main content (container not scrollable) -->
-    <main class="manual-content" id="main" tabindex="-1">
+    <main class="manual-content">
 
-      <!-- Card wrapper: static, positioned near top -->
-      <div id="manuelCard" role="region" aria-label="Fenêtre du manuel">
+      <div id="manuelCard">
+        <div class="manual-reader">
 
-        <!-- Reader area: THIS is scrollable -->
-        <div class="manual-reader" role="document" aria-label="Contenu du manuel">
-
-          <section id="intro" class="card" tabindex="0" aria-labelledby="intro-title">
-            <h2 id="intro-title">Introduction</h2>
-            <p>Glide Planner calcule les zones atteignables en vol à voile. Outil d’aide à la décision : visuel, rapide, conçu pour rester lisible en vol.</p>
+          <section id="intro" class="card">
+            <h2>Introduction</h2>
+            <p><strong>Glide Planner</strong> est un outil de visualisation rapide des zones atteignables en vol à voile.</p>
+            <p>Il vous permet de répondre immédiatement à une question essentielle :</p>
+            <p class="highlight"><strong>“Pouvez-vous rejoindre un terrain en sécurité, et quelles sont vos alternatives ?”</strong></p>
+            <p>Les calculs sont volontairement simples, rapides et lisibles afin de rester exploitables en conditions réelles de vol.</p>
           </section>
 
-          <section id="install-pwa" class="card" tabindex="0" aria-labelledby="install-title">
-            <h2 id="install-title">📱 Installer l’application</h2>
+          <section id="install-pwa" class="card">
+            <h2>📱 Installer l’application</h2>
+
             <h3>Android</h3>
             <ol>
-              <li>Ouvre Glide Planner dans Chrome.</li>
-              <li>Menu (⋮) → <strong>Ajouter à l’écran d’accueil</strong>.</li>
-              <li>Lance depuis l’icône pour une expérience plein écran.</li>
+              <li>Ouvrez Glide Planner dans Chrome</li>
+              <li>Menu ⋮ → <strong>Ajouter à l’écran d’accueil</strong></li>
+              <li>Lancez l’application depuis l’icône</li>
             </ol>
+
             <h3>iOS</h3>
             <ol>
-              <li>Ouvre Glide Planner dans Safari.</li>
-              <li>Partager → <strong>Ajouter à l’écran d’accueil</strong>.</li>
+              <li>Ouvrez dans Safari</li>
+              <li>Partager → <strong>Ajouter à l’écran d’accueil</strong></li>
             </ol>
-            <p class="note">⚠️ Assure-toi que la page est servie en HTTPS et que la géolocalisation est autorisée pour le Mode Vol.</p>
+
+            <p class="note">⚠️ Activez la géolocalisation pour utiliser le mode vol</p>
           </section>
 
-          <section id="quickstart" class="card" tabindex="0" aria-labelledby="quickstart-title">
-            <h2 id="quickstart-title">⚡ Démarrage rapide</h2>
+          <section id="quickstart" class="card">
+            <h2>⚡ Démarrage rapide</h2>
+
             <ol>
-              <li>Règle finesse, finesse basse, seuil, marge et vitesse.</li>
-              <li>Choisis un terrain de référence.</li>
-              <li>Active les labels si besoin.</li>
-              <li>Passe en <strong>Mode Vol</strong> pour le rayon GPS.</li>
+              <li>Définissez une <strong>finesse réaliste</strong> (inférieure à la théorie)</li>
+              <li>Ajoutez une <strong>marge de sécurité</strong> (100 à 300 m)</li>
+              <li>Sélectionnez un terrain</li>
+              <li>Analysez immédiatement la zone atteignable</li>
             </ol>
+
+            <p class="highlight">
+              👉 Si le terrain est clairement dans la zone : situation confortable<br>
+              👉 S’il est en limite : anticipez immédiatement une alternative
+            </p>
           </section>
 
-          <section id="concepts" class="card" tabindex="0" aria-labelledby="concepts-title">
-            <h2 id="concepts-title">Concepts clés</h2>
+          <section id="concepts" class="card">
+            <h2>Concepts clés</h2>
+
             <h3>Finesse</h3>
-            <p>Distance parcourue pour 1 m d’altitude. Valeur théorique, dépend des conditions et du pilotage.</p>
+            <p>Distance parcourue pour 1 mètre d’altitude perdue. En conditions réelles, elle est toujours inférieure à la valeur théorique.</p>
+
             <h3>Finesse basse</h3>
-            <p>Valeur conservatrice appliquée sous le seuil.</p>
-            <h3>Seuil / Marge</h3>
-            <p>Seuil = altitude où la finesse basse s’applique. Marge = sécurité retirée avant calcul.</p>
+            <p>Valeur conservatrice appliquée lorsque vous êtes bas, afin de refléter une situation dégradée.</p>
+
+            <h3>Seuil et marge</h3>
+            <p>Le seuil définit l’altitude à partir de laquelle le modèle devient plus prudent. La marge correspond à une réserve d’altitude retirée volontairement.</p>
+
             <h3>Altimétrie</h3>
             <ul>
-              <li><strong>QFE</strong> : relative au terrain.</li>
-              <li><strong>QNH</strong> : absolue (GPS/baro).</li>
-              <li><strong>QFE_REF</strong> : relative à un terrain choisi.</li>
+              <li><strong>QFE</strong> : hauteur par rapport au terrain</li>
+              <li><strong>QNH</strong> : altitude réelle</li>
+              <li><strong>QFE_REF</strong> : hauteur relative à un terrain sélectionné</li>
             </ul>
           </section>
 
-          <section id="usage" class="card" tabindex="0" aria-labelledby="usage-title">
-            <h2 id="usage-title">Utilisation</h2>
-            <h3>Préparation</h3>
-            <p>Configurer paramètres, filtrer terrains, visualiser cercles. Cliquer sur la carte ajoute un point en mode Préparation.</p>
+          <section id="usage" class="card">
+            <h2>Utilisation</h2>
+
+            <h3>Mode Préparation</h3>
+            <p>Permet d’anticiper vos options, comparer plusieurs terrains et préparer vos transitions.</p>
+
             <h3>Mode Vol</h3>
-            <p>Affiche le rayon atteignable depuis la position GPS. Recentrer recentre la carte sur la position du planeur.</p>
+            <p>Affiche en temps réel la zone atteignable depuis votre position GPS, pour une prise de décision rapide.</p>
+
             <h3>Vent</h3>
-            <p>Ajouter des couches de vent pour affiner les calculs.</p>
-          </section>
-
-          <section id="tips" class="card highlight" tabindex="0" aria-labelledby="tips-title">
-            <h2 id="tips-title">💡 Conseils</h2>
+            <p>Le vent influence fortement la distance atteignable :</p>
             <ul>
-              <li>Utilise une finesse conservatrice (70–80%).</li>
-              <li>Vérifie météo, NOTAM et cartes officielles.</li>
-              <li>Ne remplace jamais ton jugement par l’app.</li>
+              <li>Vent de face : portée réduite</li>
+              <li>Vent arrière : portée augmentée</li>
             </ul>
+
+            <p class="highlight">👉 Raisonnez toujours en scénario défavorable lorsque vous êtes bas</p>
           </section>
 
-          <section id="disclaimer" class="card warning" tabindex="0" aria-labelledby="disclaimer-title">
-            <h2 id="disclaimer-title">⚠️ Limites</h2>
-            <p><strong>Glide Planner est un outil d’aide à la décision.</strong> Les estimations sont simplifiées. Elles ne remplacent pas les procédures, les cartes officielles ni le jugement du pilote.</p>
+          <section id="tips" class="card highlight">
+            <h2>💡 Conseils</h2>
+
             <ul>
-              <li>Utilise des valeurs de finesse inférieures à la réalité pour tenir compte des pertes.</li>
-              <li>Ne pas utiliser comme unique source de navigation ou pour décisions d’urgence.</li>
+              <li>Utilisez une finesse volontairement pessimiste</li>
+              <li>Anticipez vos décisions avant d’être bas</li>
+              <li>Gardez toujours une option de secours accessible</li>
+              <li>Ne laissez jamais la situation se dégrader sans plan</li>
             </ul>
+
+            <p><strong>Un pilote en avance décide. Un pilote en retard subit.</strong></p>
           </section>
 
-          <section id="faq" class="card" tabindex="0" aria-labelledby="faq-title">
-            <h2 id="faq-title">FAQ</h2>
-            <p><strong>Cercles absents ?</strong> Vérifie rangeKm, position GPS et que <code>terrains.json</code> est chargé.</p>
-            <p><strong>Ajouter un terrain ?</strong> En mode Préparation, clique sur la carte et remplis le formulaire.</p>
-            <p><strong>Quelle finesse ?</strong> Commence par 70–80% et ajuste selon l’expérience.</p>
+          <section id="disclaimer" class="card warning">
+            <h2>⚠️ Limites</h2>
+
+            <p><strong>Glide Planner est un outil d’aide à la décision uniquement.</strong></p>
+
+            <ul>
+              <li>Le modèle est simplifié et ne reflète pas toute la complexité de l’aérologie</li>
+              <li>Il ne remplace pas l’analyse météo</li>
+              <li>Il ne remplace pas votre jugement de pilote</li>
+            </ul>
+
+            <p class="highlight">
+              👉 En cas de doute, adoptez systématiquement une décision conservatrice
+            </p>
           </section>
 
-          <section id="contact" class="card" tabindex="0" aria-labelledby="contact-title">
-            <h2 id="contact-title">Contact</h2>
-            <p>Feedback : GitHub ou canal support associé à l’application.</p>
+          <section id="faq" class="card">
+            <h2>FAQ</h2>
+
+            <p><strong>Rien ne s’affiche ?</strong><br>
+            Vérifiez votre altitude, votre position GPS et la distance maximale.</p>
+
+            <p><strong>Quelle finesse utiliser ?</strong><br>
+            Utilisez environ 70 % de votre finesse réelle.</p>
+
+            <p><strong>Pourquoi être conservateur ?</strong><br>
+            Parce que les conditions réelles dégradent toujours les performances.</p>
+
+            <p><strong>Ajouter un terrain ?</strong><br>
+            Cliquez sur la carte en mode préparation.</p>
           </section>
 
-        </div> <!-- /.manual-reader -->
+          <section id="contact" class="card">
+            <h2>Contact</h2>
+            <p>Pour toute suggestion ou amélioration, utilisez le dépôt GitHub ou le canal associé à l’application.</p>
+          </section>
 
-      </div> <!-- /#manuelCard -->
+        </div>
+      </div>
 
     </main>
   </section>
