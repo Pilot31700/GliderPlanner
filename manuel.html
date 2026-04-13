@@ -1,242 +1,212 @@
-<!-- manuel.html -->
-<section id="manuel" class="manual-root">
-
-  <!-- SIDEBAR / NAV -->
-  <aside class="manual-sidebar">
-    <h1>📘 Glide Planner</h1>
-    <p class="subtitle">Manuel</p>
-
-    <nav>
-      <a href="#intro">Intro</a>
-      <a href="#install-pwa">Installer</a>
-      <a href="#quickstart">Start</a>
-      <a href="#concepts">Concepts</a>
-      <a href="#usage">Utilisation</a>
-      <a href="#tips">Tips</a>
-      <a href="#disclaimer">Limites</a>
-      <a href="#faq">FAQ</a>
-      <a href="#contact">Contact</a>
-    </nav>
-  </aside>
-
-  <!-- CONTENT -->
-  <main class="manual-content">
-
-    <section id="intro" class="card">
-      <h2>Introduction</h2>
-      <p>Glide Planner est un outil d’aide à la décision pour le vol à voile.</p>
-    </section>
-
-    <section id="install-pwa" class="card">
-      <h2>📱 Installer</h2>
-
-      <h3>Android</h3>
-      <ol>
-        <li>Ouvre dans Chrome</li>
-        <li>⋮ → Ajouter à l’écran d’accueil</li>
-      </ol>
-
-      <h3>iOS</h3>
-      <ol>
-        <li>Ouvre dans Safari</li>
-        <li>Partager → Sur l’écran d’accueil</li>
-      </ol>
-
-      <p class="note">⚠️ Active la géolocalisation</p>
-    </section>
-
-    <section id="quickstart" class="card">
-      <h2>⚡ Démarrage</h2>
-      <ol>
-        <li>Configure la finesse</li>
-        <li>Choisis un terrain</li>
-        <li>Passe en mode vol</li>
-      </ol>
-    </section>
-
-    <section id="concepts" class="card">
-      <h2>Concepts</h2>
-      <p><strong>Finesse :</strong> distance / altitude</p>
-      <p><strong>Marge :</strong> sécurité</p>
-      <p><strong>QFE / QNH :</strong> altimétrie</p>
-    </section>
-
-    <section id="usage" class="card">
-      <h2>Utilisation</h2>
-      <p>Préparation → config</p>
-      <p>Mode vol → GPS temps réel</p>
-    </section>
-
-    <section id="tips" class="card highlight">
-      <h2>💡 Conseils</h2>
-      <ul>
-        <li>Finesse conservatrice</li>
-        <li>Vérifie météo</li>
-        <li>Garde ton jugement</li>
-      </ul>
-    </section>
-
-    <section id="disclaimer" class="card warning">
-      <h2>⚠️ Limites</h2>
-      <p>Outil d’aide uniquement.</p>
-    </section>
-
-    <section id="faq" class="card">
-      <h2>FAQ</h2>
-      <p><strong>Pas de cercles ?</strong> Vérifie range</p>
-      <p><strong>Ajouter terrain ?</strong> Clic carte</p>
-    </section>
-
-    <section id="contact" class="card">
-      <h2>Contact</h2>
-      <p>Via GitHub</p>
-    </section>
-
-  </main>
-
-  <!-- STYLE -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>Glide Planner — Manuel</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    :root {
+    :root{
       --bg:#0b1220;
-      --card:#111a2e;
+      --sidebar:#0d1628;
+      --card:#0f1724;
       --accent:#4da3ff;
       --text:#e6edf3;
-      --muted:#8b949e;
+      --muted:#9aa6b2;
+      --success:#2ecc71;
+      --danger:#ff6b6b;
+      --focus:#ffd166;
     }
 
-    body {
-      overflow-x: hidden; /* FIX iOS */
+    /* Reset / base */
+    html,body{height:100%;margin:0;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
+    a{color:var(--accent);text-decoration:none}
+    a:focus{outline:3px solid var(--focus);outline-offset:3px;border-radius:6px}
+    code{background:#071226;padding:2px 6px;border-radius:6px;font-family:monospace;font-size:0.95em;color:#cfe8ff}
+
+    /* Layout */
+    .manual-root{display:flex;min-height:100vh;gap:20px;box-sizing:border-box}
+    .manual-sidebar{width:260px;padding:20px;background:var(--sidebar);border-right:1px solid rgba(255,255,255,0.04);position:sticky;top:0;height:100vh;box-sizing:border-box;display:flex;flex-direction:column;gap:12px}
+    .manual-content-wrap{flex:1;display:flex;flex-direction:column;min-height:100vh;box-sizing:border-box}
+    .manual-content{padding:28px;max-width:980px;margin:0 auto;box-sizing:border-box;overflow-y:auto;-webkit-overflow-scrolling:touch}
+    .card{background:var(--card);padding:18px;border-radius:12px;margin-bottom:16px;box-shadow:0 8px 25px rgba(0,0,0,0.25)}
+    .card h2{margin:0 0 8px;color:var(--accent);font-weight:600}
+    .card h3{margin:12px 0 6px;font-weight:600}
+    .card p,.card li{color:#c9d1d9;line-height:1.45}
+    .muted{color:var(--muted)}
+    .note{color:var(--muted);font-size:0.95rem}
+    .kbd{background:#071226;border:1px solid rgba(255,255,255,0.04);padding:2px 6px;border-radius:4px;font-family:monospace}
+
+    /* Sidebar content */
+    .brand{display:flex;align-items:center;gap:10px}
+    .brand h1{font-size:1.05rem;margin:0}
+    .subtitle{color:var(--muted);font-size:0.9rem;margin:0}
+    .toc{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+    .toc a{display:flex;gap:10px;align-items:center;padding:8px;border-radius:8px;color:var(--muted)}
+    .toc a svg{width:18px;height:18px;flex:0 0 18px;opacity:0.9}
+    .toc a:hover,.toc a:focus{color:var(--accent);background:rgba(77,163,255,0.06);transform:translateX(6px)}
+    .sidebar-footer{margin-top:auto;font-size:0.85rem;color:var(--muted)}
+
+    /* Visual helpers */
+    .highlight{border-left:4px solid var(--success);padding-left:14px}
+    .warning{border-left:4px solid var(--danger);padding-left:14px}
+
+    /* Accessibility & focus */
+    section:focus{outline:3px solid var(--focus);outline-offset:6px;border-radius:8px}
+
+    /* Responsive: sidebar becomes horizontal scroller on small screens */
+    @media (max-width:900px){
+      .manual-root{flex-direction:column}
+      .manual-sidebar{width:100%;height:auto;position:relative;display:flex;align-items:center;padding:12px 10px;overflow-x:auto;gap:8px}
+      .manual-sidebar nav{display:flex;gap:10px}
+      .toc{flex-direction:row;gap:8px}
+      .toc a{white-space:nowrap;padding:8px 10px}
+      .manual-content{padding:16px}
     }
 
-    .manual-root {
-      display:flex;
-      min-height:100vh;
-      background:var(--bg);
-      color:var(--text);
-      font-family: system-ui;
-    }
-
-    /* SIDEBAR DESKTOP */
-    .manual-sidebar {
-      width:240px;
-      padding:20px;
-      background:#0d1628;
-      border-right:1px solid rgba(255,255,255,0.05);
-      position:sticky;
-      top:0;
-      height:100vh;
-    }
-
-    .manual-sidebar h1 {
-      font-size:1.2rem;
-      margin-bottom:4px;
-    }
-
-    .subtitle {
-      color:var(--muted);
-      font-size:0.9rem;
-      margin-bottom:20px;
-    }
-
-    .manual-sidebar nav a {
-      display:block;
-      color:var(--muted);
-      text-decoration:none;
-      margin:8px 0;
-      transition:0.2s;
-    }
-
-    .manual-sidebar nav a:hover {
-      color:var(--accent);
-      transform:translateX(4px);
-    }
-
-    /* CONTENT */
-    .manual-content {
-      flex:1;
-      padding:24px;
-      max-width:900px;
-      margin:auto;
-    }
-
-    .card {
-      background:var(--card);
-      padding:18px;
-      border-radius:12px;
-      margin-bottom:16px;
-      box-shadow:0 8px 25px rgba(0,0,0,0.25);
-    }
-
-    .card h2 {
-      margin-top:0;
-      color:var(--accent);
-    }
-
-    .card p, .card li {
-      color:#c9d1d9;
-      line-height:1.5;
-    }
-
-    .highlight {
-      border-left:4px solid #2ecc71;
-    }
-
-    .warning {
-      border-left:4px solid #ff6b6b;
-    }
-
-    .note {
-      color:var(--muted);
-      font-size:0.9rem;
-    }
-
-    /* MOBILE FIX */
-    @media (max-width: 800px) {
-
-      .manual-root {
-        flex-direction: column;
-      }
-
-      .manual-sidebar {
-        width:100%;
-        height:auto;
-        position:sticky;
-        top:0;
-        z-index:100;
-        padding:10px;
-        border-right:none;
-        border-bottom:1px solid rgba(255,255,255,0.05);
-      }
-
-      .manual-sidebar h1,
-      .subtitle {
-        display:none;
-      }
-
-      .manual-sidebar nav {
-        display:flex;
-        overflow-x:auto;
-        gap:10px;
-        -webkit-overflow-scrolling: touch;
-      }
-
-      .manual-sidebar nav a {
-        flex:0 0 auto;
-        padding:6px 10px;
-        background:rgba(255,255,255,0.05);
-        border-radius:8px;
-        font-size:0.85rem;
-        white-space:nowrap;
-      }
-
-      .manual-sidebar nav a:hover {
-        transform:none;
-      }
-
-      .manual-content {
-        padding:14px;
-      }
-    }
+    /* Ensure manual content area can scroll independently when embedded */
+    .manual-content{max-height:calc(100vh - 40px)}
   </style>
+</head>
+<body>
+  <section class="manual-root" aria-labelledby="manuel-title">
+    <aside class="manual-sidebar" aria-label="Navigation du manuel">
+      <div class="brand" role="banner">
+        <!-- SVG logo -->
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+          <rect x="1.5" y="3" width="21" height="18" rx="3" fill="#071226"/>
+          <path d="M6 16c2-3 6-6 12-8" stroke="#4da3ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="6" cy="16" r="1.6" fill="#4da3ff"/>
+        </svg>
+        <div>
+          <h1 id="manuel-title">Glide Planner</h1>
+          <div class="subtitle">Manuel d'utilisation</div>
+        </div>
+      </div>
 
-</section>
+      <nav aria-label="Table des matières" class="toc">
+        <a href="#intro"><svg viewBox="0 0 24 24" fill="none"><path d="M3 12h18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Introduction</a>
+        <a href="#install-pwa"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M8 7l4-4 4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Installer</a>
+        <a href="#quickstart"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2v20" stroke="currentColor" stroke-width="1.6"/><path d="M5 8h14" stroke="currentColor" stroke-width="1.6"/></svg>Démarrage</a>
+        <a href="#concepts"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 8v8" stroke="currentColor" stroke-width="1.6"/></svg>Concepts</a>
+        <a href="#usage"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M8 8h8" stroke="currentColor" stroke-width="1.6"/></svg>Utilisation</a>
+        <a href="#tips"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2v6" stroke="currentColor" stroke-width="1.6"/><path d="M8 12a4 4 0 0 0 8 0" stroke="currentColor" stroke-width="1.6"/></svg>Conseils</a>
+        <a href="#disclaimer"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2l9 16H3L12 2z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 9v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Limites</a>
+        <a href="#faq"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M9.5 9.5a2.5 2.5 0 1 1 5 0c0 2-2.5 2.5-2.5 4" stroke="currentColor" stroke-width="1.6"/></svg>FAQ</a>
+        <a href="#contact"><svg viewBox="0 0 24 24" fill="none"><path d="M21 8v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8" stroke="currentColor" stroke-width="1.6"/><path d="M3 8l9 6 9-6" stroke="currentColor" stroke-width="1.6"/></svg>Contact</a>
+      </nav>
+
+      <div class="sidebar-footer muted">Version 2.3 — <span class="muted">Dernière mise à jour</span></div>
+    </aside>
+
+    <div class="manual-content-wrap">
+      <main id="main" class="manual-content" role="main" tabindex="-1" aria-labelledby="manuel-title">
+
+        <section id="intro" class="card" tabindex="0" aria-labelledby="intro-title">
+          <h2 id="intro-title">Introduction</h2>
+          <p>Glide Planner estime la distance franchissable depuis une position donnée. Outil d’aide à la décision : combinez ses résultats avec cartes officielles, météo et jugement pilote.</p>
+        </section>
+
+        <section id="install-pwa" class="card" tabindex="0" aria-labelledby="install-title">
+          <h2 id="install-title">📱 Installer la PWA</h2>
+
+          <h3>Android (Chrome / Edge)</h3>
+          <ol>
+            <li>Ouvrez Glide Planner dans Chrome.</li>
+            <li>Menu (⋮) → <strong>Ajouter à l’écran d’accueil</strong>.</li>
+            <li>Lancez depuis l’écran d’accueil pour une expérience plein écran.</li>
+          </ol>
+
+          <h3>iOS (Safari)</h3>
+          <ol>
+            <li>Ouvrez Glide Planner dans <strong>Safari</strong>.</li>
+            <li>Bouton <em>Partager</em> → <strong>Ajouter à l’écran d’accueil</strong>.</li>
+          </ol>
+
+          <h3>Vérifications</h3>
+          <ul>
+            <li>Page servie en <code>HTTPS</code>.</li>
+            <li><code>manifest.json</code> et service worker accessibles.</li>
+            <li>Autorisez la géolocalisation pour le Mode Vol.</li>
+          </ul>
+        </section>
+
+        <section id="quickstart" class="card" tabindex="0" aria-labelledby="quickstart-title">
+          <h2 id="quickstart-title">⚡ Démarrage rapide</h2>
+          <ol>
+            <li>Ouvrez l’app (ou installez la PWA).</li>
+            <li>Dans Préparation : réglez finesse, finesse basse, seuil, marge et vitesse.</li>
+            <li>Sélectionnez un terrain de référence et le rayon filtre (rangeKm).</li>
+            <li>Activez <em>Labels</em> pour voir les étiquettes.</li>
+            <li>Passez en Mode Vol pour le suivi GPS et le rayon franchissable.</li>
+          </ol>
+        </section>
+
+        <section id="concepts" class="card" tabindex="0" aria-labelledby="concepts-title">
+          <h2 id="concepts-title">Concepts clés</h2>
+          <h3>Finesse</h3>
+          <p>Rapport distance/altitude utilisé pour estimer la portée. Valeur théorique dépend de l'appareil et des conditions.</p>
+
+          <h3>Finesse basse</h3>
+          <p>Valeur conservatrice appliquée sous le seuil pour tenir compte des pertes.</p>
+
+          <h3>Seuil & marge</h3>
+          <p>Seuil : altitude où la finesse basse s'applique. Marge : déduction de sécurité avant calcul.</p>
+
+          <h3>Modes altimétriques</h3>
+          <ul>
+            <li><strong>QFE</strong> : altitude relative au terrain.</li>
+            <li><strong>QNH</strong> : altitude absolue (GPS/baro).</li>
+            <li><strong>QFE_REF</strong> : relative à un terrain de référence.</li>
+          </ul>
+        </section>
+
+        <section id="usage" class="card" tabindex="0" aria-labelledby="usage-title">
+          <h2 id="usage-title">Utilisation</h2>
+
+          <h3>Préparation</h3>
+          <p>Configurer paramètres, filtrer terrains, visualiser cercles. Cliquez sur la carte pour ajouter un terrain (mode Préparation).</p>
+
+          <h3>Mode Vol</h3>
+          <p>Affiche le rayon franchissable depuis la position GPS. <span class="note">Recentrer</span> replace la carte sur la position du planeur.</p>
+
+          <h3>Vent</h3>
+          <p>Entrez couches de vent par altitude pour affiner les calculs (optionnel).</p>
+        </section>
+
+        <section id="tips" class="card highlight" tabindex="0" aria-labelledby="tips-title">
+          <h2 id="tips-title">💡 Conseils pratiques</h2>
+          <ul>
+            <li>Utilisez une finesse conservatrice (ex. 70–80% de la valeur théorique).</li>
+            <li>Vérifiez météo, NOTAM et cartes officielles avant le vol.</li>
+            <li>Combinez les résultats avec vos instruments et votre jugement.</li>
+          </ul>
+        </section>
+
+        <section id="disclaimer" class="card warning" tabindex="0" aria-labelledby="disclaimer-title">
+          <h2 id="disclaimer-title">⚠️ Disclaimer</h2>
+          <p><strong>Glide Planner est un outil d’aide à la décision.</strong> Les estimations sont indicatives et basées sur des modèles simplifiés et des données utilisateur. Elles ne remplacent pas les procédures, les cartes officielles ni le jugement du pilote.</p>
+          <p><strong>Règles simples :</strong></p>
+          <ul>
+            <li>Privilégiez des valeurs de finesse inférieures à la réalité pour la sécurité.</li>
+            <li>Ne pas utiliser comme unique source de navigation ou pour décisions d'urgence.</li>
+            <li>Vérifiez la précision de la géolocalisation et la disponibilité des données terrains.</li>
+          </ul>
+        </section>
+
+        <section id="faq" class="card" tabindex="0" aria-labelledby="faq-title">
+          <h2 id="faq-title">FAQ</h2>
+          <p><strong>Cercles absents ?</strong> Vérifiez <code>rangeKm</code>, la position utilisateur et que <code>terrains.json</code> est chargé.</p>
+          <p><strong>Ajouter un terrain ?</strong> En mode Préparation, cliquez sur la carte, remplissez nom et altitude, confirmez.</p>
+          <p><strong>Quelle finesse ?</strong> Commencez conservateur (70–80%) et ajustez selon l'expérience.</p>
+        </section>
+
+        <section id="contact" class="card" tabindex="0" aria-labelledby="contact-title">
+          <h2 id="contact-title">Contact</h2>
+          <p>Signalez bugs ou proposez améliorations via le dépôt GitHub ou le canal de support associé à l'application.</p>
+        </section>
+
+      </main>
+    </div>
+  </section>
+</body>
+</html>
