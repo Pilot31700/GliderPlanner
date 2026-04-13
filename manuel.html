@@ -1,122 +1,100 @@
 <!-- manuel.html -->
 <section id="manuel" class="manual-root">
 
+  <!-- SIDEBAR / NAV -->
   <aside class="manual-sidebar">
     <h1>📘 Glide Planner</h1>
-    <p class="subtitle">Manuel d'utilisation</p>
+    <p class="subtitle">Manuel</p>
 
     <nav>
-      <a href="#intro">Introduction</a>
+      <a href="#intro">Intro</a>
       <a href="#install-pwa">Installer</a>
-      <a href="#quickstart">Démarrage</a>
+      <a href="#quickstart">Start</a>
       <a href="#concepts">Concepts</a>
       <a href="#usage">Utilisation</a>
-      <a href="#tips">Conseils</a>
+      <a href="#tips">Tips</a>
       <a href="#disclaimer">Limites</a>
       <a href="#faq">FAQ</a>
       <a href="#contact">Contact</a>
     </nav>
   </aside>
 
+  <!-- CONTENT -->
   <main class="manual-content">
 
     <section id="intro" class="card">
       <h2>Introduction</h2>
-      <p>Glide Planner est un outil d’aide à la décision pour le vol à voile. Ce manuel explique son fonctionnement et son utilisation en conditions réelles.</p>
+      <p>Glide Planner est un outil d’aide à la décision pour le vol à voile.</p>
     </section>
 
     <section id="install-pwa" class="card">
-      <h2>📱 Installer l’application</h2>
+      <h2>📱 Installer</h2>
 
       <h3>Android</h3>
       <ol>
-        <li>Ouvre l’app dans Chrome</li>
-        <li>Menu ⋮ → <strong>Ajouter à l’écran d’accueil</strong></li>
-        <li>Lance comme une app</li>
+        <li>Ouvre dans Chrome</li>
+        <li>⋮ → Ajouter à l’écran d’accueil</li>
       </ol>
 
       <h3>iOS</h3>
       <ol>
         <li>Ouvre dans Safari</li>
-        <li>Bouton partager → <strong>Sur l’écran d’accueil</strong></li>
+        <li>Partager → Sur l’écran d’accueil</li>
       </ol>
 
-      <p class="note">⚠️ Active la géolocalisation pour le mode vol</p>
+      <p class="note">⚠️ Active la géolocalisation</p>
     </section>
 
     <section id="quickstart" class="card">
-      <h2>⚡ Démarrage rapide</h2>
+      <h2>⚡ Démarrage</h2>
       <ol>
-        <li>Configurer finesse et sécurité</li>
-        <li>Choisir un terrain</li>
-        <li>Activer les labels</li>
-        <li>Passer en <strong>Mode Vol</strong></li>
+        <li>Configure la finesse</li>
+        <li>Choisis un terrain</li>
+        <li>Passe en mode vol</li>
       </ol>
     </section>
 
     <section id="concepts" class="card">
-      <h2>Concepts clés</h2>
-
-      <h3>Finesse</h3>
-      <p>Distance parcourue pour une altitude donnée.</p>
-
-      <h3>Finesse basse</h3>
-      <p>Valeur de sécurité utilisée bas.</p>
-
-      <h3>Seuil / marge</h3>
-      <p>Déclenchement + sécurité.</p>
-
-      <h3>Altimétrie</h3>
-      <ul>
-        <li><strong>QFE</strong></li>
-        <li><strong>QNH</strong></li>
-        <li><strong>QFE_REF</strong></li>
-      </ul>
+      <h2>Concepts</h2>
+      <p><strong>Finesse :</strong> distance / altitude</p>
+      <p><strong>Marge :</strong> sécurité</p>
+      <p><strong>QFE / QNH :</strong> altimétrie</p>
     </section>
 
     <section id="usage" class="card">
       <h2>Utilisation</h2>
-
-      <h3>Préparation</h3>
-      <p>Configurer et analyser les terrains.</p>
-
-      <h3>Mode Vol</h3>
-      <p>Rayon en temps réel basé sur le GPS.</p>
-
-      <h3>Vent</h3>
-      <p>Ajoute des couches pour affiner les calculs.</p>
+      <p>Préparation → config</p>
+      <p>Mode vol → GPS temps réel</p>
     </section>
 
     <section id="tips" class="card highlight">
       <h2>💡 Conseils</h2>
       <ul>
-        <li>Prends une finesse conservatrice</li>
-        <li>Vérifie météo et NOTAM</li>
-        <li>Ne remplace jamais ton jugement</li>
+        <li>Finesse conservatrice</li>
+        <li>Vérifie météo</li>
+        <li>Garde ton jugement</li>
       </ul>
     </section>
 
     <section id="disclaimer" class="card warning">
       <h2>⚠️ Limites</h2>
-      <p><strong>Glide Planner n’est qu’une aide.</strong></p>
-      <p>Ne pas utiliser comme unique source de navigation.</p>
+      <p>Outil d’aide uniquement.</p>
     </section>
 
     <section id="faq" class="card">
       <h2>FAQ</h2>
-
-      <p><strong>Cercles absents ?</strong><br>Vérifie terrain + range</p>
-      <p><strong>Ajouter terrain ?</strong><br>Clic carte</p>
-      <p><strong>Quelle finesse ?</strong><br>70–80%</p>
+      <p><strong>Pas de cercles ?</strong> Vérifie range</p>
+      <p><strong>Ajouter terrain ?</strong> Clic carte</p>
     </section>
 
     <section id="contact" class="card">
       <h2>Contact</h2>
-      <p>GitHub / feedback utilisateur</p>
+      <p>Via GitHub</p>
     </section>
 
   </main>
 
+  <!-- STYLE -->
   <style>
     :root {
       --bg:#0b1220;
@@ -126,15 +104,19 @@
       --muted:#8b949e;
     }
 
+    body {
+      overflow-x: hidden; /* FIX iOS */
+    }
+
     .manual-root {
       display:flex;
       min-height:100vh;
-      font-family: system-ui;
       background:var(--bg);
       color:var(--text);
+      font-family: system-ui;
     }
 
-    /* SIDEBAR */
+    /* SIDEBAR DESKTOP */
     .manual-sidebar {
       width:240px;
       padding:20px;
@@ -190,11 +172,6 @@
       color:var(--accent);
     }
 
-    .card h3 {
-      margin-top:10px;
-      font-size:1rem;
-    }
-
     .card p, .card li {
       color:#c9d1d9;
       line-height:1.5;
@@ -213,27 +190,51 @@
       font-size:0.9rem;
     }
 
-    /* MOBILE */
+    /* MOBILE FIX */
     @media (max-width: 800px) {
+
       .manual-root {
-        flex-direction:column;
+        flex-direction: column;
       }
 
       .manual-sidebar {
         width:100%;
         height:auto;
-        position:relative;
-        display:flex;
-        overflow-x:auto;
+        position:sticky;
+        top:0;
+        z-index:100;
+        padding:10px;
+        border-right:none;
+        border-bottom:1px solid rgba(255,255,255,0.05);
+      }
+
+      .manual-sidebar h1,
+      .subtitle {
+        display:none;
       }
 
       .manual-sidebar nav {
         display:flex;
-        gap:12px;
+        overflow-x:auto;
+        gap:10px;
+        -webkit-overflow-scrolling: touch;
       }
 
       .manual-sidebar nav a {
+        flex:0 0 auto;
+        padding:6px 10px;
+        background:rgba(255,255,255,0.05);
+        border-radius:8px;
+        font-size:0.85rem;
         white-space:nowrap;
+      }
+
+      .manual-sidebar nav a:hover {
+        transform:none;
+      }
+
+      .manual-content {
+        padding:14px;
       }
     }
   </style>
