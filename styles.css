@@ -1,20 +1,26 @@
 /* =========================
-   styles.css - Glide Planner
-   Version complète : remplace ton fichier actuel
-   - Intègre le manuel : #manuelCard non scrollable, .manual-reader scrollable
-   - Sidebar compacte, fenêtre remontée, affichage limité à la taille de l'écran
+   styles.css - Glide Planner (nettoyé)
+   - Consolidé, variables centralisées
+   - #manuelCard statique, .manual-reader scrollable
    ========================= */
 
 /* Variables globales */
 :root{
-  --accent:#1f6feb;
+  --accent: #1f6feb;
   --panel-bg: rgba(250,250,250,0.96);
   --panel-shadow: 0 6px 18px rgba(20,20,20,0.18);
   --glass: rgba(8,10,15,0.45);
 
-  /* Ajuster si ton UI top change de hauteur */
-  --top-ui-height: 56px;
-  --manuel-vertical-offset: 48px;
+  --bg: #fff;
+  --text: #0b1220;
+  --muted: #8b949e;
+  --success: #2ecc71;
+  --danger: #ff6b6b;
+
+  /* UI sizing */
+  --top-ui-height: 56px;            /* ajuster si header diffère */
+  --manuel-vertical-offset: 16px;   /* marge interne pour le manuel */
+  --sidebar-width: 180px;           /* compact par défaut */
 }
 
 /* Reset / Base */
@@ -25,8 +31,8 @@ html, body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
-  background: #fff;
-  color: #0b1220;
+  background: var(--bg);
+  color: var(--text);
   box-sizing: border-box;
 }
 *, *::before, *::after { box-sizing: inherit; }
@@ -47,33 +53,23 @@ html, body {
   -webkit-tap-highlight-color: transparent;
   background: #eaeaea;
 }
-
-/* When we want the map to be "free" (prep/vol) we switch to absolute to avoid fixed-layer capture issues */
 #map.map-absolute { position: absolute; inset: 0; }
+.map-blurred { filter: blur(6px) brightness(0.55) saturate(0.9); pointer-events: none; }
 
-/* blur used on Home / Manuel */
-.map-blurred {
-  filter: blur(6px) brightness(0.55) saturate(0.9);
-  pointer-events: none;
-}
-
-/* Layer toggle button */
+/* Layer toggle and panel */
 #layerToggleBtn {
   position: absolute;
   bottom: 20px;
   right: 20px;
   z-index: 2000;
   display: inline-block;
-  background: white;
+  background: rgba(255,255,255,0.92);
   padding: 10px 14px;
   border-radius: 8px;
   cursor: pointer;
   font-weight: bold;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-  width: auto;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.18);
 }
-
-/* Layer panel */
 #layerPanel {
   position: absolute;
   bottom: 70px;
@@ -86,13 +82,9 @@ html, body {
   display: none;
   width: 180px;
 }
-#layerPanel label { display: block; margin-bottom: 10px; }
-#opacityAIP { width: 100%; }
 
 /* =========================
-   SCREENS
-   Default: screens do not capture pointer events so clicks fall through to the map.
-   Individual interactive elements inside screens (buttons, panels) explicitly enable pointer-events.
+   SCREENS / PANELS / BUTTONS
    ========================= */
 .screen {
   position: fixed;
@@ -102,48 +94,10 @@ html, body {
   background: transparent;
   overflow: auto;
   padding: 28px;
-  pointer-events: none; /* IMPORTANT: let clicks pass to map by default */
+  pointer-events: none;
 }
-
-/* HOME (centered overlay) - interactive (blocks map) */
 #homeScreen { display:flex; align-items:center; justify-content:center; color:white; text-align:center; }
-#homeScreen[aria-hidden="false"] { pointer-events: auto; } /* when visible, block map */
-
-#homeInner {
-  width: min(720px, 92%);
-  padding: 36px;
-  border-radius: 14px;
-  background: var(--glass);
-  box-shadow: 0 10px 40px rgba(0,0,0,0.45);
-  border: 1px solid rgba(255,255,255,0.04);
-  backdrop-filter: blur(4px);
-}
-#homeTitle { font-size:34px; margin:0 0 8px 0; }
-#homeSubtitle { margin:0 0 18px 0; color:#dfe7ff; font-size:14px; }
-
-.menuGrid { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin-top:8px; }
-.menuBtn {
-  min-width:200px;
-  padding:14px 18px;
-  border-radius:12px;
-  border: none;
-  background: #ffffff;
-  color: #0b1220;
-  font-weight:700;
-  font-size:16px;
-  cursor:pointer;
-  box-shadow: 0 6px 18px rgba(10,10,10,0.18);
-  transition: transform .12s ease, box-shadow .12s ease;
-  pointer-events:auto; /* interactive */
-  touch-action: manipulation;
-}
-.menuBtn:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(10,10,10,0.22); }
-
-/* PREP SCREEN specifics */
-#prepScreen { color:black; text-shadow:none; }
-/* prepScreen remains pointer-events:none so clicks fall through to map,
-   but interactive children (panels, buttons) must explicitly enable pointer-events */
-#prepScreen[aria-hidden="false"] { pointer-events: none; }
+#homeScreen[aria-hidden="false"] { pointer-events: auto; }
 
 .backBtn {
   position: absolute;
@@ -157,8 +111,7 @@ html, body {
   font-weight:600;
   cursor:pointer;
   box-shadow: 0 6px 18px rgba(0,0,0,0.25);
-  pointer-events:auto; /* allow clicking the back button */
-  touch-action: manipulation;
+  pointer-events:auto;
 }
 
 /* Panels */
@@ -173,13 +126,9 @@ html, body {
   max-height:78vh;
   overflow:auto;
   border:1px solid rgba(20,20,20,0.04);
-  touch-action: none; /* allow dragging without triggering map gestures */
-  pointer-events:auto; /* interactive */
+  touch-action: none;
+  pointer-events:auto;
 }
-.panel h4 { margin:0 0 8px 0; font-size:15px; }
-.panel .field { margin-bottom:10px; font-size:13px; color:#222; }
-.panel input[type="number"], .panel select { width:110px; padding:6px; border-radius:6px; border:1px solid #ddd; }
-.panel input[type="range"] { width:100%; }
 
 /* Toggle buttons */
 .toggleBtn {
@@ -190,7 +139,6 @@ html, body {
   color:white;
   padding:10px;
   border-radius:10px;
-  border:none;
   width:48px;
   height:48px;
   display:flex;
@@ -199,33 +147,16 @@ html, body {
   cursor:pointer;
   box-shadow: 0 8px 20px rgba(31,111,235,0.18);
   pointer-events:auto;
-  touch-action: manipulation;
-}
-.toggleBtn.top { top:12px; }
-.toggleBtn.second { top:72px; }
-
-/* Labels */
-.label {
-  font-size:11px;
-  font-weight:700;
-  background:rgba(255,255,255,0.95);
-  padding:4px 6px;
-  border-radius:6px;
-  border:1px solid rgba(0,0,0,0.06);
-  display:inline-block;
 }
 
-/* Wind panel smaller controls */
-.wind-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
-.wind-row input[type="number"] { width:70px; }
+/* Labels / tooltips */
+.label { font-size:11px; font-weight:700; background:rgba(255,255,255,0.95); padding:4px 6px; border-radius:6px; display:inline-block; }
 
 /* =========================
-   MANUEL content card
-   - card itself is static (no scroll)
-   - .manual-reader inside is the only scrollable area
+   MANUEL content card (consolidé)
+   - card static, .manual-reader scrollable
    ========================= */
 #manuelCard {
-  /* Remontée de la fenêtre vers le haut (réduit margin-top) */
   margin: 12px auto 16px;
   padding: 14px;
   width: min(900px, 94%);
@@ -235,248 +166,98 @@ html, body {
   box-shadow: 0 8px 30px rgba(0,0,0,0.12);
   z-index: 45;
   pointer-events: auto;
-  overflow: visible; /* important: card does not create scroll context */
+  overflow: visible;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
 }
 
-/* Optional internal sidebar (compact) if used inside the card */
-#manuelCard .manual-sidebar,
+/* Sidebar (single source) */
 .manual-sidebar {
   padding: 8px 10px;
   gap: 8px;
-  width: 220px;
+  width: var(--sidebar-width);
   box-sizing: border-box;
+  display:flex;
+  flex-direction:column;
+  background: transparent;
 }
-#manuelCard .manual-sidebar nav a,
+.manual-sidebar * { color: var(--text); }
+.manual-sidebar .brand { display:flex; gap:10px; align-items:center; }
+.manual-sidebar h1 { font-size:1rem; margin:0; color:var(--text); }
+.manual-sidebar .subtitle { color:var(--muted); margin:0; font-size:0.85rem; }
+.manual-sidebar nav { display:flex; flex-direction:column; gap:8px; }
 .manual-sidebar nav a {
-  padding: 6px 8px;
-  font-size: 0.95rem;
-  line-height: 1.1;
-  color: #0b1220;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+  display:flex; align-items:center; gap:8px; color:var(--muted); padding:6px; border-radius:8px; text-decoration:none; transition:0.18s; font-size:0.95rem;
 }
-#manuelCard .manual-sidebar nav a svg,
-.manual-sidebar nav a svg {
-  width: 18px;
-  height: 18px;
-}
+.manual-sidebar nav a:hover { color:var(--accent); background: rgba(77,163,255,0.06); transform: translateX(4px); }
 
-/* Scrollable reading area inside the card (SEULE zone scrollable) */
+/* Card sections inside reader */
+#manuelCard .card {
+  background: transparent;
+  padding: 12px 0;
+  margin-bottom: 8px;
+  border-radius: 6px;
+}
+#manuelCard .card h2 { margin: 0 0 8px 0; color: var(--accent); }
+#manuelCard .card p, #manuelCard .card li { color: var(--text); line-height: 1.45; }
+
+/* Scrollable reading area inside the card (single robust rule) */
 #manuelCard .manual-reader {
-  max-height: calc(100vh - var(--top-ui-height) - var(--manuel-vertical-offset));
+  /* prefer dynamic viewport units where supported, include safe-area fallback */
+  max-height: calc( min(100dvh, 100vh) - var(--top-ui-height) - var(--manuel-vertical-offset) - env(safe-area-inset-bottom, 0px) );
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding-right: 8px;
   box-sizing: border-box;
 }
 
-/* Card sections inside reader */
-#manuelCard .card {
-  background: transparent; /* keep card background transparent to match parent */
-  padding: 12px 0;
-  margin-bottom: 8px;
-  border-radius: 6px;
-}
-#manuelCard .card h2 { margin: 0 0 8px 0; color: var(--accent); }
-#manuelCard .card p, #manuelCard .card li { color: #0b1220; line-height: 1.45; }
-
-/* =========================
-   MODAL AJOUT TERRAIN
-   ========================= */
-.modal {
-  display: none;
-  position: fixed;
-  z-index: 2000;
-  left: 0; top: 0;
-  width: 100%; height: 100%;
-  background: rgba(0,0,0,0.45);
-  backdrop-filter: blur(3px);
-  justify-content: center;
-  align-items: center;
-}
-.modal-content {
-  background: white;
-  padding: 20px;
-  width: 280px;
-  border-radius: 10px;
-  box-shadow: 0 0 12px rgba(0,0,0,0.3);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.modal-content h3 { margin: 0; text-align: center; }
-.modal-content input { padding: 8px; border-radius: 6px; border: 1px solid #ccc; }
-.modal-buttons { display: flex; justify-content: space-between; margin-top: 10px; }
-.modal-buttons button { padding: 8px 14px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
-#addTerrainCancel { background: #ccc; }
-#addTerrainConfirm { background: var(--accent); color: white; }
-
-/* Layer select helper */
-.layer-select {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 1500;
-  padding: 6px 10px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  background: white;
-  font-size: 14px;
-}
-
-/* =========================
-   Responsive tweaks
-   ========================= */
-@media (max-width: 900px) {
-  .panel { width:90%; left:5% !important; right:5% !important; top:12px !important; }
-  .menuBtn { min-width:160px; }
-  #homeTitle { font-size:28px; }
-
-  /* Manuel card adjustments on mobile */
-  #manuelCard {
-    margin: 8px 10px;
-    padding: 12px;
-  }
-  #manuelCard .manual-sidebar,
-  .manual-sidebar {
-    width: 100%;
-    padding: 8px;
-    overflow-x: auto;
-    gap: 8px;
-  }
-  #manuelCard .manual-reader {
-    max-height: calc(100vh - var(--top-ui-height) - 64px);
-  }
-}
-
-/* FORCE le manuel à être interactif et scrollable */
-#manuelScreen[aria-hidden="false"] {
-  pointer-events: auto !important;
+/* Fallback stronger rule for inline styles or older browsers */
+#manuelCard .manual-reader[style] {
+  max-height: calc( min(100dvh, 100vh) - var(--top-ui-height) - var(--manuel-vertical-offset) ) !important;
   overflow-y: auto !important;
-  -webkit-overflow-scrolling: touch !important;
-}
-/* ---------- Corrections visuelles rapides (coller en bas de styles.css) ---------- */
-
-/* 1) Sidebar : forcer texte lisible sur fond sombre */
-.manual-sidebar,
-.manual-sidebar * {
-  color: var(--text) !important;
-}
-.manual-sidebar .subtitle {
-  color: var(--muted) !important;
-}
-.manual-sidebar nav a {
-  color: var(--text) !important;
-}
-.manual-sidebar nav a svg {
-  fill: currentColor;
-  stroke: none;
 }
 
-/* 2) Bouton "Carte" (layerToggleBtn) : contraste augmenté */
-#layerToggleBtn {
-  background: rgba(255,255,255,0.92) !important; /* légèrement moins "pur" que #fff */
-  color: #0b1220 !important;
-  border: 1px solid rgba(11,18,32,0.06) !important;
-  box-shadow: 0 8px 22px rgba(0,0,0,0.18) !important;
-}
+/* Visual helpers */
+.highlight { border-left:4px solid var(--success); padding-left:12px; }
+.warning { border-left:4px solid var(--danger); padding-left:12px; }
+.note { color:var(--muted); font-size:0.95rem; }
 
-/* Si tu veux un bouton plus sombre encore, décommente la ligne suivante */
-/* #layerToggleBtn { background: #f4f6fb !important; } */
-
-/* 3) Étiquettes / tooltips / labels de la carte : texte noir et fond clair */
+/* Tooltips / labels style (Leaflet) */
 .leaflet-tooltip,
-.leaflet-tooltip .leaflet-tooltip-content,
-.leaflet-tooltip-inner,
 .leaflet-popup-content,
-.leaflet-popup-content-wrapper,
-.leaflet-label,
-.label,
-.leaflet-marker-icon .label {
+.label {
   color: #000 !important;
   background: rgba(255,255,255,0.95) !important;
   border-radius: 6px !important;
-  padding: 2px 6px !important;
+  padding: 4px 8px !important;
   box-shadow: 0 2px 8px rgba(0,0,0,0.12) !important;
   font-weight: 600 !important;
   font-size: 13px !important;
 }
 
-/* Assurer que les tooltips Leaflet utilisent bien le style ci‑dessus */
-.leaflet-tooltip.leaflet-tooltip-right,
-.leaflet-tooltip.leaflet-tooltip-left,
-.leaflet-tooltip.leaflet-tooltip-top,
-.leaflet-tooltip.leaflet-tooltip-bottom {
-  background: transparent !important;
-  box-shadow: none !important;
-}
-.leaflet-tooltip .leaflet-tooltip-content {
-  background: rgba(255,255,255,0.95) !important;
-  color: #000 !important;
-  padding: 4px 8px !important;
-  border-radius: 6px !important;
-}
+/* Accessibility */
+html { scroll-behavior: smooth; }
+a:focus { outline: 3px solid #ffd166; outline-offset: 3px; }
 
-/* 4) Sécurité : priorité haute pour éviter d'être écrasé */
-.manual-sidebar,
-#layerToggleBtn,
-.leaflet-tooltip,
-.label {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* 5) Optionnel : si tu utilises des labels SVG blancs, forcer le fill */
-.leaflet-container svg text,
-.leaflet-container .svg-label {
-  fill: #000 !important;
-  stroke: none !important;
-}
-/* Manuel : s'arrêter au bas de l'écran, cross-device robuste */
-:root{
-  --top-ui-height: 48px;           /* ajuste si ton header est plus grand */
-  --manuel-vertical-offset: 12px;  /* marge interne souhaitée */
-}
-
-/* Primary rule: prefer dynamic viewport units and safe-area */
-#manuelCard .manual-reader {
-  /* 1) try to use dynamic viewport (dvh) where supported */
-  max-height: calc(
-    min(
-      100dvh,
-      100vh
-    )
-    - var(--top-ui-height)
-    - var(--manuel-vertical-offset)
-    - env(safe-area-inset-bottom, 0px)
-  );
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-/* Fallback strong rule to override inline styles or other rules */
-#manuelCard .manual-reader[style] {
-  max-height: calc(
-    min(100dvh, 100vh)
-    - var(--top-ui-height)
-    - var(--manuel-vertical-offset)
-    - env(safe-area-inset-bottom, 0px)
-  ) !important;
-}
-
-/* Mobile tweak: avoid issues with address bar show/hide by clamping */
+/* =========================
+   Responsive tweaks
+   ========================= */
 @media (max-width:900px){
-  #manuelCard .manual-reader {
-    max-height: min(
-      calc(100dvh - var(--top-ui-height) - var(--manuel-vertical-offset) - env(safe-area-inset-bottom,0px)),
-      calc(100vh - var(--top-ui-height) - var(--manuel-vertical-offset))
-    );
+  .manual-root { flex-direction: column; }
+  .manual-sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 10px;
+    gap: 10px;
   }
+  .manual-sidebar nav { flex-direction: row; gap: 10px; }
+  .manual-sidebar nav a { white-space: nowrap; }
+  #manuelCard { margin: 8px 10px; padding: 12px; width: calc(100% - 20px); }
+  #manuelCard .manual-reader { max-height: calc( min(100dvh,100vh) - var(--top-ui-height) - 64px ); }
 }
 
-/* ---------- fin des corrections ---------- */
+/* End of consolidated CSS */
