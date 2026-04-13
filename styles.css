@@ -211,6 +211,14 @@
       pointer-events:auto; /* interactive when visible */
     }
     
+    /* MANUEL : rendre l'écran interactif et scrollable quand il est visible */
+#manuelScreen[aria-hidden="false"] {
+  pointer-events: auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+    
     #manuelScreen[aria-hidden="false"] {
   pointer-events: auto;      /* réactive les interactions */
   overflow-y: auto;          /* permet le scroll */
