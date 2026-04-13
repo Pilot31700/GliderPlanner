@@ -43,7 +43,11 @@ function disableMapInteractions(map) {
 function goTo(screenId){
   const screens = ['homeScreen','prepScreen','volScreen','manuelScreen'];
   const mapEl = document.getElementById('map');
+const btnCarte = document.getElementById('layerToggleBtn');
 
+if (btnCarte) {
+  btnCarte.style.display = (screenId === 'homeScreen' || screenId === 'manuelScreen') ? 'none' : 'block';
+}
   // bascule les écrans
   screens.forEach(id => {
     const el = document.getElementById(id);
