@@ -437,5 +437,46 @@ html, body {
   fill: #000 !important;
   stroke: none !important;
 }
+/* Manuel : s'arrêter au bas de l'écran, cross-device robuste */
+:root{
+  --top-ui-height: 48px;           /* ajuste si ton header est plus grand */
+  --manuel-vertical-offset: 12px;  /* marge interne souhaitée */
+}
+
+/* Primary rule: prefer dynamic viewport units and safe-area */
+#manuelCard .manual-reader {
+  /* 1) try to use dynamic viewport (dvh) where supported */
+  max-height: calc(
+    min(
+      100dvh,
+      100vh
+    )
+    - var(--top-ui-height)
+    - var(--manuel-vertical-offset)
+    - env(safe-area-inset-bottom, 0px)
+  );
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Fallback strong rule to override inline styles or other rules */
+#manuelCard .manual-reader[style] {
+  max-height: calc(
+    min(100dvh, 100vh)
+    - var(--top-ui-height)
+    - var(--manuel-vertical-offset)
+    - env(safe-area-inset-bottom, 0px)
+  ) !important;
+}
+
+/* Mobile tweak: avoid issues with address bar show/hide by clamping */
+@media (max-width:900px){
+  #manuelCard .manual-reader {
+    max-height: min(
+      calc(100dvh - var(--top-ui-height) - var(--manuel-vertical-offset) - env(safe-area-inset-bottom,0px)),
+      calc(100vh - var(--top-ui-height) - var(--manuel-vertical-offset))
+    );
+  }
+}
 
 /* ---------- fin des corrections ---------- */
