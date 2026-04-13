@@ -210,13 +210,6 @@
       z-index:45;
       pointer-events:auto; /* interactive when visible */
     }
-    
-    #manuelScreen[aria-hidden="false"] {
-  pointer-events: auto;      /* réactive les interactions */
-  overflow-y: auto;          /* permet le scroll */
-  -webkit-overflow-scrolling: touch; /* scroll fluide iOS */
-}
-
 
 /* --- MODAL AJOUT TERRAIN --- */
 .modal {
@@ -294,3 +287,9 @@
       #homeTitle { font-size:28px; }
     }
 
+/* FORCE le manuel à être interactif et scrollable */
+#manuelScreen[aria-hidden="false"] {
+  pointer-events: auto !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+}
