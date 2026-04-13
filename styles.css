@@ -242,33 +242,48 @@ html, body {
 }
 
 /* Optional internal sidebar (compact) if used inside the card */
+/* --- Manuel : sidebar compacte + reader limité (remplacer l'ancien bloc) --- */
+
+/* Sidebar compacte à l'intérieur du manuel */
 #manuelCard .manual-sidebar,
 .manual-sidebar {
-  padding: 8px 10px;
-  gap: 8px;
-  width: 220px;
+  padding: 6px 8px;
+  gap: 6px;
+  width: 180px;               /* plus étroit */
   box-sizing: border-box;
+  top: 8px;
+  height: calc(100vh - 16px);
 }
+
+/* Liens de navigation plus compacts et lisibles */
 #manuelCard .manual-sidebar nav a,
 .manual-sidebar nav a {
   padding: 6px 8px;
-  font-size: 0.95rem;
+  font-size: 0.94rem;
   line-height: 1.1;
-  color: #0b1220;
+  color: var(--text);         /* texte clair sur sidebar sombre */
   text-decoration: none;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-}
-#manuelCard .manual-sidebar nav a svg,
-.manual-sidebar nav a svg {
-  width: 18px;
-  height: 18px;
+  border-radius: 8px;
 }
 
-/* Scrollable reading area inside the card (SEULE zone scrollable) */
+/* Icônes de nav plus petites */
+#manuelCard .manual-sidebar nav a svg,
+.manual-sidebar nav a svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  fill: currentColor;
+  stroke: none;
+}
+
+/* Scrollable reading area inside the card (SEULE zone scrollable)
+   On utilise top + bottom UI heights pour que la "fenêtre" s'arrête
+   avant le bouton bas (layerToggleBtn / bottom bar). */
 #manuelCard .manual-reader {
-  max-height: calc(100vh - var(--top-ui-height) - var(--manuel-vertical-offset));
+  max-height: calc(100vh - var(--top-ui-height, 48px) - var(--bottom-ui-height, 72px) - var(--manuel-vertical-offset, 16px));
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding-right: 8px;
@@ -277,13 +292,36 @@ html, body {
 
 /* Card sections inside reader */
 #manuelCard .card {
-  background: transparent; /* keep card background transparent to match parent */
+  background: transparent;
   padding: 12px 0;
   margin-bottom: 8px;
   border-radius: 6px;
 }
-#manuelCard .card h2 { margin: 0 0 8px 0; color: var(--accent); }
-#manuelCard .card p, #manuelCard .card li { color: #0b1220; line-height: 1.45; }
+#manuelCard .card h2 {
+  margin: 0 0 8px 0;
+  color: var(--accent);
+  font-weight:700;
+}
+#manuelCard .card p,
+#manuelCard .card li {
+  color: #0b1220;             /* texte noir pour le contenu du manuel */
+  line-height: 1.45;
+  margin: 0 0 8px 0;
+}
+
+/* Mobile tweak: sidebar horizontal, reader height adjusted */
+@media (max-width:900px) {
+  #manuelCard .manual-sidebar,
+  .manual-sidebar {
+    width: 100%;
+    padding: 6px;
+    gap: 8px;
+    overflow-x: auto;
+  }
+  #manuelCard .manual-reader {
+    max-height: calc(100vh - var(--top-ui-height, 56px) - var(--bottom-ui-height, 88px) - 12px);
+  }
+}
 
 /* =========================
    MODAL AJOUT TERRAIN
