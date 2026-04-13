@@ -279,8 +279,6 @@ document.getElementById('addTerrainConfirm').addEventListener('click', () => {
   pendingClickLatLon = null;
 });
 
-// Evite double initialisation du Mode VOL
-let _volInitialized = false;
   
   /* TERRAINS JSON */
   let terrainsAll = [];
