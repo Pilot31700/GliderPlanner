@@ -249,7 +249,7 @@ html, body {
 .manual-sidebar {
   padding: 6px 8px;
   gap: 6px;
-  width: 180px;               /* plus étroit */
+  width: 30px;               /* plus étroit */
   box-sizing: border-box;
   top: 8px;
   height: calc(100vh - 16px);
