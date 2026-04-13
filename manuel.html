@@ -1,178 +1,9 @@
-<!-- manuel.html -->
-<section id="manuel" class="manual-root">
-
-  <!-- SIDEBAR -->
-  <aside class="manual-sidebar">
-    <div class="brand">
-      <!-- Logo SVG -->
-      <svg width="34" height="34" viewBox="0 0 24 24" fill="none">
-        <rect x="2" y="3" width="20" height="16" rx="3" fill="#071226"/>
-        <path d="M6 16c2-3 6-6 12-8" stroke="#4da3ff" stroke-width="1.6" stroke-linecap="round"/>
-        <circle cx="6" cy="16" r="1.6" fill="#4da3ff"/>
-      </svg>
-      <div>
-        <h1>Glide Planner</h1>
-        <p class="subtitle">Manuel d'utilisation</p>
-      </div>
-    </div>
-
-    <nav>
-      <a href="#intro">
-        <svg viewBox="0 0 24 24"><path d="M3 12h18" stroke="currentColor" stroke-width="1.6"/></svg>
-        Introduction
-      </a>
-
-      <a href="#install-pwa">
-        <svg viewBox="0 0 24 24"><path d="M12 3v12" stroke="currentColor" stroke-width="1.6"/><path d="M8 7l4-4 4 4" stroke="currentColor" stroke-width="1.6"/></svg>
-        Installer
-      </a>
-
-      <a href="#quickstart">
-        <svg viewBox="0 0 24 24"><path d="M12 2v20" stroke="currentColor" stroke-width="1.6"/><path d="M5 8h14" stroke="currentColor" stroke-width="1.6"/></svg>
-        Démarrage
-      </a>
-
-      <a href="#concepts">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/></svg>
-        Concepts
-      </a>
-
-      <a href="#usage">
-        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.6"/></svg>
-        Utilisation
-      </a>
-
-      <a href="#tips">
-        <svg viewBox="0 0 24 24"><path d="M12 2v6" stroke="currentColor" stroke-width="1.6"/><path d="M8 12a4 4 0 0 0 8 0" stroke="currentColor" stroke-width="1.6"/></svg>
-        Conseils
-      </a>
-
-      <a href="#disclaimer">
-        <svg viewBox="0 0 24 24"><path d="M12 2l9 16H3L12 2z" stroke="currentColor" stroke-width="1.6"/></svg>
-        Limites
-      </a>
-
-      <a href="#faq">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/></svg>
-        FAQ
-      </a>
-
-      <a href="#contact">
-        <svg viewBox="0 0 24 24"><path d="M3 8l9 6 9-6" stroke="currentColor" stroke-width="1.6"/></svg>
-        Contact
-      </a>
-    </nav>
-  </aside>
-
-  <!-- CONTENT -->
-  <main class="manual-content">
-
-    <!-- INTRO -->
-    <section id="intro" class="card">
-      <h2>Introduction</h2>
-      <p>Glide Planner calcule en temps réel les zones atteignables en vol à voile. C’est un outil d’aide à la décision : simple, visuel, et pensé pour rester clair même en conditions réelles.</p>
-    </section>
-
-    <!-- INSTALLATION PWA -->
-    <section id="install-pwa" class="card">
-      <h2>📱 Installer l’application (PWA)</h2>
-
-      <h3>Android (Chrome / Edge)</h3>
-      <ol>
-        <li>Ouvre Glide Planner dans Chrome.</li>
-        <li>Menu (⋮) → <strong>Ajouter à l’écran d’accueil</strong>.</li>
-        <li>Lance l’app depuis l’icône.</li>
-      </ol>
-
-      <h3>iOS (Safari)</h3>
-      <ol>
-        <li>Ouvre Glide Planner dans <strong>Safari</strong>.</li>
-        <li>Partager → <strong>Ajouter à l’écran d’accueil</strong>.</li>
-      </ol>
-
-      <p class="note">⚠️ Active la géolocalisation pour le Mode Vol.</p>
-    </section>
-
-    <!-- QUICKSTART -->
-    <section id="quickstart" class="card">
-      <h2>⚡ Démarrage rapide</h2>
-      <ol>
-        <li>Règle finesse, finesse basse, seuil, marge, vitesse.</li>
-        <li>Choisis un terrain de référence.</li>
-        <li>Active les labels si besoin.</li>
-        <li>Passe en <strong>Mode Vol</strong> pour le rayon GPS.</li>
-      </ol>
-    </section>
-
-    <!-- CONCEPTS -->
-    <section id="concepts" class="card">
-      <h2>Concepts clés</h2>
-
-      <h3>Finesse</h3>
-      <p>Distance parcourue pour 1 mètre d’altitude. Valeur théorique → conditions idéales.</p>
-
-      <h3>Finesse basse</h3>
-      <p>Valeur de sécurité appliquée sous un seuil.</p>
-
-      <h3>Seuil / Marge</h3>
-      <p>Seuil = altitude où la finesse basse s’applique. Marge = sécurité retirée avant calcul.</p>
-
-      <h3>Altimétrie</h3>
-      <ul>
-        <li><strong>QFE</strong> : altitude relative au terrain.</li>
-        <li><strong>QNH</strong> : altitude absolue.</li>
-        <li><strong>QFE_REF</strong> : relative à un terrain choisi.</li>
-      </ul>
-    </section>
-
-    <!-- USAGE -->
-    <section id="usage" class="card">
-      <h2>Utilisation</h2>
-
-      <h3>Préparation</h3>
-      <p>Configure les paramètres, filtre les terrains, visualise les cercles. Clique sur la carte pour ajouter un point.</p>
-
-      <h3>Mode Vol</h3>
-      <p>Affiche le rayon atteignable en temps réel selon ton altitude GPS.</p>
-
-      <h3>Vent</h3>
-      <p>Ajoute des couches de vent pour affiner les distances.</p>
-    </section>
-
-    <!-- TIPS -->
-    <section id="tips" class="card highlight">
-      <h2>💡 Conseils</h2>
-      <ul>
-        <li>Utilise une finesse conservatrice (70–80%).</li>
-        <li>Vérifie météo, NOTAM, cartes officielles.</li>
-        <li>Ne remplace jamais ton jugement par l’app.</li>
-      </ul>
-    </section>
-
-    <!-- DISCLAIMER -->
-    <section id="disclaimer" class="card warning">
-      <h2>⚠️ Limites</h2>
-      <p><strong>Glide Planner n’est pas un outil de navigation.</strong></p>
-      <p>Les distances sont des estimations simplifiées. Toujours croiser avec ton expérience, tes instruments et les données officielles.</p>
-    </section>
-
-    <!-- FAQ -->
-    <section id="faq" class="card">
-      <h2>FAQ</h2>
-      <p><strong>Cercles absents ?</strong> Vérifie rangeKm, position GPS, terrains.json.</p>
-      <p><strong>Ajouter un terrain ?</strong> Clique sur la carte en mode Préparation.</p>
-      <p><strong>Quelle finesse ?</strong> 70–80% de la valeur théorique.</p>
-    </section>
-
-    <!-- CONTACT -->
-    <section id="contact" class="card">
-      <h2>Contact</h2>
-      <p>Feedback : GitHub ou canal support.</p>
-    </section>
-
-  </main>
-
-  <!-- INLINE STYLES -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>Glide Planner — Manuel</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
     :root{
       --bg:#0b1220;
@@ -185,14 +16,11 @@
       --danger:#ff6b6b;
     }
 
-    .manual-root{
-      display:flex;
-      min-height:100%;
-      background:var(--bg);
-      color:var(--text);
-      font-family:Inter,system-ui;
-    }
+    /* Layout root */
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
+    .manual-root{display:flex;min-height:100vh;gap:20px;box-sizing:border-box}
 
+    /* Sidebar */
     .manual-sidebar{
       width:240px;
       padding:20px;
@@ -201,72 +29,208 @@
       display:flex;
       flex-direction:column;
       gap:16px;
+      box-sizing:border-box;
+      position:sticky;
+      top:0;
+      height:100vh;
+      overflow:auto;
+      -webkit-overflow-scrolling:touch;
     }
-
-    .manual-sidebar nav{
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-    }
-
+    .manual-sidebar .brand{display:flex;gap:12px;align-items:center}
+    .manual-sidebar h1{font-size:1.05rem;margin:0}
+    .subtitle{color:var(--muted);font-size:0.9rem;margin:0}
+    .manual-sidebar nav{display:flex;flex-direction:column;gap:10px}
     .manual-sidebar nav a{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      color:var(--muted);
-      padding:8px;
-      border-radius:8px;
-      transition:0.2s;
+      display:flex;align-items:center;gap:10px;color:var(--muted);padding:8px;border-radius:8px;text-decoration:none;transition:0.18s;
     }
+    .manual-sidebar nav a:hover{color:var(--accent);background:rgba(77,163,255,0.08);transform:translateX(4px)}
 
-    .manual-sidebar nav a:hover{
-      color:var(--accent);
-      background:rgba(77,163,255,0.08);
-      transform:translateX(4px);
-    }
-
+    /* Main area - container does NOT scroll */
     .manual-content{
       flex:1;
       padding:24px;
-      max-width:900px;
+      max-width:980px;
       margin:auto;
-      overflow-y:auto;
-      -webkit-overflow-scrolling:touch;
+      box-sizing:border-box;
+      /* IMPORTANT: no overflow here, we keep the container static */
+      overflow:visible;
+      display:flex;
+      flex-direction:column;
+      gap:16px;
     }
 
+    /* Scrollable reading area inside the main content */
+    .manual-reader{
+      /* limit height to viewport minus safe offsets (header/padding) */
+      max-height: calc(100vh - 120px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-right: 8px; /* avoid content hidden under scrollbar */
+      box-sizing:border-box;
+    }
+
+    /* Card style for sections */
     .card{
       background:var(--card);
       padding:18px;
       border-radius:12px;
-      margin-bottom:16px;
+      margin-bottom:12px;
       box-shadow:0 8px 25px rgba(0,0,0,0.25);
     }
-
-    .card h2{
-      margin-top:0;
-      color:var(--accent);
-    }
-
+    .card h2{margin:0 0 8px;color:var(--accent)}
+    .card h3{margin:12px 0 6px}
+    .card p,.card li{color:#c9d1d9;line-height:1.45}
     .highlight{border-left:4px solid var(--success);padding-left:14px}
     .warning{border-left:4px solid var(--danger);padding-left:14px}
+    .note{color:var(--muted);font-size:0.95rem}
 
-    @media(max-width:800px){
+    /* Accessibility & smooth scroll */
+    html{scroll-behavior:smooth}
+    a:focus{outline:3px solid #ffd166;outline-offset:3px}
+
+    /* Responsive: sidebar becomes horizontal strip on small screens */
+    @media (max-width:900px){
       .manual-root{flex-direction:column}
       .manual-sidebar{
-        width:100%;
-        height:auto;
-        flex-direction:row;
-        overflow-x:auto;
-        gap:12px;
+        width:100%;height:auto;position:relative;flex-direction:row;overflow-x:auto;padding:12px;gap:12px;
       }
-      .manual-sidebar nav{
-        flex-direction:row;
-        gap:12px;
-      }
-      .manual-sidebar nav a{
-        white-space:nowrap;
-      }
+      .manual-sidebar nav{flex-direction:row;gap:12px}
+      .manual-sidebar nav a{white-space:nowrap}
+      /* Reader height slightly larger on mobile */
+      .manual-reader{max-height: calc(100vh - 140px)}
     }
-  </style>
 
-</section>
+    /* Small helper to ensure long paragraphs wrap nicely */
+    code{background:#0b1220;border:1px solid rgba(255,255,255,0.04);padding:2px 6px;border-radius:4px;font-family:monospace}
+  </style>
+</head>
+<body>
+  <section id="manuel" class="manual-root" aria-labelledby="manuel-title">
+
+    <!-- Sidebar -->
+    <aside class="manual-sidebar" aria-label="Navigation du manuel">
+      <div class="brand">
+        <!-- small SVG logo -->
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <rect x="2" y="3" width="20" height="16" rx="3" fill="#071226"/>
+          <path d="M6 16c2-3 6-6 12-8" stroke="#4da3ff" stroke-width="1.6" stroke-linecap="round"/>
+          <circle cx="6" cy="16" r="1.6" fill="#4da3ff"/>
+        </svg>
+        <div>
+          <h1 id="manuel-title">Glide Planner</h1>
+          <p class="subtitle">Manuel d'utilisation</p>
+        </div>
+      </div>
+
+      <nav aria-label="Table des matières">
+        <a href="#intro">Introduction</a>
+        <a href="#install-pwa">Installer</a>
+        <a href="#quickstart">Démarrage</a>
+        <a href="#concepts">Concepts</a>
+        <a href="#usage">Utilisation</a>
+        <a href="#tips">Conseils</a>
+        <a href="#disclaimer">Limites</a>
+        <a href="#faq">FAQ</a>
+        <a href="#contact">Contact</a>
+      </nav>
+    </aside>
+
+    <!-- Main content (container not scrollable) -->
+    <main class="manual-content" id="main" tabindex="-1">
+
+      <!-- Reader area: THIS is scrollable -->
+      <div class="manual-reader" role="region" aria-label="Contenu du manuel">
+
+        <section id="intro" class="card" tabindex="0" aria-labelledby="intro-title">
+          <h2 id="intro-title">Introduction</h2>
+          <p>Glide Planner calcule les zones atteignables en vol à voile. Outil d’aide à la décision : visuel, rapide, conçu pour rester lisible en vol.</p>
+        </section>
+
+        <section id="install-pwa" class="card" tabindex="0" aria-labelledby="install-title">
+          <h2 id="install-title">📱 Installer l’application</h2>
+          <h3>Android</h3>
+          <ol>
+            <li>Ouvre Glide Planner dans Chrome.</li>
+            <li>Menu (⋮) → <strong>Ajouter à l’écran d’accueil</strong>.</li>
+            <li>Lance depuis l’icône pour une expérience plein écran.</li>
+          </ol>
+          <h3>iOS</h3>
+          <ol>
+            <li>Ouvre Glide Planner dans Safari.</li>
+            <li>Partager → <strong>Ajouter à l’écran d’accueil</strong>.</li>
+          </ol>
+          <p class="note">⚠️ Assure-toi que la page est servie en HTTPS et que la géolocalisation est autorisée pour le Mode Vol.</p>
+        </section>
+
+        <section id="quickstart" class="card" tabindex="0" aria-labelledby="quickstart-title">
+          <h2 id="quickstart-title">⚡ Démarrage rapide</h2>
+          <ol>
+            <li>Règle finesse, finesse basse, seuil, marge et vitesse.</li>
+            <li>Choisis un terrain de référence.</li>
+            <li>Active les labels si besoin.</li>
+            <li>Passe en <strong>Mode Vol</strong> pour le rayon GPS.</li>
+          </ol>
+        </section>
+
+        <section id="concepts" class="card" tabindex="0" aria-labelledby="concepts-title">
+          <h2 id="concepts-title">Concepts clés</h2>
+          <h3>Finesse</h3>
+          <p>Distance parcourue pour 1 m d’altitude. Valeur théorique, dépend des conditions et du pilotage.</p>
+          <h3>Finesse basse</h3>
+          <p>Valeur conservatrice appliquée sous le seuil.</p>
+          <h3>Seuil / Marge</h3>
+          <p>Seuil = altitude où la finesse basse s’applique. Marge = sécurité retirée avant calcul.</p>
+          <h3>Altimétrie</h3>
+          <ul>
+            <li><strong>QFE</strong> : relative au terrain.</li>
+            <li><strong>QNH</strong> : absolue (GPS/baro).</li>
+            <li><strong>QFE_REF</strong> : relative à un terrain choisi.</li>
+          </ul>
+        </section>
+
+        <section id="usage" class="card" tabindex="0" aria-labelledby="usage-title">
+          <h2 id="usage-title">Utilisation</h2>
+          <h3>Préparation</h3>
+          <p>Configurer paramètres, filtrer terrains, visualiser cercles. Cliquer sur la carte ajoute un point en mode Préparation.</p>
+          <h3>Mode Vol</h3>
+          <p>Affiche le rayon atteignable depuis la position GPS. Recentrer recentre la carte sur la position du planeur.</p>
+          <h3>Vent</h3>
+          <p>Ajouter des couches de vent pour affiner les calculs.</p>
+        </section>
+
+        <section id="tips" class="card highlight" tabindex="0" aria-labelledby="tips-title">
+          <h2 id="tips-title">💡 Conseils</h2>
+          <ul>
+            <li>Utilise une finesse conservatrice (70–80%).</li>
+            <li>Vérifie météo, NOTAM et cartes officielles.</li>
+            <li>Ne remplace jamais ton jugement par l’app.</li>
+          </ul>
+        </section>
+
+        <section id="disclaimer" class="card warning" tabindex="0" aria-labelledby="disclaimer-title">
+          <h2 id="disclaimer-title">⚠️ Limites</h2>
+          <p><strong>Glide Planner est un outil d’aide à la décision.</strong> Les estimations sont simplifiées. Elles ne remplacent pas les procédures, les cartes officielles ni le jugement du pilote.</p>
+          <ul>
+            <li>Utilise des valeurs de finesse inférieures à la réalité pour tenir compte des pertes.</li>
+            <li>Ne pas utiliser comme unique source de navigation ou pour décisions d’urgence.</li>
+          </ul>
+        </section>
+
+        <section id="faq" class="card" tabindex="0" aria-labelledby="faq-title">
+          <h2 id="faq-title">FAQ</h2>
+          <p><strong>Cercles absents ?</strong> Vérifie rangeKm, position GPS et que <code>terrains.json</code> est chargé.</p>
+          <p><strong>Ajouter un terrain ?</strong> En mode Préparation, clique sur la carte et remplis le formulaire.</p>
+          <p><strong>Quelle finesse ?</strong> Commence par 70–80% et ajuste selon l’expérience.</p>
+        </section>
+
+        <section id="contact" class="card" tabindex="0" aria-labelledby="contact-title">
+          <h2 id="contact-title">Contact</h2>
+          <p>Feedback : GitHub ou canal support associé à l’application.</p>
+        </section>
+
+      </div> <!-- /.manual-reader -->
+
+    </main>
+  </section>
+</body>
+</html>
