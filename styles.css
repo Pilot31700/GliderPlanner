@@ -360,3 +360,82 @@ html, body {
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch !important;
 }
+/* ---------- Corrections visuelles rapides (coller en bas de styles.css) ---------- */
+
+/* 1) Sidebar : forcer texte lisible sur fond sombre */
+.manual-sidebar,
+.manual-sidebar * {
+  color: var(--text) !important;
+}
+.manual-sidebar .subtitle {
+  color: var(--muted) !important;
+}
+.manual-sidebar nav a {
+  color: var(--text) !important;
+}
+.manual-sidebar nav a svg {
+  fill: currentColor;
+  stroke: none;
+}
+
+/* 2) Bouton "Carte" (layerToggleBtn) : contraste augmenté */
+#layerToggleBtn {
+  background: rgba(255,255,255,0.92) !important; /* légèrement moins "pur" que #fff */
+  color: #0b1220 !important;
+  border: 1px solid rgba(11,18,32,0.06) !important;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.18) !important;
+}
+
+/* Si tu veux un bouton plus sombre encore, décommente la ligne suivante */
+/* #layerToggleBtn { background: #f4f6fb !important; } */
+
+/* 3) Étiquettes / tooltips / labels de la carte : texte noir et fond clair */
+.leaflet-tooltip,
+.leaflet-tooltip .leaflet-tooltip-content,
+.leaflet-tooltip-inner,
+.leaflet-popup-content,
+.leaflet-popup-content-wrapper,
+.leaflet-label,
+.label,
+.leaflet-marker-icon .label {
+  color: #000 !important;
+  background: rgba(255,255,255,0.95) !important;
+  border-radius: 6px !important;
+  padding: 2px 6px !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12) !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+}
+
+/* Assurer que les tooltips Leaflet utilisent bien le style ci‑dessus */
+.leaflet-tooltip.leaflet-tooltip-right,
+.leaflet-tooltip.leaflet-tooltip-left,
+.leaflet-tooltip.leaflet-tooltip-top,
+.leaflet-tooltip.leaflet-tooltip-bottom {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.leaflet-tooltip .leaflet-tooltip-content {
+  background: rgba(255,255,255,0.95) !important;
+  color: #000 !important;
+  padding: 4px 8px !important;
+  border-radius: 6px !important;
+}
+
+/* 4) Sécurité : priorité haute pour éviter d'être écrasé */
+.manual-sidebar,
+#layerToggleBtn,
+.leaflet-tooltip,
+.label {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 5) Optionnel : si tu utilises des labels SVG blancs, forcer le fill */
+.leaflet-container svg text,
+.leaflet-container .svg-label {
+  fill: #000 !important;
+  stroke: none !important;
+}
+
+/* ---------- fin des corrections ---------- */
