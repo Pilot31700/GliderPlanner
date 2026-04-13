@@ -1,1 +1,148 @@
-{“title”:“Manuel d’utilisation — Glide Planner”,“body”:”<nav aria-label="Table des matières" class="manual-toc" style="margin-bottom:18px;">\n  Sommaire\n  \n    <a href="#intro">Introduction\n    <a href="#install-pwa">Installer la PWA (mobile)\n    <a href="#quickstart">Démarrage rapide\n    <a href="#concepts">Concepts clés\n    <a href="#utilisation">Utilisation de l’application\n    <a href="#conseils">Conseils pratiques\n    <a href="#disclaimer">Disclaimer et limites\n    <a href="#faq">FAQ\n    <a href="#contact">Contact\n  \n\n\n<main id="manuel-content">\n  <section id="intro">\n    Glide Planner — Manuel d’utilisation\n    Ce manuel explique les fonctions principales de Glide Planner, comment installer l’application en tant que PWA sur mobile, et donne des conseils d’utilisation et de sécurité. Le contenu est organisé par sections pour une navigation rapide.\n  \n\n  <section id="install-pwa">\n    Installer la PWA sur mobile\n    Glide Planner peut être installé sur l’écran d’accueil de votre téléphone pour un accès rapide et un comportement proche d’une application native.\n\n    Android (Chrome, Edge, autres navigateurs WebView)\n    \n      Ouvrez Glide Planner dans votre navigateur mobile (Chrome recommandé).\n      Ouvrez le menu du navigateur (⋮) puis choisissez Ajouter à l’écran d’accueil ou Add to Home screen.\n      Confirmez l’ajout. L’icône apparaîtra sur votre écran d’accueil et lancera l’application en mode plein écran.\n    \n\n    iOS (iPhone / iPad)\n    Sur iOS, l’installation PWA est gérée via Safari. Les autres navigateurs sur iOS utilisent WebKit mais n’affichent pas toujours l’option d’installation.\n    \n      Ouvrez Glide Planner dans Safari.\n      Touchez le bouton Partager (icône carré avec flèche vers le haut).\n      Sélectionnez Ajouter à l’écran d’accueil (Add to Home Screen).\n      Confirmez. L’application s’ouvrira ensuite en plein écran sans barre d’adresse.\n    \n\n    Permissions recommandées\n    \n      Géolocalisation : autorisez l’accès si vous souhaitez utiliser le mode Vol et le recentrage automatique.\n      Notifications : non requises par défaut, mais utiles si vous activez des alertes futures.\n    \n\n    Remarques\n    \n      Sur iOS, l’expérience PWA est limitée par les contraintes de WebKit (ex. service worker, cache). Pour une installation fiable, utilisez Safari.\n      Si l’option d’installation n’apparaît pas, vérifiez que la page est servie via HTTPS et que le manifest.json et le service worker sont accessibles.\n    \n  \n\n  <section id="quickstart">\n    Démarrage rapide\n    \n      Ouvrez l’application (ou installez-la en PWA comme indiqué ci‑dessus).\n      Sur l’écran Préparation, ajustez les paramètres : finesse, finesse basse, seuil, marge, vitesse de croisière.\n      Choisissez la référence (terrain) si nécessaire et réglez la distance de filtre (rangeKm).\n      Activez l’option Labels pour afficher les étiquettes sur la carte.\n      Passez en Mode Vol pour activer le suivi GPS et visualiser le rayon franchissable.\n    \n  \n\n  <section id="concepts">\n    Concepts clés\n\n    Finesse\n    La finesse est le rapport distance/altitude théorique. Glide Planner utilise une finesse nominale pour estimer la distance franchissable. La finesse réelle dépend de l’appareil, des conditions aérologiques et du pilotage.\n\n    Finesse basse\n    Valeur utilisée pour les altitudes basses (sous le seuil). Représente une finesse réduite en cas de conditions défavorables.\n\n    Seuil et marge\n    Le seuil définit la limite où la finesse basse s’applique. La marge est une déduction de sécurité appliquée à l’altitude disponible avant calcul de la distance.\n\n    Modes altimétriques\n    \n      QFE : altitude relative au terrain (utile pour approches locales).\n      QNH : altitude barométrique / GPS (altitude absolue).\n      QFE_REF : altitude relative à un terrain de référence sélectionné.\n    \n  \n\n  <section id="utilisation">\n    Utilisation détaillée\n\n    Écran Préparation\n    Permet de configurer les paramètres de calcul, filtrer les terrains et visualiser les cercles de sécurité. Cliquez sur la carte pour ajouter un terrain (mode Préparation actif).\n\n    Écran Vol\n    Affiche le rayon franchissable depuis la position GPS (si activée). Le bouton Recentrer recentre la carte sur la position du planeur. Le panneau Vol contient des réglages rapides pour la finesse et l’altimétrie.\n\n    Panneaux et interactions\n    \n      Les panneaux sont déplaçables par glisser (drag) ; les contrôles de formulaire restent interactifs.\n      Le panneau Vent permet d’entrer des couches de vent par altitude et d’inclure l’effet du vent dans le calcul.\n    \n  \n\n  <section id="conseils">\n    Conseils pratiques\n    \n      Utilisez des valeurs de finesse conservatrices pour la planification (inférieures à la finesse théorique) afin d’avoir une marge de sécurité.\n      Vérifiez toujours les cartes officielles, NOTAMs et la météo avant un vol.\n      Ne comptez pas uniquement sur l’application pour la prise de décision en vol ; combinez les informations avec votre jugement et vos instruments.\n      Sur mobile, installez la PWA pour un accès rapide et autorisez la géolocalisation pour un suivi précis.\n    \n  \n\n  <section id="disclaimer">\n    Disclaimer et limites\n    Glide Planner est un outil d’aide à la décision. Il fournit des estimations basées sur des modèles simplifiés et des données entrées par l’utilisateur. Les résultats ne remplacent pas les cartes officielles, les procédures de vol, ni le jugement du pilote.\n\n    Recommandations de sécurité :\n    \n      Utilisez des valeurs de finesse inférieures à la réalité pour tenir compte des pertes et des erreurs (ex. turbulence, vent, erreurs de pilotage).\n      Ne pas utiliser Glide Planner comme unique source de navigation ou pour des décisions d’urgence.\n      Vérifiez la précision de la géolocalisation et la disponibilité des données terrains avant de vous fier aux calculs.\n      En cas de doute, priorisez les procédures de sécurité et contactez les services compétents.\n    \n  \n\n  <section id="faq">\n    FAQ\n    \n      Pourquoi mes cercles n’apparaissent-ils pas ?\n      Vérifiez le rayon de filtre (rangeKm), la position utilisateur (userPos) et que les terrains sont chargés (terrains.json). Activez les labels si nécessaire.\n\n      Comment ajouter un terrain ?\n      En mode Préparation, cliquez sur la carte à l’emplacement souhaité, remplissez le nom et l’altitude, puis confirmez.\n\n      Quelle finesse dois-je utiliser ?\n      Commencez par une valeur conservatrice (par exemple 70–80% de la finesse théorique) et ajustez selon l’expérience et les conditions.\n    \n  \n\n  <section id="contact">\n    Contact et retours\n    Pour signaler un bug, proposer une amélioration ou poser une question technique, envoyez un message via le canal de support associé à l’application (ou ajoutez une issue sur le dépôt si disponible).\n  \n\n\n\n  /* Styles locaux pour le manuel (insérer dans styles.css si souhaité) */\n  .manual-toc { background: rgba(255,255,255,0.95); padding:10px; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,0.08); }\n  .manual-toc ul { margin:8px 0 0 14px; padding:0; }\n  .manual-toc a { color: var(–accent); text-decoration: none; }\n  #manuel-content h1, #manuel-content h2 { margin-top: 18px; }\n  #manuel-content p, #manuel-content li, #manuel-content dd { line-height:1.45; }\n  @media (max-width:720px){ .manual-toc { position: sticky; top: 8px; z-index: 60; } }\n”}
+<!-- manuel.html -->
+<section id="manuel" aria-labelledby="manuel-title" class="manual-root">
+  <nav aria-label="Table des matières" class="manual-toc">
+    <strong id="manuel-title">Manuel d'utilisation — Glide Planner</strong>
+    <ul>
+      <li><a href="#intro">Introduction</a></li>
+      <li><a href="#install-pwa">Installer la PWA (mobile)</a></li>
+      <li><a href="#quickstart">Démarrage rapide</a></li>
+      <li><a href="#concepts">Concepts clés</a></li>
+      <li><a href="#usage">Utilisation</a></li>
+      <li><a href="#tips">Conseils pratiques</a></li>
+      <li><a href="#disclaimer">Disclaimer & limites</a></li>
+      <li><a href="#faq">FAQ</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </nav>
+
+  <main id="manuel-content">
+    <section id="intro">
+      <h2>Introduction</h2>
+      <p>Ce manuel explique les fonctions principales de Glide Planner, comment installer l'application en tant que PWA sur mobile, et fournit des conseils d'utilisation et de sécurité. Le contenu est organisé en sections pour une navigation rapide.</p>
+    </section>
+
+    <section id="install-pwa">
+      <h2>Installer la PWA sur mobile</h2>
+
+      <h3>Android (Chrome, Edge)</h3>
+      <ol>
+        <li>Ouvrez Glide Planner dans votre navigateur mobile (Chrome recommandé).</li>
+        <li>Ouvrez le menu du navigateur (⋮) puis choisissez <strong>Ajouter à l'écran d'accueil</strong>.</li>
+        <li>Confirmez l'ajout : l'icône apparaîtra sur l'écran d'accueil et lancera l'application en mode plein écran.</li>
+      </ol>
+
+      <h3>iOS (Safari)</h3>
+      <ol>
+        <li>Ouvrez Glide Planner dans <strong>Safari</strong>.</li>
+        <li>Touchez le bouton <em>Partager</em> puis sélectionnez <strong>Ajouter à l'écran d'accueil</strong>.</li>
+        <li>Confirmez. L'application s'ouvrira ensuite en plein écran sans barre d'adresse.</li>
+      </ol>
+
+      <h3>Vérifications et permissions</h3>
+      <ul>
+        <li>Assurez‑vous que la page est servie en <strong>HTTPS</strong> et que <code>manifest.json</code> et le service worker sont accessibles.</li>
+        <li>Autorisez la <strong>géolocalisation</strong> si vous utilisez le Mode Vol.</li>
+      </ul>
+    </section>
+
+    <section id="quickstart">
+      <h2>Démarrage rapide</h2>
+      <ol>
+        <li>Ouvrez l'application ou installez-la en PWA.</li>
+        <li>Dans <strong>Préparation</strong>, réglez finesse, finesse basse, seuil, marge et vitesse de croisière.</li>
+        <li>Choisissez un terrain de référence si nécessaire et réglez la distance de filtre.</li>
+        <li>Activez <em>Labels</em> pour afficher les étiquettes sur la carte.</li>
+        <li>Passez en <strong>Mode Vol</strong> pour activer le suivi GPS et visualiser le rayon franchissable.</li>
+      </ol>
+    </section>
+
+    <section id="concepts">
+      <h2>Concepts clés</h2>
+      <h3>Finesse</h3>
+      <p>Rapport distance/altitude théorique utilisé pour estimer la distance franchissable.</p>
+
+      <h3>Finesse basse</h3>
+      <p>Valeur conservatrice appliquée aux basses altitudes (sous le seuil).</p>
+
+      <h3>Seuil et marge</h3>
+      <p>Le seuil déclenche la finesse basse ; la marge est une déduction de sécurité appliquée à l'altitude disponible.</p>
+
+      <h3>Modes altimétriques</h3>
+      <ul>
+        <li><strong>QFE</strong> : altitude relative au terrain.</li>
+        <li><strong>QNH</strong> : altitude absolue (GPS/baro).</li>
+        <li><strong>QFE_REF</strong> : altitude relative à un terrain de référence.</li>
+      </ul>
+    </section>
+
+    <section id="usage">
+      <h2>Utilisation détaillée</h2>
+
+      <h3>Écran Préparation</h3>
+      <p>Configurer les paramètres, filtrer les terrains et visualiser les cercles de sécurité. Cliquez sur la carte pour ajouter un terrain en mode Préparation.</p>
+
+      <h3>Écran Vol</h3>
+      <p>Affiche le rayon franchissable depuis la position GPS. Le bouton <em>Recentrer</em> recentre la carte sur la position du planeur.</p>
+
+      <h3>Panneaux et Vent</h3>
+      <p>Les panneaux sont déplaçables ; le panneau Vent permet d'entrer des couches de vent et d'inclure leur effet dans le calcul.</p>
+    </section>
+
+    <section id="tips">
+      <h2>Conseils pratiques</h2>
+      <ul>
+        <li>Utilisez des valeurs de finesse conservatrices (inférieures à la finesse théorique) pour garder une marge de sécurité.</li>
+        <li>Vérifiez toujours cartes officielles, NOTAMs et météo avant un vol.</li>
+        <li>Ne comptez pas uniquement sur l'application pour la prise de décision en vol ; combinez avec instruments et jugement.</li>
+        <li>Sur mobile, installez la PWA et autorisez la géolocalisation pour un suivi précis.</li>
+      </ul>
+    </section>
+
+    <section id="disclaimer">
+      <h2>Disclaimer et limites</h2>
+      <p><strong>Glide Planner est un outil d'aide à la décision.</strong> Les estimations sont basées sur des modèles simplifiés et des données fournies par l'utilisateur. Elles ne remplacent pas les cartes officielles, les procédures de vol ni le jugement du pilote.</p>
+      <p><strong>Recommandations :</strong></p>
+      <ul>
+        <li>Utilisez des valeurs de finesse inférieures à la réalité pour tenir compte des pertes (turbulence, vent, erreurs de pilotage).</li>
+        <li>Ne pas utiliser Glide Planner comme unique source de navigation ou pour décisions d'urgence.</li>
+        <li>Vérifiez la précision de la géolocalisation et la disponibilité des données terrains avant de vous fier aux calculs.</li>
+      </ul>
+    </section>
+
+    <section id="faq">
+      <h2>FAQ</h2>
+      <dl>
+        <dt>Pourquoi mes cercles n'apparaissent-ils pas ?</dt>
+        <dd>Vérifiez le rayon de filtre (rangeKm), la position utilisateur et que <code>terrains.json</code> est chargé.</dd>
+
+        <dt>Comment ajouter un terrain ?</dt>
+        <dd>En mode Préparation, cliquez sur la carte, remplissez le nom et l'altitude, puis confirmez.</dd>
+
+        <dt>Quelle finesse utiliser ?</dt>
+        <dd>Commencez par une valeur conservatrice (70–80% de la finesse théorique) et ajustez selon l'expérience.</dd>
+      </dl>
+    </section>
+
+    <section id="contact">
+      <h2>Contact et retours</h2>
+      <p>Pour signaler un bug ou proposer une amélioration, utilisez le canal de support associé à l'application ou créez une issue sur le dépôt si disponible.</p>
+    </section>
+  </main>
+
+  <style>
+    :root { --accent:#1f6feb; --bg:#ffffff; --muted:#666; }
+    .manual-root { max-width:980px; margin:18px auto; padding:12px; }
+    .manual-toc { background: rgba(255,255,255,0.98); padding:12px; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,0.06); margin-bottom:14px; }
+    .manual-toc ul { margin:8px 0 0 16px; padding:0; }
+    .manual-toc a { color:var(--accent); text-decoration:none; }
+    #manuel-content { background: var(--bg); padding:14px; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,0.04); }
+    #manuel-content h2 { margin-top:18px; color:#0b1220; }
+    #manuel-content h3 { margin-top:12px; color:#0b1220; font-size:1rem; }
+    #manuel-content p, #manuel-content li, #manuel-content dd { color:#222; line-height:1.45; }
+    code { background:#f4f6fb; padding:2px 6px; border-radius:4px; font-family:monospace; font-size:0.95em; }
+    @media (max-width:720px) {
+      .manual-root { padding:10px; margin:8px; }
+      .manual-toc { position:sticky; top:8px; z-index:60; }
+    }
+  </style>
+</section>
