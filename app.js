@@ -1,13 +1,15 @@
 /****************************************************
- *  Glide Planner – app.js (réécrit selon tes demandes)
- *  - Supprime les cercles terrains jaunes
- *  - Étiquette réduite à l'ICAO (t.id) uniquement
- *  - Utilise icône piste stylisée pour tous les terrains
- *  - Slider opacité OSM + toggle OpenAIP (décoché par défaut)
- *  - loadManuel sécurisé (n'injecte que le fragment utile)
- *  - Corrige scope / doublons et rend le code plus robuste
+ *  Glide Planner – app.js (réécriture complète demandée)
  *
- *  Remplace entièrement ton app.js par ce fichier.
+ *  Objectifs appliqués :
+ *  - Supprimer les "cercles fixes" indésirables
+ *  - Conserver les cercles de calcul (finesse / vent) en PREP
+ *  - Ne PAS afficher le cercle bleu du planeur en PREP (uniquement en VOL)
+ *  - Étiquette réduite à l'ICAO (t.id) uniquement
+ *  - Icône piste stylisée pour tous les terrains
+ *  - Slider opacité OSM + toggle OpenAIP décoché par défaut
+ *  - loadManuel sécurisé (n'injecte que le fragment utile)
+ *  - Robustesse : guards null-safe, pas de variables hors scope
  ****************************************************/
 
 /* Globals */
@@ -15,14 +17,14 @@ let _volInitialized = false;
 let terrainsAll = [];
 let terrains = [];
 let filterOnly4Letters = false;
-let objs = []; // calques ajoutés à la carte (cercles, polygones, marqueurs)
-let volObjects = [];
+let objs = []; // calques ajoutés dynamiquement (cercles, polygones, marqueurs)
+let volObjects = []; // calques spécifiques au mode VOL
 let volGpsWatchId = null;
 let volAutoCenter = true;
 
-/* =========================
-   Helpers : activer / désactiver interactions carte
-   ========================= */
+/* -------------------------
+   Helpers : map interactions
+   ------------------------- */
 function enableMapInteractions(map) {
   try {
     if (!map) return;
@@ -59,9 +61,9 @@ function disableMapInteractions(map) {
   } catch (e) { console.warn('disableMapInteractions', e); }
 }
 
-/* =========================
-   Navigation entre écrans
-   ========================= */
+/* -------------------------
+   Navigation between screens
+   ------------------------- */
 function goTo(screenId){
   const screens = ['homeScreen','prepScreen','volScreen','manuelScreen'];
   const mapEl = document.getElementById('map');
@@ -83,15 +85,16 @@ function goTo(screenId){
     }
   });
 
-  if (!mapEl) return;
   const map = window._glide_map || null;
 
+  // show/hide vol radius display
   const volRadiusEl = document.getElementById('volRadiusDisplay');
   if (volRadiusEl) volRadiusEl.style.display = (screenId === 'volScreen') ? 'block' : 'none';
 
+  // map interaction behavior
   if (screenId === 'prepScreen' || screenId === 'volScreen') {
-    mapEl.classList.remove('map-blurred');
-    mapEl.classList.add('map-absolute');
+    mapEl?.classList.remove('map-blurred');
+    mapEl?.classList.add('map-absolute');
     const prep = document.getElementById('prepScreen');
     if (prep) prep.style.pointerEvents = 'none';
     if (map) {
@@ -99,17 +102,19 @@ function goTo(screenId){
       setTimeout(()=> map.invalidateSize(), 120);
     }
   } else {
-    mapEl.classList.add('map-blurred');
-    mapEl.classList.remove('map-absolute');
+    mapEl?.classList.add('map-blurred');
+    mapEl?.classList.remove('map-absolute');
     const prep = document.getElementById('prepScreen');
     if (prep) prep.style.pointerEvents = 'auto';
     if (map) disableMapInteractions(map);
   }
 
+  // vol mode lifecycle
   if (screenId === 'volScreen') {
     try { initVolMode(); } catch (e) { console.warn('initVolMode error', e); }
     try { startVolGps(); } catch (e) { console.warn('startVolGps error', e); }
   } else {
+    // stop GPS watch when leaving vol mode
     try {
       if (typeof volGpsWatchId === 'number' && volGpsWatchId !== null) {
         navigator.geolocation.clearWatch(volGpsWatchId);
@@ -119,12 +124,12 @@ function goTo(screenId){
   }
 }
 
-/* =========================
-   DOMContentLoaded – initialisation
-   ========================= */
+/* -------------------------
+   DOMContentLoaded init
+   ------------------------- */
 document.addEventListener('DOMContentLoaded', function () {
 
-  /* NAVIGATION BUTTONS */
+  /* Navigation buttons */
   const btnGoPrep = document.getElementById('btnGoPrep');
   const btnGoVol = document.getElementById('btnGoVol');
   const btnGoManuel = document.getElementById('btnGoManuel');
@@ -147,7 +152,7 @@ document.addEventListener('DOMContentLoaded', function () {
   if(backFromVol) backFromVol.addEventListener('click', (e) => { e.preventDefault(); goTo('homeScreen'); });
   if(backFromManuel) backFromManuel.addEventListener('click', (e) => { e.preventDefault(); goTo('homeScreen'); });
 
-  /* DOM ELEMENTS */
+  /* DOM elements */
   const panel = document.getElementById('panel');
   const menuVent = document.getElementById('menuVent');
   const btnPanel = document.getElementById('btnPanel');
@@ -169,32 +174,32 @@ document.addEventListener('DOMContentLoaded', function () {
   const rangeKm = document.getElementById('rangeKm');
   const applyWind = document.getElementById('applyWind');
 
-  /* MAP init */
+  /* Map init */
   const map = L.map('map', { preferCanvas: true, tap: true }).setView([43.8, 0.1], 9);
   window._glide_map = map;
 
-  /* Icône piste stylisée (réutiliser pour tous les marqueurs) */
+  /* Airfield icon (single instance) */
   const airfieldIcon = L.icon({
     iconUrl: 'icons/airfield-runway.svg',
-    iconRetinaUrl: 'icons/airfield-runway@2x.svg', // optionnel
+    iconRetinaUrl: 'icons/airfield-runway@2x.svg',
     iconSize: [28, 28],
     iconAnchor: [14, 14],
     popupAnchor: [0, -16],
     className: 'airfield-marker'
   });
 
-  /* Helper utilitaire pour ajouter un marqueur terrain */
-  function addAirfieldMarker(lat, lon, id, labelText) {
+  /* Utility to add a single marker per terrain */
+  function addAirfieldMarker(lat, lon, id, showLabel) {
     const m = L.marker([lat, lon], { icon: airfieldIcon, title: id });
     m.addTo(map);
-    if (labelText) {
-      m.bindTooltip(labelText, { permanent: true, direction: 'top', className: 'terrain-label' }).openTooltip();
+    if (showLabel) {
+      m.bindTooltip(id, { permanent: true, direction: 'top', className: 'terrain-label' }).openTooltip();
     }
     objs.push(m);
     return m;
   }
 
-  /* --- LAYERS --- */
+  /* Layers */
   const API_KEY = "e21af8d83997e96b1f6e68551e8c2a78";
 
   const osmLayer = L.tileLayer(
@@ -214,7 +219,6 @@ document.addEventListener('DOMContentLoaded', function () {
   const opacityAIP = document.getElementById("opacityAIP");
   const opacityOSM = document.getElementById('opacityOSM');
 
-  /* Layer panel toggle */
   if (btn) {
     btn.addEventListener("click", () => {
       if (!layerpanel) return;
@@ -222,14 +226,12 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  /* toggleAIP : restaurer préférence ou forcer décoché par défaut */
+  // toggleAIP: restore preference or default to unchecked
   try {
     const savedAIP = localStorage.getItem('glide_toggleAIP');
     if (toggleAIP) {
-      if (savedAIP === null) toggleAIP.checked = false;
-      else toggleAIP.checked = (savedAIP === 'true');
+      toggleAIP.checked = (savedAIP === 'true') || false;
       if (toggleAIP.checked) openAIPLayer.addTo(map);
-      else map.removeLayer(openAIPLayer);
       toggleAIP.addEventListener('change', (e) => {
         const on = e.target.checked;
         try { localStorage.setItem('glide_toggleAIP', String(on)); } catch (err) {}
@@ -240,7 +242,6 @@ document.addEventListener('DOMContentLoaded', function () {
     if (toggleAIP) toggleAIP.checked = false;
   }
 
-  /* opacityAIP control (existing) */
   if (opacityAIP) {
     opacityAIP.addEventListener("input", () => {
       const value = opacityAIP.value / 100;
@@ -248,7 +249,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  /* opacityOSM control (nouveau slider) */
+  // OSM opacity slider
   if (opacityOSM) {
     try {
       const saved = localStorage.getItem('glide_opacity_osm');
@@ -275,12 +276,12 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  /* Désactiver interactions initialement si besoin */
+  // optionally disable interactions initially
   if (typeof disableMapInteractions === 'function') {
     disableMapInteractions(map);
   }
 
-  /* position utilisateur */
+  /* user position tracking (map center used as userPos) */
   let userPos = { lat: 43.8, lon: 0.1 };
   map.on('moveend', () => {
     const c = map.getCenter();
@@ -288,10 +289,10 @@ document.addEventListener('DOMContentLoaded', function () {
     if (typeof update === 'function') update();
   });
 
-  /* Afficher l'écran d'accueil */
+  // show home screen initially
   if (typeof goTo === 'function') goTo('homeScreen');
 
-  /* Ajout terrain via clic (mode PREP) */
+  /* Add terrain via click (PREP mode) */
   let pendingClickLatLon = null;
   map.on('click', function(e) {
     const prepVisible = document.getElementById('prepScreen')?.style.display !== 'none';
@@ -306,7 +307,6 @@ document.addEventListener('DOMContentLoaded', function () {
     if (altEl) altEl.value = "";
   });
 
-  /* Popup buttons */
   const addTerrainCancel = document.getElementById('addTerrainCancel');
   const addTerrainConfirm = document.getElementById('addTerrainConfirm');
   if (addTerrainCancel) addTerrainCancel.addEventListener('click', () => {
@@ -329,7 +329,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const opt = document.createElement("option");
       opt.value = id; opt.innerText = id; refSelect.appendChild(opt);
     }
-    // Marqueur visuel : utiliser airfieldIcon et ajouter à objs pour nettoyage futur
+    // add marker with airfield icon
     const newMarker = L.marker([newTerrain.lat, newTerrain.lon], { icon: airfieldIcon, title: newTerrain.id });
     newMarker.addTo(map);
     objs.push(newMarker);
@@ -339,7 +339,7 @@ document.addEventListener('DOMContentLoaded', function () {
     pendingClickLatLon = null;
   });
 
-  /* Charger terrains.json */
+  /* Load terrains.json */
   function populateRef() {
     if (!refSelect) return;
     refSelect.innerHTML = "";
@@ -362,7 +362,7 @@ document.addEventListener('DOMContentLoaded', function () {
     })
     .catch(err => console.error("Erreur chargement terrains.json :", err));
 
-  /* VENT menu init */
+  /* Wind menu */
   const windLayers = [
     { label: "0-500", v: "v0", d: "d0" },
     { label: "500-1000", v: "v1", d: "d1" },
@@ -403,7 +403,10 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   /* =========================
-     UPDATE : calculs et rendu
+     UPDATE : calculs et rendu (PREP mode)
+     - draws only calculation circles/polygons
+     - no fixed stray circles
+     - single marker per terrain with ICAO label only
      ========================= */
   function clearObjs() {
     objs.forEach(o => map.removeLayer(o));
@@ -429,6 +432,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function update() {
     clearObjs();
+
     const range = parseFloat(rangeKm?.value ?? 100);
     terrains = terrainsAll.filter(t => {
       if (filterOnly4Letters && !/^[A-Z]{4}$/.test(t.id)) return false;
@@ -452,54 +456,63 @@ document.addEventListener('DOMContentLoaded', function () {
     terrains.forEach(t => {
       const hMin = allVal ? 0 : h;
       const hMax = allVal ? 3000 : h;
+
       for (let hh = hMin; hh <= hMax; hh += 100) {
         let h_rel;
         if (modeVal === "QFE") h_rel = hh;
         else if (modeVal === "QNH") h_rel = hh - t.alt;
         else h_rel = hh - (t.alt - refAlt);
+
         if (h_rel <= 0) continue;
+
         const finesseUse = (h_rel <= seuilVal) ? fbVal : f;
         const h_util = h_rel - margeVal;
         if (h_util <= 0) continue;
-        const d = h_util * finesseUse;
 
-        // Ne plus dessiner les cercles terrains (suppression demandée)
-        // Si tu veux garder une visualisation, réactive ici.
+        const d = h_util * finesseUse; // meters
 
-        // Si mode vent et que tu veux garder la forme, tu peux décommenter la partie polygonale.
-        if (useWind) {
-          // Optionnel : dessiner polygone vent (commenté par défaut)
-          // const polyPts = [];
-          // const step = 6;
-          // for (let a = 0; a < 360; a += step) {
-          //   const alphaRad = a * Math.PI / 180;
-          //   let layerIdx = Math.floor(hh / 500);
-          //   if (layerIdx > windLayers.length - 1) layerIdx = windLayers.length - 1;
-          //   const wind = getWindForLayer(layerIdx);
-          //   const W = wind.v;
-          //   const dir = wind.d;
-          //   const dirRad = (dir + 180) * Math.PI / 180;
-          //   const projWind = W * Math.cos(alphaRad - dirRad);
-          //   let denom = vCruise - projWind;
-          //   if (denom < 5) denom = 5;
-          //   const effDist = d * (vCruise / denom);
-          //   const latOff = (effDist / 111000) * Math.cos(alphaRad);
-          //   const lonOff = (effDist / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(alphaRad);
-          //   polyPts.push([t.lat + latOff, t.lon + lonOff]);
-          // }
-          // const poly = L.polygon(polyPts, { color: color(hh), weight: 2, fill: false }).addTo(map);
-          // objs.push(poly);
+        if (!useWind) {
+          // calculation circle (finesse) — shown in PREP
+          const circle = L.circle([t.lat, t.lon], {
+            radius: d,
+            color: color(hh),
+            weight: 2,
+            fill: false
+          }).addTo(map);
+          objs.push(circle);
+        } else {
+          // wind-affected polygon (approximation)
+          const polyPts = [];
+          const step = 6;
+          for (let a = 0; a < 360; a += step) {
+            const alphaRad = a * Math.PI / 180;
+            let layerIdx = Math.floor(hh / 500);
+            if (layerIdx > windLayers.length - 1) layerIdx = windLayers.length - 1;
+            const wind = getWindForLayer(layerIdx);
+            const W = wind.v;
+            const dir = wind.d;
+            const dirRad = (dir + 180) * Math.PI / 180;
+            const projWind = W * Math.cos(alphaRad - dirRad);
+            let denom = vCruise - projWind;
+            if (denom < 5) denom = 5;
+            const effDist = d * (vCruise / denom);
+            const latOff = (effDist / 111000) * Math.cos(alphaRad);
+            const lonOff = (effDist / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(alphaRad);
+            polyPts.push([t.lat + latOff, t.lon + lonOff]);
+          }
+          const poly = L.polygon(polyPts, { color: color(hh), weight: 2, fill: false }).addTo(map);
+          objs.push(poly);
         }
-      } // fin boucle hh
+      } // end hh loop
 
-      // Un seul marqueur par terrain, étiquette réduite à l'ICAO (t.id)
+      // single marker per terrain, label only ICAO if showLabels
       addAirfieldMarker(t.lat, t.lon, t.id, showLabels ? t.id : null);
-    }); // fin terrains.forEach
-  } // fin update
+    }); // end terrains.forEach
+  } // end update
 
   update();
 
-  /* UI EVENTS */
+  /* UI events */
   slider && slider.addEventListener('input', () => { if (hVal) hVal.innerText = slider.value; update(); });
   btnRecalc && btnRecalc.addEventListener('click', (e) => { e.preventDefault(); update(); });
   btnRecalcWind && btnRecalcWind.addEventListener('click', (e) => { e.preventDefault(); update(); });
@@ -522,7 +535,7 @@ document.addEventListener('DOMContentLoaded', function () {
     menuVent.style.display = (menuVent.style.display === 'none' || menuVent.style.display === '') ? 'block' : 'none';
   });
 
-  /* DRAGGABLE PANELS */
+  /* Draggable panels */
   function makeDraggable(el) {
     if (!el) return;
     let dragging = false;
@@ -571,7 +584,7 @@ document.addEventListener('DOMContentLoaded', function () {
   makeDraggable(panel);
   makeDraggable(menuVent);
 
-  /* Charger manuel externe et n'injecter que le fragment utile */
+  /* loadManuel: safe injection of fragment content only */
   function loadManuel() {
     fetch('manuel.html')
       .then(response => {
@@ -581,13 +594,11 @@ document.addEventListener('DOMContentLoaded', function () {
       .then(html => {
         const tmp = document.createElement('div');
         tmp.innerHTML = html;
-        // Cherche d'abord .manual-reader, puis #manuelCard, sinon tout le body du fragment
         const fragment = tmp.querySelector('.manual-reader') || tmp.querySelector('#manuelCard') || tmp;
         const container = document.getElementById('manuelCard');
         if (!container) return;
         container.innerHTML = fragment.innerHTML || fragment.textContent || '';
 
-        // exécuter les scripts éventuels contenus dans le fragment (append sans remove immédiat)
         const scripts = fragment.querySelectorAll('script');
         scripts.forEach(oldScript => {
           const s = document.createElement('script');
@@ -599,7 +610,6 @@ document.addEventListener('DOMContentLoaded', function () {
             s.textContent = oldScript.textContent;
             document.body.appendChild(s);
           }
-          // cleanup après un délai pour laisser le script s'exécuter
           setTimeout(() => { try { s.remove(); } catch(e){} }, 2000);
         });
       })
@@ -610,22 +620,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
   loadManuel();
 
-  /* initialize wind labels */
+  /* init wind labels */
   windLayers.forEach(w => {
     const s = document.getElementById(w.v);
     const lbl = document.getElementById(w.v + '_label');
     if (s && lbl) lbl.innerText = s.value + ' km/h';
   });
 
-  /* expose update and map for debugging */
+  /* expose for debugging */
   window._glide_update = update;
   window._glide_map = map;
-}); // fin DOMContentLoaded
+}); // end DOMContentLoaded
 
-/* ============================================================
-   MODE VOL – module
-   ============================================================ */
-
+/* =========================
+   MODE VOL module
+   - plane circle only in VOL
+   - no terrain fixed circles here
+   ========================= */
 function initVolMode() {
   if (_volInitialized) return;
   _volInitialized = true;
@@ -781,7 +792,7 @@ function updateVolCircle() {
 
   const d = computeGlideDistance(h, finesse, fb, seuil, marge);
 
-  // cercle planeur (utile)
+  // plane circle (only in VOL)
   const circle = L.circle([pos.lat, pos.lon], {
     radius: d,
     color: '#00aaff',
@@ -793,8 +804,7 @@ function updateVolCircle() {
   const radiusDisplay = document.getElementById('volRadiusDisplay');
   if (radiusDisplay) radiusDisplay.innerText = `Distance franchissable : ${Math.round(d / 1000)} km`;
 
-  // Ne plus dessiner les cercles terrains en mode VOL (suppression demandée)
-  // Si tu veux réactiver une visualisation terrain, implémente-la ici.
+  // intentionally do NOT draw terrain circles here (they are shown in PREP via update())
 }
 
 /* End of file */
