@@ -1,12 +1,13 @@
 /****************************************************
- *  Glide Planner – app.js (version réécrite et consolidée)
- *  Remplace ton app.js actuel par ce fichier.
- *  - Corrige duplications et erreurs de scope
- *  - Intègre icône piste stylisée (airfieldIcon)
- *  - Remplace les marqueurs par airfieldIcon
- *  - Fix loadManuel pour n'injecter que le fragment utile
- *  - Gère opacityOSM slider et toggleAIP avec localStorage
- *  - Reste compatible avec le reste de ton code existant
+ *  Glide Planner – app.js (réécrit selon tes demandes)
+ *  - Supprime les cercles terrains jaunes
+ *  - Étiquette réduite à l'ICAO (t.id) uniquement
+ *  - Utilise icône piste stylisée pour tous les terrains
+ *  - Slider opacité OSM + toggle OpenAIP (décoché par défaut)
+ *  - loadManuel sécurisé (n'injecte que le fragment utile)
+ *  - Corrige scope / doublons et rend le code plus robuste
+ *
+ *  Remplace entièrement ton app.js par ce fichier.
  ****************************************************/
 
 /* Globals */
@@ -18,8 +19,6 @@ let objs = []; // calques ajoutés à la carte (cercles, polygones, marqueurs)
 let volObjects = [];
 let volGpsWatchId = null;
 let volAutoCenter = true;
-let glideWorker = null; // (optionnel) pour futur worker
-let lastRequestId = 0;
 
 /* =========================
    Helpers : activer / désactiver interactions carte
@@ -229,7 +228,6 @@ document.addEventListener('DOMContentLoaded', function () {
     if (toggleAIP) {
       if (savedAIP === null) toggleAIP.checked = false;
       else toggleAIP.checked = (savedAIP === 'true');
-      // appliquer état initial
       if (toggleAIP.checked) openAIPLayer.addTo(map);
       else map.removeLayer(openAIPLayer);
       toggleAIP.addEventListener('change', (e) => {
@@ -302,8 +300,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const modal = document.getElementById('addTerrainModal');
     if (!modal) return;
     modal.style.display = 'flex';
-    document.getElementById('newTerrainName').value = "";
-    document.getElementById('newTerrainAlt').value = "";
+    const nameEl = document.getElementById('newTerrainName');
+    const altEl = document.getElementById('newTerrainAlt');
+    if (nameEl) nameEl.value = "";
+    if (altEl) altEl.value = "";
   });
 
   /* Popup buttons */
@@ -316,8 +316,10 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   if (addTerrainConfirm) addTerrainConfirm.addEventListener('click', () => {
-    const name = document.getElementById('newTerrainName').value.trim();
-    const alt = parseFloat(document.getElementById('newTerrainAlt').value);
+    const nameEl = document.getElementById('newTerrainName');
+    const altEl = document.getElementById('newTerrainAlt');
+    const name = nameEl ? nameEl.value.trim() : '';
+    const alt = altEl ? parseFloat(altEl.value) : NaN;
     if (!name) { alert("Nom invalide"); return; }
     if (isNaN(alt)) { alert("Altitude invalide"); return; }
     const id = name.toUpperCase().replace(/[^A-Z0-9]/g, "_");
@@ -461,60 +463,37 @@ document.addEventListener('DOMContentLoaded', function () {
         if (h_util <= 0) continue;
         const d = h_util * finesseUse;
 
-        if (!useWind) {
-          const circle = L.circle([t.lat, t.lon], { radius: d, color: color(hh), weight: 2, fill: false }).addTo(map);
-          objs.push(circle);
+        // Ne plus dessiner les cercles terrains (suppression demandée)
+        // Si tu veux garder une visualisation, réactive ici.
 
-          if (showLabels) {
-            [0, 180].forEach(a => {
-              const rad = a * Math.PI / 180;
-              const latOff = (d / 111000) * Math.cos(rad);
-              const lonOff = (d / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(rad);
-              const labelMarker = L.marker([t.lat + latOff, t.lon + lonOff], {
-                icon: L.divIcon({ className: 'label', html: `${hh}m-F${Math.round(finesseUse)}-${t.id}` })
-              }).addTo(map);
-              objs.push(labelMarker);
-            });
-          }
-        } else {
-          const polyPts = [];
-          const step = 6;
-          for (let a = 0; a < 360; a += step) {
-            const alphaRad = a * Math.PI / 180;
-            let layerIdx = Math.floor(hh / 500);
-            if (layerIdx > windLayers.length - 1) layerIdx = windLayers.length - 1;
-            const wind = getWindForLayer(layerIdx);
-            const W = wind.v;
-            const dir = wind.d;
-            const dirRad = (dir + 180) * Math.PI / 180;
-            const projWind = W * Math.cos(alphaRad - dirRad);
-            let denom = vCruise - projWind;
-            if (denom < 5) denom = 5;
-            const effDist = d * (vCruise / denom);
-            const latOff = (effDist / 111000) * Math.cos(alphaRad);
-            const lonOff = (effDist / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(alphaRad);
-            polyPts.push([t.lat + latOff, t.lon + lonOff]);
-          }
-          const poly = L.polygon(polyPts, { color: color(hh), weight: 2, fill: false }).addTo(map);
-          objs.push(poly);
-
-          if (showLabels) {
-            [0, 180].forEach(a => {
-              const rad = a * Math.PI / 180;
-              const latOff = (d / 111000) * Math.cos(rad);
-              const lonOff = (d / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(rad);
-              const labelMarker = L.marker([t.lat + latOff, t.lon + lonOff], {
-                icon: L.divIcon({ className: 'label', html: `${hh}m-F${Math.round(finesseUse)}-${t.id}` })
-              }).addTo(map);
-              objs.push(labelMarker);
-            });
-          }
+        // Si mode vent et que tu veux garder la forme, tu peux décommenter la partie polygonale.
+        if (useWind) {
+          // Optionnel : dessiner polygone vent (commenté par défaut)
+          // const polyPts = [];
+          // const step = 6;
+          // for (let a = 0; a < 360; a += step) {
+          //   const alphaRad = a * Math.PI / 180;
+          //   let layerIdx = Math.floor(hh / 500);
+          //   if (layerIdx > windLayers.length - 1) layerIdx = windLayers.length - 1;
+          //   const wind = getWindForLayer(layerIdx);
+          //   const W = wind.v;
+          //   const dir = wind.d;
+          //   const dirRad = (dir + 180) * Math.PI / 180;
+          //   const projWind = W * Math.cos(alphaRad - dirRad);
+          //   let denom = vCruise - projWind;
+          //   if (denom < 5) denom = 5;
+          //   const effDist = d * (vCruise / denom);
+          //   const latOff = (effDist / 111000) * Math.cos(alphaRad);
+          //   const lonOff = (effDist / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(alphaRad);
+          //   polyPts.push([t.lat + latOff, t.lon + lonOff]);
+          // }
+          // const poly = L.polygon(polyPts, { color: color(hh), weight: 2, fill: false }).addTo(map);
+          // objs.push(poly);
         }
       } // fin boucle hh
 
-      // Ajout d'un seul marqueur terrain (icône piste) — label basé sur la hauteur courante 'h' et finesse 'f'
-      const labelText = `${h}m • F${Math.round(f)} • ${t.id}`;
-      addAirfieldMarker(t.lat, t.lon, t.id, showLabels ? labelText : null);
+      // Un seul marqueur par terrain, étiquette réduite à l'ICAO (t.id)
+      addAirfieldMarker(t.lat, t.lon, t.id, showLabels ? t.id : null);
     }); // fin terrains.forEach
   } // fin update
 
@@ -802,6 +781,7 @@ function updateVolCircle() {
 
   const d = computeGlideDistance(h, finesse, fb, seuil, marge);
 
+  // cercle planeur (utile)
   const circle = L.circle([pos.lat, pos.lon], {
     radius: d,
     color: '#00aaff',
@@ -813,19 +793,8 @@ function updateVolCircle() {
   const radiusDisplay = document.getElementById('volRadiusDisplay');
   if (radiusDisplay) radiusDisplay.innerText = `Distance franchissable : ${Math.round(d / 1000)} km`;
 
-  terrainsAll.forEach(t => {
-    const hTerrain = h - (t.alt - 0);
-    const dT = computeGlideDistance(hTerrain, finesse, fb, seuil, marge);
-    if (dT > 0) {
-      const c = L.circle([t.lat, t.lon], {
-        radius: dT,
-        color: '#ffaa00',
-        weight: 1,
-        fill: false
-      }).addTo(window._glide_map);
-      volObjects.push(c);
-    }
-  });
+  // Ne plus dessiner les cercles terrains en mode VOL (suppression demandée)
+  // Si tu veux réactiver une visualisation terrain, implémente-la ici.
 }
 
 /* End of file */
