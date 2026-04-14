@@ -329,8 +329,10 @@ document.getElementById('addTerrainConfirm').addEventListener('click', () => {
     refSelect.appendChild(opt);
   }
 
-  // Marqueur visuel
-  L.marker([newTerrain.lat, newTerrain.lon]).addTo(map);
+  // Marqueur visuel avec icône piste
+const newMarker = L.marker([newTerrain.lat, newTerrain.lon], { icon: airfieldIcon, title: newTerrain.id });
+newMarker.addTo(map);
+objs.push(newMarker);
 
   // Recalcul
   update();
@@ -512,7 +514,20 @@ document.getElementById('addTerrainConfirm').addEventListener('click', () => {
           }
         }
       }
-      objs.push(L.marker([t.lat, t.lon]).addTo(map));
+      // marqueur terrain avec icône piste stylisée
+const marker = L.marker([t.lat, t.lon], { icon: airfieldIcon, title: t.id });
+marker.addTo(map);
+objs.push(marker);
+
+// tooltip permanent (optionnel) : lisible en vol
+if (showLabels) {
+  marker.bindTooltip(`${hh}m • F${Math.round(finesseUse)} • ${t.id}`, {
+    permanent: true,
+    direction: 'top',
+    className: 'terrain-label'
+  }).openTooltip();
+}
+
     });
   }
 
