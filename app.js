@@ -1,16 +1,17 @@
 /****************************************************
- *  Glide Planner – app.js (réécriture complète finale)
+ *  Glide Planner – app.js (version finale demandée)
  *
- *  Fonctionnalités appliquées :
+ *  Objectifs appliqués strictement :
  *  - Pas d'accès GPS en PREP ; GPS demandé et utilisé uniquement en VOL
  *  - Cercle planeur (bleu) affiché uniquement en VOL
  *  - Suppression des cercles "fixes" indésirables
  *  - Cercles de calcul (finesse / vent) affichés en PREP
- *  - Labels attachés aux cercles (tooltip permanent sur chaque cercle/polygone)
+ *  - Labels positionnés **sur le périmètre** du cercle (deux labels diamétralement opposés)
+ *    contenant : **hauteur m • finesse (arrondie) • ICAO**
  *  - Un seul marqueur piste par terrain (icône piste) ; label ICAO si demandé
  *  - makeDraggable défini tôt pour éviter ReferenceError
  *  - Nettoyage correct des calques PREP / VOL
- *  - Slider opacité OSM + toggle OpenAIP (préférence sauvegardée)
+ *  - Robustesse : guards null-safe, pas de variables hors scope
  *
  *  Remplace entièrement ton app.js par ce fichier.
  ****************************************************/
@@ -20,13 +21,13 @@ let _volInitialized = false;
 let terrainsAll = [];
 let terrains = [];
 let filterOnly4Letters = false;
-let objs = [];        // calques dynamiques PREP (cercles, polygones, markers)
+let objs = [];        // calques dynamiques PREP (cercles, polygones, labelMarkers, markers)
 let volObjects = [];  // calques VOL (cercle planeur, etc.)
 let volGpsWatchId = null;
 let volAutoCenter = true;
 
 /* -------------------------
-   Helpers : map interactions
+   Helpers : activer / désactiver interactions carte
    ------------------------- */
 function enableMapInteractions(map) {
   try {
@@ -289,11 +290,24 @@ document.addEventListener('DOMContentLoaded', function () {
 
   /* =========================
      UPDATE : calculs et rendu (PREP)
-     - labels attachés aux cercles (tooltip sur cercle/polygon)
+     - labels positionnés sur le périmètre (deux labels diamétralement opposés)
+     - chaque label est un L.marker avec L.divIcon (class 'circle-label')
+     - tous les objets ajoutés à 'objs' pour nettoyage
      ========================= */
   function clearObjs() { objs.forEach(o => { try { map.removeLayer(o); } catch(e){} }); objs = []; }
   function distanceKm(a, b) { const R = 6371; const dLat = (b.lat - a.lat) * Math.PI / 180; const dLon = (b.lon - a.lon) * Math.PI / 180; const x = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180) * Math.sin(dLon / 2) ** 2; return 2 * R * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x)); }
   function color(h) { const r = Math.round(255 * (1 - (h / 3000))); const g = Math.round(255 * (h / 3000)); return `rgb(${r},${g},0)`; }
+
+  // offset a point by distance (meters) and bearing (deg) using haversine-based direct formula
+  function offsetLatLon(lat, lon, distanceMeters, bearingDeg) {
+    const R = 6378137; // Earth radius in meters
+    const bearing = bearingDeg * Math.PI / 180;
+    const lat1 = lat * Math.PI / 180;
+    const lon1 = lon * Math.PI / 180;
+    const lat2 = Math.asin(Math.sin(lat1) * Math.cos(distanceMeters / R) + Math.cos(lat1) * Math.sin(distanceMeters / R) * Math.cos(bearing));
+    const lon2 = lon1 + Math.atan2(Math.sin(bearing) * Math.sin(distanceMeters / R) * Math.cos(lat1), Math.cos(distanceMeters / R) - Math.sin(lat1) * Math.sin(lat2));
+    return { lat: lat2 * 180 / Math.PI, lon: lon2 * 180 / Math.PI };
+  }
 
   function update() {
     clearObjs();
@@ -320,13 +334,24 @@ document.addEventListener('DOMContentLoaded', function () {
         const d = h_util * finesseUse; // meters
 
         if (!useWind) {
+          // circle of calculation
           const circle = L.circle([t.lat, t.lon], { radius: d, color: color(hh), weight: 2, fill: false }).addTo(map);
           objs.push(circle);
+
           if (showLabels) {
-            const labelText = `${hh}m • F${Math.round(finesseUse)} • ${t.id}`;
-            circle.bindTooltip(labelText, { permanent: true, direction: 'top', className: 'circle-label' }).openTooltip();
+            // place two labels on perimeter at bearings 0° and 180° (north and south)
+            const bearings = [0, 180];
+            bearings.forEach(bearing => {
+              const pos = offsetLatLon(t.lat, t.lon, d, bearing);
+              const labelHtml = `<div class="circle-label">${hh}m • F${Math.round(finesseUse)} • ${t.id}</div>`;
+              const labelMarker = L.marker([pos.lat, pos.lon], {
+                icon: L.divIcon({ className: 'circle-label-container', html: labelHtml, iconSize: null })
+              }).addTo(map);
+              objs.push(labelMarker);
+            });
           }
         } else {
+          // wind-affected polygon
           const polyPts = []; const step = 6;
           for (let a = 0; a < 360; a += step) {
             const alphaRad = a * Math.PI / 180;
@@ -341,9 +366,31 @@ document.addEventListener('DOMContentLoaded', function () {
           }
           const poly = L.polygon(polyPts, { color: color(hh), weight: 2, fill: false }).addTo(map);
           objs.push(poly);
+
           if (showLabels) {
-            const labelText = `${hh}m • F${Math.round(finesseUse)} • ${t.id}`;
-            poly.bindTooltip(labelText, { permanent: true, direction: 'top', className: 'circle-label' }).openTooltip();
+            // place two labels at polygon bounds north/south extremes
+            try {
+              const bounds = poly.getBounds();
+              const north = bounds.getNorth();
+              const south = bounds.getSouth();
+              const centerLng = bounds.getCenter().lng;
+              const labelHtmlN = `<div class="circle-label">${hh}m • F${Math.round(finesseUse)} • ${t.id}</div>`;
+              const labelN = L.marker([north, centerLng], { icon: L.divIcon({ className: 'circle-label-container', html: labelHtmlN, iconSize: null }) }).addTo(map);
+              objs.push(labelN);
+              const labelHtmlS = `<div class="circle-label">${hh}m • F${Math.round(finesseUse)} • ${t.id}</div>`;
+              const labelS = L.marker([south, centerLng], { icon: L.divIcon({ className: 'circle-label-container', html: labelHtmlS, iconSize: null }) }).addTo(map);
+              objs.push(labelS);
+            } catch (e) {
+              // fallback: place at d north/south of center
+              [0, 180].forEach(bearing => {
+                const pos = offsetLatLon(t.lat, t.lon, d, bearing);
+                const labelHtml = `<div class="circle-label">${hh}m • F${Math.round(finesseUse)} • ${t.id}</div>`;
+                const labelMarker = L.marker([pos.lat, pos.lon], {
+                  icon: L.divIcon({ className: 'circle-label-container', html: labelHtml, iconSize: null })
+                }).addTo(map);
+                objs.push(labelMarker);
+              });
+            }
           }
         }
       } // end hh loop
