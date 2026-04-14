@@ -1,144 +1,145 @@
 /****************************************************
- *  Glide Planner – app.js (complete file)
- *
- *  - Uses only icons/airfield-runway.svg for terrain markers
- *  - No GPS access in PREP; GPS requested & used only in VOL
- *  - Blue plane circle shown only in VOL
- *  - No stray fixed circles; PREP draws calculation circles
- *  - Labels placed on circle perimeter (hauteur • finesse • ICAO)
- *  - Single marker per terrain; ICAO label shown when "Labels" checked
- *  - makeDraggable defined early to avoid ReferenceError
- *  - All dynamic layers tracked and cleaned on screen changes
- *
- *  Replace your current app.js with this file.
+ *  Glide Planner – APP.JS (Version A fidèle corrigée)
  ****************************************************/
-
-/* Globals */
 let _volInitialized = false;
-let terrainsAll = [];
-let terrains = [];
-let filterOnly4Letters = false;
-let objs = [];        // PREP dynamic layers (circles, polygons, label markers, terrain markers)
-let volObjects = [];  // VOL dynamic layers (plane circle, vol-specific markers)
-let volGpsWatchId = null;
-let volAutoCenter = true;
-
-/* -------------------------
-   Utility helpers
-   ------------------------- */
-function safe(fn) { try { return fn(); } catch (e) { console.warn(e); return null; } }
-
+/* HELPERS – Enable / Disable map interactions */
 function enableMapInteractions(map) {
   try {
     if (!map) return;
-    map.dragging?.enable?.();
-    map.scrollWheelZoom?.enable?.();
-    map.touchZoom?.enable?.();
-    map.doubleClickZoom?.enable?.();
-    map.boxZoom?.enable?.();
-    map.keyboard?.enable?.();
-    map.tap?.enable?.();
+    if (map.dragging && map.dragging.enable) map.dragging.enable();
+    if (map.scrollWheelZoom && map.scrollWheelZoom.enable) map.scrollWheelZoom.enable();
+    if (map.touchZoom && map.touchZoom.enable) map.touchZoom.enable();
+    if (map.doubleClickZoom && map.doubleClickZoom.enable) map.doubleClickZoom.enable();
+    if (map.boxZoom && map.boxZoom.enable) map.boxZoom.enable();
+    if (map.keyboard && map.keyboard.enable) map.keyboard.enable();
+    if (map.tap && map.tap.enable) map.tap.enable();
     const el = map.getContainer ? map.getContainer() : document.getElementById('map');
-    if (el) { el.style.pointerEvents = 'auto'; el.style.touchAction = 'pan-x pan-y pinch-zoom'; }
+    if (el) {
+      el.style.pointerEvents = 'auto';
+      el.style.touchAction = 'pan-x pan-y pinch-zoom';
+    }
   } catch (e) { console.warn('enableMapInteractions', e); }
 }
 
 function disableMapInteractions(map) {
   try {
     if (!map) return;
-    map.dragging?.disable?.();
-    map.scrollWheelZoom?.disable?.();
-    map.touchZoom?.disable?.();
-    map.doubleClickZoom?.disable?.();
-    map.boxZoom?.disable?.();
-    map.keyboard?.disable?.();
-    map.tap?.disable?.();
+    if (map.dragging && map.dragging.disable) map.dragging.disable();
+    if (map.scrollWheelZoom && map.scrollWheelZoom.disable) map.scrollWheelZoom.disable();
+    if (map.touchZoom && map.touchZoom.disable) map.touchZoom.disable();
+    if (map.doubleClickZoom && map.doubleClickZoom.disable) map.doubleClickZoom.disable();
+    if (map.boxZoom && map.boxZoom.disable) map.boxZoom.disable();
+    if (map.keyboard && map.keyboard.disable) map.keyboard.disable();
+    if (map.tap && map.tap.disable) map.tap.disable();
     const el = map.getContainer ? map.getContainer() : document.getElementById('map');
-    if (el) { el.style.pointerEvents = 'none'; el.style.touchAction = 'none'; }
+    if (el) {
+      el.style.pointerEvents = 'none';
+      el.style.touchAction = 'none';
+    }
   } catch (e) { console.warn('disableMapInteractions', e); }
 }
 
-/* -------------------------
-   Draggable helper (defined early)
-   ------------------------- */
-function makeDraggable(el) {
-  if (!el) return;
-  let dragging = false, offsetX = 0, offsetY = 0;
-  function isFormControl(target) {
-    if (!target) return false;
-    return !!target.closest('input, select, textarea, button, label, [role="slider"], .no-drag');
-  }
-  el.addEventListener('pointerdown', function (e) {
-    if (e.button && e.button !== 0) return;
-    if (isFormControl(e.target)) return;
-    dragging = true;
-    try { el.setPointerCapture(e.pointerId); } catch (err) {}
-    offsetX = e.clientX - el.offsetLeft;
-    offsetY = e.clientY - el.offsetTop;
-    el.style.cursor = 'grabbing';
-    e.preventDefault();
-  });
-  el.addEventListener('pointermove', function (e) {
-    if (!dragging) return;
-    let left = e.clientX - offsetX, top = e.clientY - offsetY;
-    left = Math.max(0, Math.min(window.innerWidth - el.offsetWidth, left));
-    top = Math.max(0, Math.min(window.innerHeight - el.offsetHeight, top));
-    el.style.left = left + 'px'; el.style.top = top + 'px';
-  });
-  el.addEventListener('pointerup', function (e) {
-    if (!dragging) return;
-    dragging = false;
-    try { el.releasePointerCapture(e.pointerId); } catch (err) {}
-    el.style.cursor = 'default';
-  });
-  el.addEventListener('pointercancel', function () { dragging = false; el.style.cursor = 'default'; });
-}
-
-/* -------------------------
-   Navigation between screens
-   ------------------------- */
-function goTo(screenId) {
+/* NAVIGATION – goTo() */
+function goTo(screenId){
   const screens = ['homeScreen','prepScreen','volScreen','manuelScreen'];
   const mapEl = document.getElementById('map');
-  const btnCarte = document.getElementById('layerToggleBtn');
+const btnCarte = document.getElementById('layerToggleBtn');
 
-  if (btnCarte) btnCarte.style.display = (screenId === 'homeScreen' || screenId === 'manuelScreen') ? 'none' : 'block';
-
+if (btnCarte) {
+  btnCarte.style.display = (screenId === 'homeScreen' || screenId === 'manuelScreen') ? 'none' : 'block';
+}
+  // bascule les écrans
   screens.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
-    if (id === screenId) { el.style.display = (id === 'homeScreen') ? 'flex' : 'block'; el.removeAttribute('aria-hidden'); }
-    else { el.style.display = 'none'; el.setAttribute('aria-hidden','true'); }
+    if (id === screenId) {
+      el.style.display = (id === 'homeScreen') ? 'flex' : 'block';
+      el.removeAttribute('aria-hidden');
+    } else {
+      el.style.display = 'none';
+      el.setAttribute('aria-hidden','true');
+    }
   });
 
-  const map = window._glide_map || null;
-  const volRadiusEl = document.getElementById('volRadiusDisplay');
-  if (volRadiusEl) volRadiusEl.style.display = (screenId === 'volScreen') ? 'block' : 'none';
+  if (!mapEl) return;
 
+  const map = window._glide_map || null;
+
+  // gérer l'affichage du volRadiusDisplay uniquement en Mode VOL
+  const volRadiusEl = document.getElementById('volRadiusDisplay');
+  if (volRadiusEl) {
+    volRadiusEl.style.display = (screenId === 'volScreen') ? 'block' : 'none';
+  }
+
+  // comportement carte / interactions
   if (screenId === 'prepScreen' || screenId === 'volScreen') {
-    mapEl?.classList.remove('map-blurred'); mapEl?.classList.add('map-absolute');
-    const prep = document.getElementById('prepScreen'); if (prep) prep.style.pointerEvents = 'none';
-    if (map) { enableMapInteractions(map); setTimeout(()=> map.invalidateSize(), 120); }
+    mapEl.classList.remove('map-blurred');
+    mapEl.classList.add('map-absolute');
+
+    // quand on est en prepScreen, on veut que le panneau prep ne capte pas les interactions sur la carte
+    const prep = document.getElementById('prepScreen');
+    if (prep) prep.style.pointerEvents = 'none';
+
+    if (map) {
+      enableMapInteractions(map);
+      // invalide la taille après un court délai pour Leaflet
+      setTimeout(()=> map.invalidateSize(), 120);
+    }
   } else {
-    mapEl?.classList.add('map-blurred'); mapEl?.classList.remove('map-absolute');
-    const prep = document.getElementById('prepScreen'); if (prep) prep.style.pointerEvents = 'auto';
+    mapEl.classList.add('map-blurred');
+    mapEl.classList.remove('map-absolute');
+
+    const prep = document.getElementById('prepScreen');
+    if (prep) prep.style.pointerEvents = 'auto';
+
     if (map) disableMapInteractions(map);
   }
 
+  // initialisation / arrêt spécifiques au Mode VOL
   if (screenId === 'volScreen') {
+    // initVolMode est idempotent (protégé par _volInitialized)
     try { initVolMode(); } catch (e) { console.warn('initVolMode error', e); }
+
+    // démarrer GPS watch si nécessaire (startVolGps gère l'idempotence)
     try { startVolGps(); } catch (e) { console.warn('startVolGps error', e); }
   } else {
-    try { if (typeof volGpsWatchId === 'number' && volGpsWatchId !== null) { navigator.geolocation.clearWatch(volGpsWatchId); volGpsWatchId = null; } } catch(e){}
-    try { clearVolObjects(); } catch(e){}
+    // quitter le mode vol : arrêter le watch GPS pour économiser la batterie/ressources
+    try {
+      if (typeof volGpsWatchId === 'number' && volGpsWatchId !== null) {
+        navigator.geolocation.clearWatch(volGpsWatchId);
+        volGpsWatchId = null;
+      }
+    } catch (e) { /* ignore */ }
   }
 }
 
-/* -------------------------
-   DOMContentLoaded – initialization
-   ------------------------- */
+/* DOMContentLoaded – INITIALISATION GLOBALE */
 document.addEventListener('DOMContentLoaded', function () {
-  /* DOM refs */
+
+  /* NAVIGATION BUTTONS */
+  const btnGoPrep = document.getElementById('btnGoPrep');
+  const btnGoVol = document.getElementById('btnGoVol');
+  const btnGoManuel = document.getElementById('btnGoManuel');
+  const backFromPrep = document.getElementById('backFromPrep');
+  const backFromVol = document.getElementById('backFromVol');
+  const backFromManuel = document.getElementById('backFromManuel');
+  const filter4Letters = document.getElementById("filter4Letters");
+
+if (filter4Letters) {
+  filter4Letters.addEventListener("change", () => {
+    filterOnly4Letters = filter4Letters.checked;
+    update();
+  });
+}
+  if(btnGoPrep) btnGoPrep.addEventListener('click', (e) => { e.preventDefault(); goTo('prepScreen'); });
+  if(btnGoVol) btnGoVol.addEventListener('click', (e) => { e.preventDefault(); goTo('volScreen'); });
+  if(btnGoManuel) btnGoManuel.addEventListener('click', (e) => { e.preventDefault(); goTo('manuelScreen'); });
+
+  if(backFromPrep) backFromPrep.addEventListener('click', (e) => { e.preventDefault(); goTo('homeScreen'); });
+  if(backFromVol) backFromVol.addEventListener('click', (e) => { e.preventDefault(); goTo('homeScreen'); });
+  if(backFromManuel) backFromManuel.addEventListener('click', (e) => { e.preventDefault(); goTo('homeScreen'); });
+
+  /* DOM ELEMENTS */
   const panel = document.getElementById('panel');
   const menuVent = document.getElementById('menuVent');
   const btnPanel = document.getElementById('btnPanel');
@@ -159,114 +160,195 @@ document.addEventListener('DOMContentLoaded', function () {
   const refSelect = document.getElementById('refSelect');
   const rangeKm = document.getElementById('rangeKm');
   const applyWind = document.getElementById('applyWind');
-  const filter4Letters = document.getElementById("filter4Letters");
 
-  /* MAP init */
-  const map = L.map('map', { preferCanvas: true, tap: true }).setView([43.8, 0.1], 9);
-  window._glide_map = map;
+/* MAP */
+const map = L.map('map', { preferCanvas: true, tap: true }).setView([43.8, 0.1], 9);
+window._glide_map = map;
 
-  /* ---------- ICON: single runway icon ---------- */
-  const ICON_PATH = 'icons/';
-  const airfieldIcon = L.icon({
-    iconUrl: ICON_PATH + 'airfield-runway.svg',
-    iconRetinaUrl: ICON_PATH + 'airfield-runway@2x.svg',
-    iconSize: [28, 28],
-    iconAnchor: [14, 14],
-    popupAnchor: [0, -16],
-    className: 'airfield-marker'
-  });
+// --- LAYER SYSTEM OSM + OpenAIP Aviation ---
+const API_KEY = "e21af8d83997e96b1f6e68551e8c2a78";
 
-  function addAirfieldMarker(lat, lon, id, showLabel) {
-    const m = L.marker([lat, lon], { icon: airfieldIcon, title: id });
-    m.addTo(map);
-    if (showLabel) m.bindTooltip(id, { permanent: true, direction: 'top', className: 'terrain-label' }).openTooltip();
-    objs.push(m);
-    return m;
-  }
+// Fond OSM (toujours visible)
+const osmLayer = L.tileLayer(
+  "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+  { maxZoom: 19, attribution: "© OpenStreetMap" }
+).addTo(map);
 
-  /* Layers */
-  const API_KEY = "e21af8d83997e96b1f6e68551e8c2a78";
-  const osmLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap" }).addTo(map);
-  const openAIPLayer = L.tileLayer(`https://api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y}.png?apiKey=${API_KEY}`, { maxZoom: 14, opacity: 1 });
+// --- OSM layer already créé plus haut
+// const osmLayer = L.tileLayer(...).addTo(map);
 
-  const layerpanel = document.getElementById("layerPanel");
-  const btn = document.getElementById("layerToggleBtn");
-  const toggleAIP = document.getElementById("toggleAIP");
-  const opacityAIP = document.getElementById("opacityAIP");
-  const opacityOSM = document.getElementById('opacityOSM');
-
-  if (btn) btn.addEventListener("click", () => { if (!layerpanel) return; layerpanel.style.display = layerpanel.style.display === "none" ? "block" : "none"; });
-
+// Récupérer le slider (et restaurer valeur si présente)
+const opacityOSM = document.getElementById('opacityOSM');
+if (opacityOSM) {
+  // restaurer préférence si existante
   try {
-    const savedAIP = localStorage.getItem('glide_toggleAIP');
-    if (toggleAIP) {
-      toggleAIP.checked = (savedAIP === 'true') || false;
-      if (toggleAIP.checked) openAIPLayer.addTo(map);
-      toggleAIP.addEventListener('change', (e) => {
-        const on = e.target.checked;
-        try { localStorage.setItem('glide_toggleAIP', String(on)); } catch (err) {}
-        if (on) openAIPLayer.addTo(map); else map.removeLayer(openAIPLayer);
-      });
+    const saved = localStorage.getItem('glide_opacity_osm');
+    if (saved !== null) opacityOSM.value = Math.max(0, Math.min(100, parseInt(saved, 10)));
+  } catch (e) { /* ignore localStorage errors */ }
+
+  // appliquer la valeur initiale
+  const applyOsmOpacity = (v) => {
+    const val = (typeof v === 'string') ? parseInt(v, 10) : v;
+    const opacity = Math.max(0, Math.min(100, val)) / 100;
+    if (typeof osmLayer !== 'undefined' && osmLayer && osmLayer.setOpacity) {
+      osmLayer.setOpacity(opacity);
+    } else {
+      console.warn('osmLayer non défini au moment de setOpacity');
     }
-  } catch (e) { if (toggleAIP) toggleAIP.checked = false; }
+  };
 
-  if (opacityAIP) opacityAIP.addEventListener("input", () => { openAIPLayer.setOpacity(opacityAIP.value / 100); });
+  applyOsmOpacity(opacityOSM.value);
 
-  if (opacityOSM) {
-    try { const saved = localStorage.getItem('glide_opacity_osm'); if (saved !== null) opacityOSM.value = Math.max(0, Math.min(100, parseInt(saved, 10))); } catch(e){}
-    const applyOsmOpacity = (v) => { const val = (typeof v === 'string') ? parseInt(v,10) : v; const opacity = Math.max(0, Math.min(100, val)) / 100; osmLayer.setOpacity(opacity); };
-    applyOsmOpacity(opacityOSM.value);
-    let osmDebounceTimer = null;
-    opacityOSM.addEventListener('input', (e) => { const v = e.target.value; if (osmDebounceTimer) clearTimeout(osmDebounceTimer); osmDebounceTimer = setTimeout(()=>{ applyOsmOpacity(v); try{ localStorage.setItem('glide_opacity_osm', String(v)); }catch(e){} }, 80); });
-    opacityOSM.addEventListener('change', (e) => { applyOsmOpacity(e.target.value); try{ localStorage.setItem('glide_opacity_osm', String(e.target.value)); }catch(e){} });
+  // debounce simple pour éviter trop d'appels lors du drag
+  let osmDebounceTimer = null;
+  opacityOSM.addEventListener('input', (e) => {
+    const v = e.target.value;
+    // visuel immédiat mais throttlé
+    if (osmDebounceTimer) clearTimeout(osmDebounceTimer);
+    osmDebounceTimer = setTimeout(() => {
+      applyOsmOpacity(v);
+      try { localStorage.setItem('glide_opacity_osm', String(v)); } catch(e){}
+    }, 80);
+  });
+
+  // aussi appliquer sur change pour compatibilité clavier
+  opacityOSM.addEventListener('change', (e) => {
+    applyOsmOpacity(e.target.value);
+    try { localStorage.setItem('glide_opacity_osm', String(e.target.value)); } catch(e){}
+  });
+}
+
+
+// OpenAIP Aviation (overlay)
+const openAIPLayer = L.tileLayer(
+  `https://api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y}.png?apiKey=${API_KEY}`,
+  { maxZoom: 14, opacity: 1 }
+);
+
+// --- UI LOGIC ---
+const layerpanel = document.getElementById("layerPanel");
+const btn = document.getElementById("layerToggleBtn");
+const toggleAIP = document.getElementById("toggleAIP");
+const opacityAIP = document.getElementById("opacityAIP");
+
+// Ouvrir / fermer panneau
+btn.addEventListener("click", () => {
+  layerpanel.style.display = layerpanel.style.display === "none" ? "block" : "none";
+});
+
+// Activer / désactiver OpenAIP Aviation
+toggleAIP.addEventListener("change", () => {
+  if (toggleAIP.checked) {
+    openAIPLayer.addTo(map);
+  } else {
+    map.removeLayer(openAIPLayer);
+  }
+});
+
+// Régler la transparence
+opacityAIP.addEventListener("input", () => {
+  const value = opacityAIP.value / 100;
+  openAIPLayer.setOpacity(value);
+});
+
+// Désactiver interactions si tu utilises cette fonction (doit recevoir map)
+if (typeof disableMapInteractions === 'function') {
+  disableMapInteractions(map);
+}
+
+// position utilisateur et écoute du déplacement
+let userPos = { lat: 43.8, lon: 0.1 };
+map.on('moveend', () => {
+  const c = map.getCenter();
+  userPos = { lat: c.lat, lon: c.lng };
+  if (typeof update === 'function') update();
+});
+
+// now that map exists, show home
+if (typeof goTo === 'function') goTo('homeScreen');
+  // --- MODE PREP : Ajout d'un terrain via popup stylé ---
+let pendingClickLatLon = null;
+
+map.on('click', function(e) {
+  const prepVisible = document.getElementById('prepScreen')?.style.display !== 'none';
+  if (!prepVisible) return;
+
+  pendingClickLatLon = { lat: e.latlng.lat, lon: e.latlng.lng };
+
+  document.getElementById('addTerrainModal').style.display = 'flex';
+  document.getElementById('newTerrainName').value = "";
+  document.getElementById('newTerrainAlt').value = "";
+});
+
+// Boutons popup
+document.getElementById('addTerrainCancel').addEventListener('click', () => {
+  document.getElementById('addTerrainModal').style.display = 'none';
+  pendingClickLatLon = null;
+});
+
+document.getElementById('addTerrainConfirm').addEventListener('click', () => {
+  const name = document.getElementById('newTerrainName').value.trim();
+  const alt = parseFloat(document.getElementById('newTerrainAlt').value);
+
+  if (!name) {
+    alert("Nom invalide");
+    return;
+  }
+  if (isNaN(alt)) {
+    alert("Altitude invalide");
+    return;
   }
 
-  if (typeof disableMapInteractions === 'function') disableMapInteractions(map);
+  const id = name.toUpperCase().replace(/[^A-Z0-9]/g, "_");
 
-  /* user position fallback (map center) */
-  let userPos = { lat: 43.8, lon: 0.1 };
-  map.on('moveend', () => { const c = map.getCenter(); userPos = { lat: c.lat, lon: c.lng }; if (typeof update === 'function') update(); });
+  const newTerrain = {
+    id: id,
+    lat: pendingClickLatLon.lat,
+    lon: pendingClickLatLon.lon,
+    alt: alt
+  };
 
-  /* show home */
-  if (typeof goTo === 'function') goTo('homeScreen');
+  terrainsAll.push(newTerrain);
 
-  /* Add terrain via click (PREP) */
-  let pendingClickLatLon = null;
-  map.on('click', function(e) {
-    const prepVisible = document.getElementById('prepScreen')?.style.display !== 'none';
-    if (!prepVisible) return;
-    pendingClickLatLon = { lat: e.latlng.lat, lon: e.latlng.lng };
-    const modal = document.getElementById('addTerrainModal');
-    if (!modal) return;
-    modal.style.display = 'flex';
-    document.getElementById('newTerrainName') && (document.getElementById('newTerrainName').value = "");
-    document.getElementById('newTerrainAlt') && (document.getElementById('newTerrainAlt').value = "");
-  });
+  // Ajout dans la liste de référence
+  if (refSelect) {
+    const opt = document.createElement("option");
+    opt.value = id;
+    opt.innerText = id;
+    refSelect.appendChild(opt);
+  }
 
-  document.getElementById('addTerrainCancel')?.addEventListener('click', () => { document.getElementById('addTerrainModal')?.style.display = 'none'; pendingClickLatLon = null; });
-  document.getElementById('addTerrainConfirm')?.addEventListener('click', () => {
-    const nameEl = document.getElementById('newTerrainName'); const altEl = document.getElementById('newTerrainAlt');
-    const name = nameEl ? nameEl.value.trim() : ''; const alt = altEl ? parseFloat(altEl.value) : NaN;
-    if (!name) { alert("Nom invalide"); return; } if (isNaN(alt)) { alert("Altitude invalide"); return; }
-    const id = name.toUpperCase().replace(/[^A-Z0-9]/g, "_");
-    const newTerrain = { id: id, lat: pendingClickLatLon.lat, lon: pendingClickLatLon.lon, alt: alt };
-    terrainsAll.push(newTerrain);
-    if (refSelect) { const opt = document.createElement("option"); opt.value = id; opt.innerText = id; refSelect.appendChild(opt); }
-    const newMarker = L.marker([newTerrain.lat, newTerrain.lon], { icon: airfieldIcon, title: newTerrain.id });
-    newMarker.addTo(map); objs.push(newMarker);
-    update();
-    document.getElementById('addTerrainModal')?.style.display = 'none';
-    pendingClickLatLon = null;
-  });
+  // Marqueur visuel
+  L.marker([newTerrain.lat, newTerrain.lon]).addTo(map);
 
+  // Recalcul
+  update();
+
+  document.getElementById('addTerrainModal').style.display = 'none';
+  pendingClickLatLon = null;
+});
+
+  
   /* TERRAINS JSON */
-  function populateRef() { if (!refSelect) return; refSelect.innerHTML = ""; terrainsAll.forEach(t => { const opt = document.createElement("option"); opt.value = t.id; opt.innerText = t.id; refSelect.appendChild(opt); }); }
+  let terrainsAll = [];
+  let terrains = [];
+  let filterOnly4Letters = false;
+  function populateRef() {
+    if (!refSelect) return;
+    refSelect.innerHTML = "";
+    terrainsAll.forEach(t => {
+      const opt = document.createElement("option");
+      opt.value = t.id;
+      opt.innerText = t.id;
+      refSelect.appendChild(opt);
+    });
+  }
 
   fetch("terrains.json")
     .then(r => r.json())
     .then(data => {
-      terrainsAll = Array.isArray(data) ? data : [];
-      terrains = terrainsAll.slice();
+      terrainsAll = data;
+      terrains = data;
       populateRef();
       update();
       initVolMode();
@@ -313,11 +395,13 @@ document.addEventListener('DOMContentLoaded', function () {
     return { v: isNaN(v) ? 0 : v, d: isNaN(d) ? 0 : d };
   }
 
-  /* =========================
-     UPDATE : calculs et rendu (PREP)
-     - labels positioned on perimeter (two opposite labels)
-     ========================= */
-  function clearObjs() { objs.forEach(o => { try { map.removeLayer(o); } catch(e){} }); objs = []; }
+  /* UPDATE */
+  let objs = [];
+
+  function clearObjs() {
+    objs.forEach(o => map.removeLayer(o));
+    objs = [];
+  }
 
   function distanceKm(a, b) {
     const R = 6371;
@@ -336,34 +420,30 @@ document.addEventListener('DOMContentLoaded', function () {
     return `rgb(${r},${g},0)`;
   }
 
-  // offset a point by distance (meters) and bearing (deg)
-  function offsetLatLon(lat, lon, distanceMeters, bearingDeg) {
-    const R = 6378137;
-    const bearing = bearingDeg * Math.PI / 180;
-    const lat1 = lat * Math.PI / 180;
-    const lon1 = lon * Math.PI / 180;
-    const lat2 = Math.asin(Math.sin(lat1) * Math.cos(distanceMeters / R) + Math.cos(lat1) * Math.sin(distanceMeters / R) * Math.cos(bearing));
-    const lon2 = lon1 + Math.atan2(Math.sin(bearing) * Math.sin(distanceMeters / R) * Math.cos(lat1), Math.cos(distanceMeters / R) - Math.sin(lat1) * Math.sin(lat2));
-    return { lat: lat2 * 180 / Math.PI, lon: lon2 * 180 / Math.PI };
-  }
-
   function update() {
     clearObjs();
     const range = parseFloat(rangeKm?.value ?? 100);
     terrains = terrainsAll.filter(t => {
-      if (filterOnly4Letters && !/^[A-Z]{4}$/.test(t.id)) return false;
-      return distanceKm(userPos, t) <= range;
-    });
-
-    const h = parseInt(slider?.value ?? 0, 10); if (hVal) hVal.innerText = h;
-    const f = parseFloat(finesse?.value ?? 30); const fbVal = parseFloat(fb?.value ?? 10);
-    const seuilVal = parseFloat(seuil?.value ?? 500); const margeVal = parseFloat(marge?.value ?? 250);
-    const vCruise = parseFloat(vCruiseInput?.value ?? 100); const modeVal = mode?.value ?? 'QFE';
-    const showLabels = labels?.checked ?? false; const allVal = all?.checked ?? false; const useWind = applyWind?.checked ?? false;
-    const ref = terrainsAll.find(t => refSelect && t.id === refSelect.value); const refAlt = ref ? ref.alt : 0;
+  if (filterOnly4Letters && !/^[A-Z]{4}$/.test(t.id)) return false;
+  return distanceKm(userPos, t) <= range;
+});
+    const h = parseInt(slider?.value ?? 0, 10);
+    if (hVal) hVal.innerText = h;
+    const f = parseFloat(finesse?.value ?? 30);
+    const fbVal = parseFloat(fb?.value ?? 10);
+    const seuilVal = parseFloat(seuil?.value ?? 500);
+    const margeVal = parseFloat(marge?.value ?? 250);
+    const vCruise = parseFloat(vCruiseInput?.value ?? 100);
+    const modeVal = mode?.value ?? 'QFE';
+    const showLabels = labels?.checked ?? false;
+    const allVal = all?.checked ?? false;
+    const useWind = applyWind?.checked ?? false;
+    const ref = terrainsAll.find(t => refSelect && t.id === refSelect.value);
+    const refAlt = ref ? ref.alt : 0;
 
     terrains.forEach(t => {
-      const hMin = allVal ? 0 : h; const hMax = allVal ? 3000 : h;
+      const hMin = allVal ? 0 : h;
+      const hMax = allVal ? 3000 : h;
       for (let hh = hMin; hh <= hMax; hh += 100) {
         let h_rel;
         if (modeVal === "QFE") h_rel = hh;
@@ -371,30 +451,37 @@ document.addEventListener('DOMContentLoaded', function () {
         else h_rel = hh - (t.alt - refAlt);
         if (h_rel <= 0) continue;
         const finesseUse = (h_rel <= seuilVal) ? fbVal : f;
-        const h_util = h_rel - margeVal; if (h_util <= 0) continue;
-        const d = h_util * finesseUse; // meters
+        const h_util = h_rel - margeVal;
+        if (h_util <= 0) continue;
+        const d = h_util * finesseUse;
 
         if (!useWind) {
           const circle = L.circle([t.lat, t.lon], { radius: d, color: color(hh), weight: 2, fill: false }).addTo(map);
           objs.push(circle);
           if (showLabels) {
-            [0, 180].forEach(bearing => {
-              const pos = offsetLatLon(t.lat, t.lon, d, bearing);
-              const labelHtml = `<div class="circle-label">${hh}m • F${Math.round(finesseUse)} • ${t.id}</div>`;
-              const labelMarker = L.marker([pos.lat, pos.lon], {
-                icon: L.divIcon({ className: 'circle-label-container', html: labelHtml, iconSize: null })
-              }).addTo(map);
-              objs.push(labelMarker);
+            [0, 180].forEach(a => {
+              const rad = a * Math.PI / 180;
+              const latOff = (d / 111000) * Math.cos(rad);
+              const lonOff = (d / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(rad);
+              objs.push(L.marker([t.lat + latOff, t.lon + lonOff], {
+                icon: L.divIcon({ className: 'label', html: `${hh}m-F${Math.round(finesseUse)}-${t.id}` })
+              }).addTo(map));
             });
           }
         } else {
-          const polyPts = []; const step = 6;
+          const polyPts = [];
+          const step = 6;
           for (let a = 0; a < 360; a += step) {
             const alphaRad = a * Math.PI / 180;
-            let layerIdx = Math.floor(hh / 500); if (layerIdx > windLayers.length - 1) layerIdx = windLayers.length - 1;
-            const wind = getWindForLayer(layerIdx); const W = wind.v; const dir = wind.d; const dirRad = (dir + 180) * Math.PI / 180;
+            let layerIdx = Math.floor(hh / 500);
+            if (layerIdx > windLayers.length - 1) layerIdx = windLayers.length - 1;
+            const wind = getWindForLayer(layerIdx);
+            const W = wind.v;
+            const dir = wind.d;
+            const dirRad = (dir + 180) * Math.PI / 180;
             const projWind = W * Math.cos(alphaRad - dirRad);
-            let denom = vCruise - projWind; if (denom < 5) denom = 5;
+            let denom = vCruise - projWind;
+            if (denom < 5) denom = 5;
             const effDist = d * (vCruise / denom);
             const latOff = (effDist / 111000) * Math.cos(alphaRad);
             const lonOff = (effDist / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(alphaRad);
@@ -403,84 +490,154 @@ document.addEventListener('DOMContentLoaded', function () {
           const poly = L.polygon(polyPts, { color: color(hh), weight: 2, fill: false }).addTo(map);
           objs.push(poly);
           if (showLabels) {
-            try {
-              const bounds = poly.getBounds();
-              const north = bounds.getNorth();
-              const south = bounds.getSouth();
-              const centerLng = bounds.getCenter().lng;
-              const labelHtmlN = `<div class="circle-label">${hh}m • F${Math.round(finesseUse)} • ${t.id}</div>`;
-              const labelN = L.marker([north, centerLng], { icon: L.divIcon({ className: 'circle-label-container', html: labelHtmlN, iconSize: null }) }).addTo(map);
-              objs.push(labelN);
-              const labelHtmlS = `<div class="circle-label">${hh}m • F${Math.round(finesseUse)} • ${t.id}</div>`;
-              const labelS = L.marker([south, centerLng], { icon: L.divIcon({ className: 'circle-label-container', html: labelHtmlS, iconSize: null }) }).addTo(map);
-              objs.push(labelS);
-            } catch (e) {
-              [0, 180].forEach(bearing => {
-                const pos = offsetLatLon(t.lat, t.lon, d, bearing);
-                const labelHtml = `<div class="circle-label">${hh}m • F${Math.round(finesseUse)} • ${t.id}</div>`;
-                const labelMarker = L.marker([pos.lat, pos.lon], {
-                  icon: L.divIcon({ className: 'circle-label-container', html: labelHtml, iconSize: null })
-                }).addTo(map);
-                objs.push(labelMarker);
-              });
-            }
+            [0, 180].forEach(a => {
+              const rad = a * Math.PI / 180;
+              const latOff = (d / 111000) * Math.cos(rad);
+              const lonOff = (d / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(rad);
+              objs.push(L.marker([t.lat + latOff, t.lon + lonOff], {
+                icon: L.divIcon({ className: 'label', html: `${hh}m-F${Math.round(finesseUse)}-${t.id}` })
+              }).addTo(map));
+            });
           }
         }
-      } // end hh loop
-
-      // single marker per terrain, ICAO label if requested
-      addAirfieldMarker(t.lat, t.lon, t.id, labels?.checked ?? false);
+      }
+      objs.push(L.marker([t.lat, t.lon]).addTo(map));
     });
-  } // end update
+  }
 
   update();
 
-  /* UI events */
+  /* UI EVENTS */
   slider && slider.addEventListener('input', () => { if (hVal) hVal.innerText = slider.value; update(); });
   btnRecalc && btnRecalc.addEventListener('click', (e) => { e.preventDefault(); update(); });
   btnRecalcWind && btnRecalcWind.addEventListener('click', (e) => { e.preventDefault(); update(); });
 
-  [finesse, fb, seuil, marge, vCruiseInput, mode, labels, all, rangeKm, refSelect, applyWind].forEach(el => { if (!el) return; el.addEventListener('change', update); });
+  [
+    finesse, fb, seuil, marge, vCruiseInput,
+    mode, labels, all, rangeKm, refSelect, applyWind
+  ].forEach(el => {
+    if (!el) return;
+    el.addEventListener('change', update);
+  });
 
-  btnPanel && btnPanel.addEventListener('click', () => { if (!panel) return; panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none'; });
-  btnVent && btnVent.addEventListener('click', () => { if (!menuVent) return; menuVent.style.display = (menuVent.style.display === 'none' || menuVent.style.display === '') ? 'block' : 'none'; });
+  btnPanel && btnPanel.addEventListener('click', () => {
+    if (!panel) return;
+    panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none';
+  });
 
-  makeDraggable(panel); makeDraggable(menuVent);
+  btnVent && btnVent.addEventListener('click', () => {
+    if (!menuVent) return;
+    menuVent.style.display = (menuVent.style.display === 'none' || menuVent.style.display === '') ? 'block' : 'none';
+  });
 
-  /* loadManuel safe injection */
-  function loadManuel() {
-    fetch('manuel.html').then(response => { if (!response.ok) throw new Error('manuel.html non trouvé'); return response.text(); })
-      .then(html => {
-        const tmp = document.createElement('div'); tmp.innerHTML = html;
-        const fragment = tmp.querySelector('.manual-reader') || tmp.querySelector('#manuelCard') || tmp;
-        const container = document.getElementById('manuelCard'); if (!container) return;
-        container.innerHTML = fragment.innerHTML || fragment.textContent || '';
-        const scripts = fragment.querySelectorAll('script');
-        scripts.forEach(oldScript => {
-          const s = document.createElement('script');
-          if (oldScript.src) { s.src = oldScript.src; s.async = false; document.body.appendChild(s); }
-          else { s.textContent = oldScript.textContent; document.body.appendChild(s); }
-          setTimeout(() => { try { s.remove(); } catch(e){} }, 2000);
-        });
-      }).catch(err => console.error('Erreur chargement manuel:', err));
+  /* DRAGGABLE PANELS */
+  function makeDraggable(el) {
+    if (!el) return;
+    let dragging = false;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    function isFormControl(target) {
+      if (!target) return false;
+      return !!target.closest('input, select, textarea, button, label, [role="slider"], .no-drag');
+    }
+
+    el.addEventListener('pointerdown', function (e) {
+      if (e.button && e.button !== 0) return;
+      if (isFormControl(e.target)) return;
+      dragging = true;
+      try { el.setPointerCapture(e.pointerId); } catch (err) {}
+      offsetX = e.clientX - el.offsetLeft;
+      offsetY = e.clientY - el.offsetTop;
+      el.style.cursor = 'grabbing';
+      e.preventDefault();
+    });
+
+    el.addEventListener('pointermove', function (e) {
+      if (!dragging) return;
+      let left = e.clientX - offsetX;
+      let top = e.clientY - offsetY;
+      left = Math.max(0, Math.min(window.innerWidth - el.offsetWidth, left));
+      top = Math.max(0, Math.min(window.innerHeight - el.offsetHeight, top));
+      el.style.left = left + 'px';
+      el.style.top = top + 'px';
+    });
+
+    el.addEventListener('pointerup', function (e) {
+      if (!dragging) return;
+      dragging = false;
+      try { el.releasePointerCapture(e.pointerId); } catch (err) {}
+      el.style.cursor = 'default';
+    });
+
+    el.addEventListener('pointercancel', function () {
+      dragging = false;
+      el.style.cursor = 'default';
+    });
   }
-  loadManuel();
 
-  /* init wind labels */
-  windLayers.forEach(w => { const s = document.getElementById(w.v); const lbl = document.getElementById(w.v + '_label'); if (s && lbl) lbl.innerText = s.value + ' km/h'; });
+  makeDraggable(panel);
+  makeDraggable(menuVent);
 
-  /* expose for debugging */
-  window._glide_update = update; window._glide_map = map;
-}); // end DOMContentLoaded
+// charger manuel externe et l'insérer dans #manuelCard
+function loadManuel() {
+  fetch('manuel.html')
+    .then(response => {
+      if (!response.ok) throw new Error('manuel.html non trouvé');
+      return response.text();
+    })
+    .then(html => {
+      const container = document.getElementById('manuelCard');
+      if (!container) return;
+      container.innerHTML = html;
 
+      // exécuter les scripts éventuels contenus dans manuel.html
+      const scripts = container.querySelectorAll('script');
+      scripts.forEach(oldScript => {
+        const s = document.createElement('script');
+        if (oldScript.src) {
+          s.src = oldScript.src;
+          s.async = false;
+        } else {
+          s.textContent = oldScript.textContent;
+        }
+        document.body.appendChild(s);
+        s.remove();
+      });
+    })
+    .catch(err => {
+      console.error('Erreur chargement manuel:', err);
+    });
+}
+
+// appeler après l'initialisation (par exemple à la fin de DOMContentLoaded)
+loadManuel();
+  
+  // initialize wind labels
+  windLayers.forEach(w => {
+    const s = document.getElementById(w.v);
+    const lbl = document.getElementById(w.v + '_label');
+    if (s && lbl) lbl.innerText = s.value + ' km/h';
+  });
+
+  // expose update and map for debugging
+  window._glide_update = update;
+  window._glide_map = map;
+}); 
 /* ============================================================
-   MODE VOL – module
+   MODE VOL – MODULE COMPLET
    ============================================================ */
 
+let volObjects = [];
+let volGpsWatchId = null;
+let volAutoCenter = true;
+
 function initVolMode() {
+  // Ne rien faire si déjà initialisé
   if (_volInitialized) return;
   _volInitialized = true;
 
+  // Vérifier que terrainsAll est prêt
   if (typeof terrainsAll === 'undefined' || !Array.isArray(terrainsAll)) {
     console.warn('initVolMode: terrainsAll non disponible, initialisation différée.');
     return;
@@ -498,61 +655,115 @@ function initVolMode() {
   const volAltManual = document.getElementById('volAltManual');
   const btnRecenter = document.getElementById('btnRecenter');
 
-  if (!btnVolMenu || !volPanel) { console.warn('initVolMode: éléments DOM du Mode VOL manquants.'); return; }
-
-  if (volRefSelect && terrainsAll.length && volRefSelect.children.length === 0) {
-    terrainsAll.forEach(t => { const opt = document.createElement("option"); opt.value = t.id; opt.innerText = t.id; volRefSelect.appendChild(opt); });
+  if (!btnVolMenu || !volPanel) {
+    console.warn('initVolMode: éléments DOM du Mode VOL manquants.');
+    return;
   }
 
-  btnVolMenu.addEventListener('click', () => { volPanel.style.display = (volPanel.style.display === 'none' || volPanel.style.display === '') ? 'block' : 'none'; });
-  btnRecenter?.addEventListener('click', () => { volAutoCenter = true; if (window._glide_plane_pos && window._glide_map) window._glide_map.setView([window._glide_plane_pos.lat, window._glide_plane_pos.lon]); });
+  // remplir la liste des terrains si vide
+  if (volRefSelect && terrainsAll.length && volRefSelect.children.length === 0) {
+    terrainsAll.forEach(t => {
+      const opt = document.createElement("option");
+      opt.value = t.id;
+      opt.innerText = t.id;
+      volRefSelect.appendChild(opt);
+    });
+  }
 
-  volFinesse?.addEventListener('input', () => { document.getElementById('volFinesseVal').innerText = volFinesse.value; updateVolCircle(); });
-  volFb?.addEventListener('input', () => { document.getElementById('volFbVal').innerText = volFb.value; updateVolCircle(); });
-  volSeuil?.addEventListener('input', () => { document.getElementById('volSeuilVal').innerText = volSeuil.value; updateVolCircle(); });
+  // afficher / masquer panel
+  btnVolMenu.addEventListener('click', () => {
+    volPanel.style.display = (volPanel.style.display === 'none' || volPanel.style.display === '') ? 'block' : 'none';
+  });
+
+  // recentrage
+  btnRecenter?.addEventListener('click', () => {
+    volAutoCenter = true;
+    if (window._glide_plane_pos && window._glide_map) {
+      window._glide_map.setView([window._glide_plane_pos.lat, window._glide_plane_pos.lon]);
+    }
+  });
+
+  // sliders affichent leur valeur et déclenchent update
+  volFinesse?.addEventListener('input', () => {
+    document.getElementById('volFinesseVal').innerText = volFinesse.value;
+    updateVolCircle();
+  });
+  volFb?.addEventListener('input', () => {
+    document.getElementById('volFbVal').innerText = volFb.value;
+    updateVolCircle();
+  });
+  volSeuil?.addEventListener('input', () => {
+    document.getElementById('volSeuilVal').innerText = volSeuil.value;
+    updateVolCircle();
+  });
 
   [volMarge, volAltMode, volRefSelect, volGpsEnabled, volAltManual].forEach(el => el?.addEventListener('change', updateVolCircle));
+
+  // rendre le panel déplaçable (assure-toi que makeDraggable existe)
   try { makeDraggable(volPanel); } catch (e) { console.warn('makeDraggable absent', e); }
 
-  // startVolGps will be called when entering volScreen (goTo)
+  // démarrer GPS si nécessaire
+  startVolGps();
+
+  // affichage initial
   updateVolCircle();
 }
-
 function startVolGps() {
-  if (!navigator.geolocation) { console.warn("Géolocalisation non supportée"); return; }
-  if (volGpsWatchId !== null) { try { navigator.geolocation.clearWatch(volGpsWatchId); } catch(e){} volGpsWatchId = null; }
+  if (!navigator.geolocation) {
+    console.warn("Géolocalisation non supportée");
+    return;
+  }
+
+  if (volGpsWatchId !== null) {
+    navigator.geolocation.clearWatch(volGpsWatchId);
+  }
 
   volGpsWatchId = navigator.geolocation.watchPosition(
     pos => {
       const coords = pos.coords;
       window._glide_plane_pos = { lat: coords.latitude, lon: coords.longitude };
-      window._glide_gps_alt = coords.altitude ?? parseFloat(document.getElementById('volAltManual')?.value ?? 0);
-      if (volAutoCenter && window._glide_map) window._glide_map.setView([coords.latitude, coords.longitude]);
+      window._glide_gps_alt = coords.altitude ?? parseFloat(document.getElementById('volAltManual').value);
+      if (volAutoCenter && window._glide_map) {
+        window._glide_map.setView([coords.latitude, coords.longitude]);
+      }
       updateVolCircle();
     },
-    err => { console.warn("Erreur GPS :", err.message); },
-    { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 }
+    err => {
+      console.warn("Erreur GPS :", err.message);
+    },
+    {
+      enableHighAccuracy: true,
+      maximumAge: 10000,
+      timeout: 10000
+    }
   );
 
-  window._glide_map.on('dragstart', () => { volAutoCenter = false; });
+  // désactive recentrage auto si utilisateur déplace la carte
+  window._glide_map.on('dragstart', () => {
+    volAutoCenter = false;
+  });
 }
 
 function getPlaneAltitude() {
-  const gpsEnabled = document.getElementById('volGpsEnabled')?.checked ?? false;
-  const altMode = document.getElementById('volAltMode')?.value ?? 'QNH';
-  const altManual = parseFloat(document.getElementById('volAltManual')?.value ?? 0);
-  const gpsAlt = gpsEnabled ? (window._glide_gps_alt ?? altManual) : altManual;
+  const gpsEnabled = document.getElementById('volGpsEnabled').checked;
+  const altMode = document.getElementById('volAltMode').value;
+  const altManual = parseFloat(document.getElementById('volAltManual').value);
+  const gpsAlt = gpsEnabled ? window._glide_gps_alt ?? altManual : altManual;
 
   if (altMode === 'QNH') return gpsAlt;
 
   if (altMode === 'QFE') {
-    let nearest = null, bestDist = Infinity;
-    terrainsAll.forEach(t => { const d = distanceKm(window._glide_plane_pos ?? { lat: 43.8, lon: 0.1 }, t); if (d < bestDist) { bestDist = d; nearest = t; } });
+    let nearest = null;
+    let bestDist = Infinity;
+    terrainsAll.forEach(t => {
+      const d = distanceKm(window._glide_plane_pos, t);
+      if (d < bestDist) { bestDist = d; nearest = t; }
+    });
     return gpsAlt - (nearest?.alt ?? 0);
   }
 
   if (altMode === 'QFE_REF') {
-    const refId = document.getElementById('volRefSelect')?.value;
+    const refId = document.getElementById('volRefSelect').value;
     const ref = terrainsAll.find(t => t.id === refId);
     return gpsAlt - (ref?.alt ?? 0);
   }
@@ -567,27 +778,54 @@ function computeGlideDistance(h, finesse, finesseBasse, seuil, marge) {
   return hRel * f;
 }
 
-function clearVolObjects() { volObjects.forEach(o => { try { window._glide_map.removeLayer(o); } catch(e){} }); volObjects = []; }
+function clearVolObjects() {
+  volObjects.forEach(o => window._glide_map.removeLayer(o));
+  volObjects = [];
+}
 
 function updateVolCircle() {
-  const volScreenEl = document.getElementById('volScreen');
-  if (!volScreenEl || volScreenEl.style.display === 'none') { clearVolObjects(); return; }
   if (!window._glide_map) return;
+
   clearVolObjects();
 
   const pos = window._glide_plane_pos ?? { lat: 43.8, lon: 0.1 };
+
   const h = getPlaneAltitude();
-  const finesse = parseFloat(document.getElementById('volFinesse')?.value ?? 30);
-  const fb = parseFloat(document.getElementById('volFb')?.value ?? 10);
-  const seuil = parseFloat(document.getElementById('volSeuil')?.value ?? 500);
-  const marge = parseFloat(document.getElementById('volMarge')?.value ?? 250);
+  const finesse = parseFloat(document.getElementById('volFinesse').value);
+  const fb = parseFloat(document.getElementById('volFb').value);
+  const seuil = parseFloat(document.getElementById('volSeuil').value);
+  const marge = parseFloat(document.getElementById('volMarge').value);
+
   const d = computeGlideDistance(h, finesse, fb, seuil, marge);
 
-  const circle = L.circle([pos.lat, pos.lon], { radius: d, color: '#00aaff', weight: 2, fill: false }).addTo(window._glide_map);
+  // cercle planeur
+  const circle = L.circle([pos.lat, pos.lon], {
+    radius: d,
+    color: '#00aaff',
+    weight: 2,
+    fill: false
+  }).addTo(window._glide_map);
+
   volObjects.push(circle);
 
+  // afficher rayon
   const radiusDisplay = document.getElementById('volRadiusDisplay');
-  if (radiusDisplay) radiusDisplay.innerText = `Distance franchissable : ${Math.round(d / 1000)} km`;
-}
+  if (radiusDisplay) {
+    radiusDisplay.innerText = `Distance franchissable : ${Math.round(d / 1000)} km`;
+  }
 
-/* End of file */
+  // cercles terrains
+  terrainsAll.forEach(t => {
+    const hTerrain = h - (t.alt - 0);
+    const dT = computeGlideDistance(hTerrain, finesse, fb, seuil, marge);
+    if (dT > 0) {
+      const c = L.circle([t.lat, t.lon], {
+        radius: dT,
+        color: '#ffaa00',
+        weight: 1,
+        fill: false
+      }).addTo(window._glide_map);
+      volObjects.push(c);
+    }
+  });
+}
