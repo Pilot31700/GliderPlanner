@@ -476,9 +476,21 @@ objs.push(newMarker);
               const rad = a * Math.PI / 180;
               const latOff = (d / 111000) * Math.cos(rad);
               const lonOff = (d / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(rad);
-              objs.push(L.marker([t.lat + latOff, t.lon + lonOff], {
-                icon: L.divIcon({ className: 'label', html: `${hh}m-F${Math.round(finesseUse)}-${t.id}` })
-              }).addTo(map));
+              // créer un seul marqueur terrain (icône airfieldIcon déjà défini)
+const labelText = `${h}m • F${Math.round(f)} • ${t.id}`; // ou adapte si tu veux finesseUse
+const marker = L.marker([t.lat, t.lon], { icon: airfieldIcon, title: t.id });
+marker.addTo(map);
+objs.push(marker);
+
+// tooltip permanent si demandé
+if (showLabels) {
+  marker.bindTooltip(labelText, {
+    permanent: true,
+    direction: 'top',
+    className: 'terrain-label'
+  }).openTooltip();
+}
+
             });
           }
         } else {
