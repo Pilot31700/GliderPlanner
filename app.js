@@ -1,16 +1,16 @@
 /****************************************************
  *  Glide Planner – app.js (réécriture complète)
  *
- *  Changements appliqués :
- *  - Aucun accès GPS en mode PREP ; GPS demandé et utilisé uniquement en VOL
- *  - Cercle bleu (planeur) affiché uniquement en VOL
- *  - Suppression des "cercles fixes" indésirables
- *  - Cercles de calcul (finesse / vent) conservés en PREP
- *  - Étiquette réduite à l'ICAO (t.id) uniquement
- *  - Icône piste stylisée pour tous les terrains
+ *  Ce fichier applique :
+ *  - Pas d'accès GPS en PREP ; GPS demandé et utilisé uniquement en VOL
+ *  - Cercle planeur (bleu) affiché uniquement en VOL
+ *  - Suppression des cercles "fixes" indésirables
+ *  - Cercles de calcul (finesse / vent) affichés en PREP
+ *  - Labels attachés aux cercles (ou tooltips) si "Labels" coché
+ *  - Un seul marqueur par terrain (icône piste) ; label ICAO si demandé
+ *  - makeDraggable défini tôt pour éviter ReferenceError
+ *  - Nettoyage correct des calques PREP / VOL
  *  - Slider opacité OSM + toggle OpenAIP (décoché par défaut)
- *  - loadManuel sécurisé (n'injecte que le fragment utile)
- *  - Définitions et guards pour éviter ReferenceError (makeDraggable, etc.)
  *
  *  Remplace entièrement ton app.js par ce fichier.
  ****************************************************/
@@ -20,8 +20,8 @@ let _volInitialized = false;
 let terrainsAll = [];
 let terrains = [];
 let filterOnly4Letters = false;
-let objs = []; // calques dynamiques (PREP)
-let volObjects = []; // calques spécifiques au mode VOL
+let objs = [];        // calques dynamiques pour PREP (cercles, polygones, markers de label)
+let volObjects = [];  // calques spécifiques au mode VOL (cercle planeur, etc.)
 let volGpsWatchId = null;
 let volAutoCenter = true;
 
@@ -412,7 +412,6 @@ document.addEventListener('DOMContentLoaded', function () {
       terrains = data;
       populateRef();
       update();
-      // initVolMode sera appelé plus tard si nécessaire (goTo('volScreen') l'appelle aussi)
       initVolMode();
     })
     .catch(err => console.error("Erreur chargement terrains.json :", err));
@@ -461,10 +460,12 @@ document.addEventListener('DOMContentLoaded', function () {
      UPDATE : calculs et rendu (PREP)
      - dessine uniquement les cercles/polygones de calcul
      - pas de cercles fixes indésirables
-     - un seul marqueur par terrain, label = ICAO si demandé
+     - labels attachés aux cercles si showLabels
      ========================= */
   function clearObjs() {
-    objs.forEach(o => map.removeLayer(o));
+    objs.forEach(o => {
+      try { map.removeLayer(o); } catch (e) {}
+    });
     objs = [];
   }
 
@@ -535,6 +536,17 @@ document.addEventListener('DOMContentLoaded', function () {
             fill: false
           }).addTo(map);
           objs.push(circle);
+
+          // Label attaché au cercle (tooltip) si demandé
+          if (showLabels) {
+            const labelText = `${hh}m • F${Math.round(finesseUse)} • ${t.id}`;
+            circle.bindTooltip(labelText, {
+              permanent: true,
+              direction: 'top',
+              className: 'circle-label'
+            }).openTooltip();
+            // tooltip is bound to circle; no separate marker needed
+          }
         } else {
           // Mode vent : polygone approximatif
           const polyPts = [];
@@ -557,11 +569,21 @@ document.addEventListener('DOMContentLoaded', function () {
           }
           const poly = L.polygon(polyPts, { color: color(hh), weight: 2, fill: false }).addTo(map);
           objs.push(poly);
+
+          if (showLabels) {
+            const labelText = `${hh}m • F${Math.round(finesseUse)} • ${t.id}`;
+            // bind tooltip to polygon (centered)
+            poly.bindTooltip(labelText, {
+              permanent: true,
+              direction: 'top',
+              className: 'circle-label'
+            }).openTooltip();
+          }
         }
       } // fin boucle hh
 
       // Un seul marqueur par terrain, étiquette = ICAO si demandé
-      addAirfieldMarker(t.lat, t.lon, t.id, showLabels ? t.id : null);
+      addAirfieldMarker(t.lat, t.lon, t.id, labels?.checked ?? false);
     }); // fin terrains.forEach
   } // fin update
 
@@ -643,7 +665,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 /* ============================================================
    MODE VOL – module
-   - GPS watch started only when entering VOL (startVolGps called from goTo)
+   - GPS watch started only when entering VOL (goTo triggers startVolGps)
    - plane circle drawn only in VOL
    ============================================================ */
 
@@ -731,7 +753,7 @@ function startVolGps() {
     pos => {
       const coords = pos.coords;
       window._glide_plane_pos = { lat: coords.latitude, lon: coords.longitude };
-      window._glide_gps_alt = coords.altitude ?? parseFloat(document.getElementById('volAltManual').value);
+      window._glide_gps_alt = coords.altitude ?? parseFloat(document.getElementById('volAltManual')?.value ?? 0);
       if (volAutoCenter && window._glide_map) {
         window._glide_map.setView([coords.latitude, coords.longitude]);
       }
