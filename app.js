@@ -1,8 +1,29 @@
 /****************************************************
- *  Glide Planner – APP.JS (Version A fidèle corrigée)
+ *  Glide Planner – app.js (version réécrite et consolidée)
+ *  Remplace ton app.js actuel par ce fichier.
+ *  - Corrige duplications et erreurs de scope
+ *  - Intègre icône piste stylisée (airfieldIcon)
+ *  - Remplace les marqueurs par airfieldIcon
+ *  - Fix loadManuel pour n'injecter que le fragment utile
+ *  - Gère opacityOSM slider et toggleAIP avec localStorage
+ *  - Reste compatible avec le reste de ton code existant
  ****************************************************/
+
+/* Globals */
 let _volInitialized = false;
-/* HELPERS – Enable / Disable map interactions */
+let terrainsAll = [];
+let terrains = [];
+let filterOnly4Letters = false;
+let objs = []; // calques ajoutés à la carte (cercles, polygones, marqueurs)
+let volObjects = [];
+let volGpsWatchId = null;
+let volAutoCenter = true;
+let glideWorker = null; // (optionnel) pour futur worker
+let lastRequestId = 0;
+
+/* =========================
+   Helpers : activer / désactiver interactions carte
+   ========================= */
 function enableMapInteractions(map) {
   try {
     if (!map) return;
@@ -39,16 +60,18 @@ function disableMapInteractions(map) {
   } catch (e) { console.warn('disableMapInteractions', e); }
 }
 
-/* NAVIGATION – goTo() */
+/* =========================
+   Navigation entre écrans
+   ========================= */
 function goTo(screenId){
   const screens = ['homeScreen','prepScreen','volScreen','manuelScreen'];
   const mapEl = document.getElementById('map');
-const btnCarte = document.getElementById('layerToggleBtn');
+  const btnCarte = document.getElementById('layerToggleBtn');
 
-if (btnCarte) {
-  btnCarte.style.display = (screenId === 'homeScreen' || screenId === 'manuelScreen') ? 'none' : 'block';
-}
-  // bascule les écrans
+  if (btnCarte) {
+    btnCarte.style.display = (screenId === 'homeScreen' || screenId === 'manuelScreen') ? 'none' : 'block';
+  }
+
   screens.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -62,48 +85,32 @@ if (btnCarte) {
   });
 
   if (!mapEl) return;
-
   const map = window._glide_map || null;
 
-  // gérer l'affichage du volRadiusDisplay uniquement en Mode VOL
   const volRadiusEl = document.getElementById('volRadiusDisplay');
-  if (volRadiusEl) {
-    volRadiusEl.style.display = (screenId === 'volScreen') ? 'block' : 'none';
-  }
+  if (volRadiusEl) volRadiusEl.style.display = (screenId === 'volScreen') ? 'block' : 'none';
 
-  // comportement carte / interactions
   if (screenId === 'prepScreen' || screenId === 'volScreen') {
     mapEl.classList.remove('map-blurred');
     mapEl.classList.add('map-absolute');
-
-    // quand on est en prepScreen, on veut que le panneau prep ne capte pas les interactions sur la carte
     const prep = document.getElementById('prepScreen');
     if (prep) prep.style.pointerEvents = 'none';
-
     if (map) {
       enableMapInteractions(map);
-      // invalide la taille après un court délai pour Leaflet
       setTimeout(()=> map.invalidateSize(), 120);
     }
   } else {
     mapEl.classList.add('map-blurred');
     mapEl.classList.remove('map-absolute');
-
     const prep = document.getElementById('prepScreen');
     if (prep) prep.style.pointerEvents = 'auto';
-
     if (map) disableMapInteractions(map);
   }
 
-  // initialisation / arrêt spécifiques au Mode VOL
   if (screenId === 'volScreen') {
-    // initVolMode est idempotent (protégé par _volInitialized)
     try { initVolMode(); } catch (e) { console.warn('initVolMode error', e); }
-
-    // démarrer GPS watch si nécessaire (startVolGps gère l'idempotence)
     try { startVolGps(); } catch (e) { console.warn('startVolGps error', e); }
   } else {
-    // quitter le mode vol : arrêter le watch GPS pour économiser la batterie/ressources
     try {
       if (typeof volGpsWatchId === 'number' && volGpsWatchId !== null) {
         navigator.geolocation.clearWatch(volGpsWatchId);
@@ -113,7 +120,9 @@ if (btnCarte) {
   }
 }
 
-/* DOMContentLoaded – INITIALISATION GLOBALE */
+/* =========================
+   DOMContentLoaded – initialisation
+   ========================= */
 document.addEventListener('DOMContentLoaded', function () {
 
   /* NAVIGATION BUTTONS */
@@ -125,12 +134,12 @@ document.addEventListener('DOMContentLoaded', function () {
   const backFromManuel = document.getElementById('backFromManuel');
   const filter4Letters = document.getElementById("filter4Letters");
 
-if (filter4Letters) {
-  filter4Letters.addEventListener("change", () => {
-    filterOnly4Letters = filter4Letters.checked;
-    update();
-  });
-}
+  if (filter4Letters) {
+    filter4Letters.addEventListener("change", () => {
+      filterOnly4Letters = filter4Letters.checked;
+      update();
+    });
+  }
   if(btnGoPrep) btnGoPrep.addEventListener('click', (e) => { e.preventDefault(); goTo('prepScreen'); });
   if(btnGoVol) btnGoVol.addEventListener('click', (e) => { e.preventDefault(); goTo('volScreen'); });
   if(btnGoManuel) btnGoManuel.addEventListener('click', (e) => { e.preventDefault(); goTo('manuelScreen'); });
@@ -161,191 +170,174 @@ if (filter4Letters) {
   const rangeKm = document.getElementById('rangeKm');
   const applyWind = document.getElementById('applyWind');
 
-/* MAP */
-const map = L.map('map', { preferCanvas: true, tap: true }).setView([43.8, 0.1], 9);
-window._glide_map = map;
+  /* MAP init */
+  const map = L.map('map', { preferCanvas: true, tap: true }).setView([43.8, 0.1], 9);
+  window._glide_map = map;
 
-// icône piste stylisée (réutiliser pour tous les marqueurs)
-const airfieldIcon = L.icon({
-  iconUrl: 'icons/airfield-runway.svg',
-  iconRetinaUrl: 'icons/airfield-runway@2x.svg', // optionnel
-  iconSize: [28, 28],
-  iconAnchor: [14, 14],
-  popupAnchor: [0, -16],
-  className: 'airfield-marker'
-});
+  /* Icône piste stylisée (réutiliser pour tous les marqueurs) */
+  const airfieldIcon = L.icon({
+    iconUrl: 'icons/airfield-runway.svg',
+    iconRetinaUrl: 'icons/airfield-runway@2x.svg', // optionnel
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+    popupAnchor: [0, -16],
+    className: 'airfield-marker'
+  });
 
-
-// --- LAYER SYSTEM OSM + OpenAIP Aviation ---
-const API_KEY = "e21af8d83997e96b1f6e68551e8c2a78";
-
-// Fond OSM (toujours visible)
-const osmLayer = L.tileLayer(
-  "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-  { maxZoom: 19, attribution: "© OpenStreetMap" }
-).addTo(map);
-
-// --- OSM layer already créé plus haut
-// const osmLayer = L.tileLayer(...).addTo(map);
-
-// Récupérer le slider (et restaurer valeur si présente)
-const opacityOSM = document.getElementById('opacityOSM');
-if (opacityOSM) {
-  // restaurer préférence si existante
-  try {
-    const saved = localStorage.getItem('glide_opacity_osm');
-    if (saved !== null) opacityOSM.value = Math.max(0, Math.min(100, parseInt(saved, 10)));
-  } catch (e) { /* ignore localStorage errors */ }
-
-  // appliquer la valeur initiale
-  const applyOsmOpacity = (v) => {
-    const val = (typeof v === 'string') ? parseInt(v, 10) : v;
-    const opacity = Math.max(0, Math.min(100, val)) / 100;
-    if (typeof osmLayer !== 'undefined' && osmLayer && osmLayer.setOpacity) {
-      osmLayer.setOpacity(opacity);
-    } else {
-      console.warn('osmLayer non défini au moment de setOpacity');
+  /* Helper utilitaire pour ajouter un marqueur terrain */
+  function addAirfieldMarker(lat, lon, id, labelText) {
+    const m = L.marker([lat, lon], { icon: airfieldIcon, title: id });
+    m.addTo(map);
+    if (labelText) {
+      m.bindTooltip(labelText, { permanent: true, direction: 'top', className: 'terrain-label' }).openTooltip();
     }
-  };
+    objs.push(m);
+    return m;
+  }
 
-  applyOsmOpacity(opacityOSM.value);
+  /* --- LAYERS --- */
+  const API_KEY = "e21af8d83997e96b1f6e68551e8c2a78";
 
-  // debounce simple pour éviter trop d'appels lors du drag
-  let osmDebounceTimer = null;
-  opacityOSM.addEventListener('input', (e) => {
-    const v = e.target.value;
-    // visuel immédiat mais throttlé
-    if (osmDebounceTimer) clearTimeout(osmDebounceTimer);
-    osmDebounceTimer = setTimeout(() => {
-      applyOsmOpacity(v);
-      try { localStorage.setItem('glide_opacity_osm', String(v)); } catch(e){}
-    }, 80);
+  const osmLayer = L.tileLayer(
+    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    { maxZoom: 19, attribution: "© OpenStreetMap" }
+  ).addTo(map);
+
+  const openAIPLayer = L.tileLayer(
+    `https://api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y}.png?apiKey=${API_KEY}`,
+    { maxZoom: 14, opacity: 1 }
+  );
+
+  /* Layer panel elements */
+  const layerpanel = document.getElementById("layerPanel");
+  const btn = document.getElementById("layerToggleBtn");
+  const toggleAIP = document.getElementById("toggleAIP");
+  const opacityAIP = document.getElementById("opacityAIP");
+  const opacityOSM = document.getElementById('opacityOSM');
+
+  /* Layer panel toggle */
+  if (btn) {
+    btn.addEventListener("click", () => {
+      if (!layerpanel) return;
+      layerpanel.style.display = layerpanel.style.display === "none" ? "block" : "none";
+    });
+  }
+
+  /* toggleAIP : restaurer préférence ou forcer décoché par défaut */
+  try {
+    const savedAIP = localStorage.getItem('glide_toggleAIP');
+    if (toggleAIP) {
+      if (savedAIP === null) toggleAIP.checked = false;
+      else toggleAIP.checked = (savedAIP === 'true');
+      // appliquer état initial
+      if (toggleAIP.checked) openAIPLayer.addTo(map);
+      else map.removeLayer(openAIPLayer);
+      toggleAIP.addEventListener('change', (e) => {
+        const on = e.target.checked;
+        try { localStorage.setItem('glide_toggleAIP', String(on)); } catch (err) {}
+        if (on) openAIPLayer.addTo(map); else map.removeLayer(openAIPLayer);
+      });
+    }
+  } catch (e) {
+    if (toggleAIP) toggleAIP.checked = false;
+  }
+
+  /* opacityAIP control (existing) */
+  if (opacityAIP) {
+    opacityAIP.addEventListener("input", () => {
+      const value = opacityAIP.value / 100;
+      openAIPLayer.setOpacity(value);
+    });
+  }
+
+  /* opacityOSM control (nouveau slider) */
+  if (opacityOSM) {
+    try {
+      const saved = localStorage.getItem('glide_opacity_osm');
+      if (saved !== null) opacityOSM.value = Math.max(0, Math.min(100, parseInt(saved, 10)));
+    } catch (e) {}
+    const applyOsmOpacity = (v) => {
+      const val = (typeof v === 'string') ? parseInt(v, 10) : v;
+      const opacity = Math.max(0, Math.min(100, val)) / 100;
+      if (osmLayer && osmLayer.setOpacity) osmLayer.setOpacity(opacity);
+    };
+    applyOsmOpacity(opacityOSM.value);
+    let osmDebounceTimer = null;
+    opacityOSM.addEventListener('input', (e) => {
+      const v = e.target.value;
+      if (osmDebounceTimer) clearTimeout(osmDebounceTimer);
+      osmDebounceTimer = setTimeout(() => {
+        applyOsmOpacity(v);
+        try { localStorage.setItem('glide_opacity_osm', String(v)); } catch(e){}
+      }, 80);
+    });
+    opacityOSM.addEventListener('change', (e) => {
+      applyOsmOpacity(e.target.value);
+      try { localStorage.setItem('glide_opacity_osm', String(e.target.value)); } catch(e){}
+    });
+  }
+
+  /* Désactiver interactions initialement si besoin */
+  if (typeof disableMapInteractions === 'function') {
+    disableMapInteractions(map);
+  }
+
+  /* position utilisateur */
+  let userPos = { lat: 43.8, lon: 0.1 };
+  map.on('moveend', () => {
+    const c = map.getCenter();
+    userPos = { lat: c.lat, lon: c.lng };
+    if (typeof update === 'function') update();
   });
 
-  // aussi appliquer sur change pour compatibilité clavier
-  opacityOSM.addEventListener('change', (e) => {
-    applyOsmOpacity(e.target.value);
-    try { localStorage.setItem('glide_opacity_osm', String(e.target.value)); } catch(e){}
+  /* Afficher l'écran d'accueil */
+  if (typeof goTo === 'function') goTo('homeScreen');
+
+  /* Ajout terrain via clic (mode PREP) */
+  let pendingClickLatLon = null;
+  map.on('click', function(e) {
+    const prepVisible = document.getElementById('prepScreen')?.style.display !== 'none';
+    if (!prepVisible) return;
+    pendingClickLatLon = { lat: e.latlng.lat, lon: e.latlng.lng };
+    const modal = document.getElementById('addTerrainModal');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    document.getElementById('newTerrainName').value = "";
+    document.getElementById('newTerrainAlt').value = "";
   });
-}
 
+  /* Popup buttons */
+  const addTerrainCancel = document.getElementById('addTerrainCancel');
+  const addTerrainConfirm = document.getElementById('addTerrainConfirm');
+  if (addTerrainCancel) addTerrainCancel.addEventListener('click', () => {
+    const modal = document.getElementById('addTerrainModal');
+    if (modal) modal.style.display = 'none';
+    pendingClickLatLon = null;
+  });
 
-// OpenAIP Aviation (overlay)
-const openAIPLayer = L.tileLayer(
-  `https://api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y}.png?apiKey=${API_KEY}`,
-  { maxZoom: 14, opacity: 1 }
-);
+  if (addTerrainConfirm) addTerrainConfirm.addEventListener('click', () => {
+    const name = document.getElementById('newTerrainName').value.trim();
+    const alt = parseFloat(document.getElementById('newTerrainAlt').value);
+    if (!name) { alert("Nom invalide"); return; }
+    if (isNaN(alt)) { alert("Altitude invalide"); return; }
+    const id = name.toUpperCase().replace(/[^A-Z0-9]/g, "_");
+    const newTerrain = { id: id, lat: pendingClickLatLon.lat, lon: pendingClickLatLon.lon, alt: alt };
+    terrainsAll.push(newTerrain);
+    if (refSelect) {
+      const opt = document.createElement("option");
+      opt.value = id; opt.innerText = id; refSelect.appendChild(opt);
+    }
+    // Marqueur visuel : utiliser airfieldIcon et ajouter à objs pour nettoyage futur
+    const newMarker = L.marker([newTerrain.lat, newTerrain.lon], { icon: airfieldIcon, title: newTerrain.id });
+    newMarker.addTo(map);
+    objs.push(newMarker);
+    update();
+    const modal = document.getElementById('addTerrainModal');
+    if (modal) modal.style.display = 'none';
+    pendingClickLatLon = null;
+  });
 
-// --- UI LOGIC ---
-const layerpanel = document.getElementById("layerPanel");
-const btn = document.getElementById("layerToggleBtn");
-const toggleAIP = document.getElementById("toggleAIP");
-const opacityAIP = document.getElementById("opacityAIP");
-
-// Ouvrir / fermer panneau
-btn.addEventListener("click", () => {
-  layerpanel.style.display = layerpanel.style.display === "none" ? "block" : "none";
-});
-
-// Activer / désactiver OpenAIP Aviation
-toggleAIP.addEventListener("change", () => {
-  if (toggleAIP.checked) {
-    openAIPLayer.addTo(map);
-  } else {
-    map.removeLayer(openAIPLayer);
-  }
-});
-
-// Régler la transparence
-opacityAIP.addEventListener("input", () => {
-  const value = opacityAIP.value / 100;
-  openAIPLayer.setOpacity(value);
-});
-
-// Désactiver interactions si tu utilises cette fonction (doit recevoir map)
-if (typeof disableMapInteractions === 'function') {
-  disableMapInteractions(map);
-}
-
-// position utilisateur et écoute du déplacement
-let userPos = { lat: 43.8, lon: 0.1 };
-map.on('moveend', () => {
-  const c = map.getCenter();
-  userPos = { lat: c.lat, lon: c.lng };
-  if (typeof update === 'function') update();
-});
-
-// now that map exists, show home
-if (typeof goTo === 'function') goTo('homeScreen');
-  // --- MODE PREP : Ajout d'un terrain via popup stylé ---
-let pendingClickLatLon = null;
-
-map.on('click', function(e) {
-  const prepVisible = document.getElementById('prepScreen')?.style.display !== 'none';
-  if (!prepVisible) return;
-
-  pendingClickLatLon = { lat: e.latlng.lat, lon: e.latlng.lng };
-
-  document.getElementById('addTerrainModal').style.display = 'flex';
-  document.getElementById('newTerrainName').value = "";
-  document.getElementById('newTerrainAlt').value = "";
-});
-
-// Boutons popup
-document.getElementById('addTerrainCancel').addEventListener('click', () => {
-  document.getElementById('addTerrainModal').style.display = 'none';
-  pendingClickLatLon = null;
-});
-
-document.getElementById('addTerrainConfirm').addEventListener('click', () => {
-  const name = document.getElementById('newTerrainName').value.trim();
-  const alt = parseFloat(document.getElementById('newTerrainAlt').value);
-
-  if (!name) {
-    alert("Nom invalide");
-    return;
-  }
-  if (isNaN(alt)) {
-    alert("Altitude invalide");
-    return;
-  }
-
-  const id = name.toUpperCase().replace(/[^A-Z0-9]/g, "_");
-
-  const newTerrain = {
-    id: id,
-    lat: pendingClickLatLon.lat,
-    lon: pendingClickLatLon.lon,
-    alt: alt
-  };
-
-  terrainsAll.push(newTerrain);
-
-  // Ajout dans la liste de référence
-  if (refSelect) {
-    const opt = document.createElement("option");
-    opt.value = id;
-    opt.innerText = id;
-    refSelect.appendChild(opt);
-  }
-
-  // Marqueur visuel avec icône piste
-const newMarker = L.marker([newTerrain.lat, newTerrain.lon], { icon: airfieldIcon, title: newTerrain.id });
-newMarker.addTo(map);
-objs.push(newMarker);
-
-  // Recalcul
-  update();
-
-  document.getElementById('addTerrainModal').style.display = 'none';
-  pendingClickLatLon = null;
-});
-
-  
-  /* TERRAINS JSON */
-  let terrainsAll = [];
-  let terrains = [];
-  let filterOnly4Letters = false;
+  /* Charger terrains.json */
   function populateRef() {
     if (!refSelect) return;
     refSelect.innerHTML = "";
@@ -368,7 +360,7 @@ objs.push(newMarker);
     })
     .catch(err => console.error("Erreur chargement terrains.json :", err));
 
-  /* VENT */
+  /* VENT menu init */
   const windLayers = [
     { label: "0-500", v: "v0", d: "d0" },
     { label: "500-1000", v: "v1", d: "d1" },
@@ -408,9 +400,9 @@ objs.push(newMarker);
     return { v: isNaN(v) ? 0 : v, d: isNaN(d) ? 0 : d };
   }
 
-  /* UPDATE */
-  let objs = [];
-
+  /* =========================
+     UPDATE : calculs et rendu
+     ========================= */
   function clearObjs() {
     objs.forEach(o => map.removeLayer(o));
     objs = [];
@@ -437,9 +429,10 @@ objs.push(newMarker);
     clearObjs();
     const range = parseFloat(rangeKm?.value ?? 100);
     terrains = terrainsAll.filter(t => {
-  if (filterOnly4Letters && !/^[A-Z]{4}$/.test(t.id)) return false;
-  return distanceKm(userPos, t) <= range;
-});
+      if (filterOnly4Letters && !/^[A-Z]{4}$/.test(t.id)) return false;
+      return distanceKm(userPos, t) <= range;
+    });
+
     const h = parseInt(slider?.value ?? 0, 10);
     if (hVal) hVal.innerText = h;
     const f = parseFloat(finesse?.value ?? 30);
@@ -471,26 +464,16 @@ objs.push(newMarker);
         if (!useWind) {
           const circle = L.circle([t.lat, t.lon], { radius: d, color: color(hh), weight: 2, fill: false }).addTo(map);
           objs.push(circle);
+
           if (showLabels) {
             [0, 180].forEach(a => {
               const rad = a * Math.PI / 180;
               const latOff = (d / 111000) * Math.cos(rad);
               const lonOff = (d / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(rad);
-              // créer un seul marqueur terrain (icône airfieldIcon déjà défini)
-const labelText = `${h}m • F${Math.round(f)} • ${t.id}`; // ou adapte si tu veux finesseUse
-const marker = L.marker([t.lat, t.lon], { icon: airfieldIcon, title: t.id });
-marker.addTo(map);
-objs.push(marker);
-
-// tooltip permanent si demandé
-if (showLabels) {
-  marker.bindTooltip(labelText, {
-    permanent: true,
-    direction: 'top',
-    className: 'terrain-label'
-  }).openTooltip();
-}
-
+              const labelMarker = L.marker([t.lat + latOff, t.lon + lonOff], {
+                icon: L.divIcon({ className: 'label', html: `${hh}m-F${Math.round(finesseUse)}-${t.id}` })
+              }).addTo(map);
+              objs.push(labelMarker);
             });
           }
         } else {
@@ -514,34 +497,26 @@ if (showLabels) {
           }
           const poly = L.polygon(polyPts, { color: color(hh), weight: 2, fill: false }).addTo(map);
           objs.push(poly);
+
           if (showLabels) {
             [0, 180].forEach(a => {
               const rad = a * Math.PI / 180;
               const latOff = (d / 111000) * Math.cos(rad);
               const lonOff = (d / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(rad);
-              objs.push(L.marker([t.lat + latOff, t.lon + lonOff], {
+              const labelMarker = L.marker([t.lat + latOff, t.lon + lonOff], {
                 icon: L.divIcon({ className: 'label', html: `${hh}m-F${Math.round(finesseUse)}-${t.id}` })
-              }).addTo(map));
+              }).addTo(map);
+              objs.push(labelMarker);
             });
           }
         }
-      }
-      // marqueur terrain avec icône piste stylisée
-const marker = L.marker([t.lat, t.lon], { icon: airfieldIcon, title: t.id });
-marker.addTo(map);
-objs.push(marker);
+      } // fin boucle hh
 
-// tooltip permanent (optionnel) : lisible en vol
-if (showLabels) {
-  marker.bindTooltip(`${hh}m • F${Math.round(finesseUse)} • ${t.id}`, {
-    permanent: true,
-    direction: 'top',
-    className: 'terrain-label'
-  }).openTooltip();
-}
-
-    });
-  }
+      // Ajout d'un seul marqueur terrain (icône piste) — label basé sur la hauteur courante 'h' et finesse 'f'
+      const labelText = `${h}m • F${Math.round(f)} • ${t.id}`;
+      addAirfieldMarker(t.lat, t.lon, t.id, showLabels ? labelText : null);
+    }); // fin terrains.forEach
+  } // fin update
 
   update();
 
@@ -617,65 +592,65 @@ if (showLabels) {
   makeDraggable(panel);
   makeDraggable(menuVent);
 
-// charger manuel externe et l'insérer dans #manuelCard
-function loadManuel() {
-  fetch('manuel.html')
-    .then(response => {
-      if (!response.ok) throw new Error('manuel.html non trouvé');
-      return response.text();
-    })
-    .then(html => {
-      const container = document.getElementById('manuelCard');
-      if (!container) return;
-      container.innerHTML = html;
+  /* Charger manuel externe et n'injecter que le fragment utile */
+  function loadManuel() {
+    fetch('manuel.html')
+      .then(response => {
+        if (!response.ok) throw new Error('manuel.html non trouvé');
+        return response.text();
+      })
+      .then(html => {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        // Cherche d'abord .manual-reader, puis #manuelCard, sinon tout le body du fragment
+        const fragment = tmp.querySelector('.manual-reader') || tmp.querySelector('#manuelCard') || tmp;
+        const container = document.getElementById('manuelCard');
+        if (!container) return;
+        container.innerHTML = fragment.innerHTML || fragment.textContent || '';
 
-      // exécuter les scripts éventuels contenus dans manuel.html
-      const scripts = container.querySelectorAll('script');
-      scripts.forEach(oldScript => {
-        const s = document.createElement('script');
-        if (oldScript.src) {
-          s.src = oldScript.src;
-          s.async = false;
-        } else {
-          s.textContent = oldScript.textContent;
-        }
-        document.body.appendChild(s);
-        s.remove();
+        // exécuter les scripts éventuels contenus dans le fragment (append sans remove immédiat)
+        const scripts = fragment.querySelectorAll('script');
+        scripts.forEach(oldScript => {
+          const s = document.createElement('script');
+          if (oldScript.src) {
+            s.src = oldScript.src;
+            s.async = false;
+            document.body.appendChild(s);
+          } else {
+            s.textContent = oldScript.textContent;
+            document.body.appendChild(s);
+          }
+          // cleanup après un délai pour laisser le script s'exécuter
+          setTimeout(() => { try { s.remove(); } catch(e){} }, 2000);
+        });
+      })
+      .catch(err => {
+        console.error('Erreur chargement manuel:', err);
       });
-    })
-    .catch(err => {
-      console.error('Erreur chargement manuel:', err);
-    });
-}
+  }
 
-// appeler après l'initialisation (par exemple à la fin de DOMContentLoaded)
-loadManuel();
-  
-  // initialize wind labels
+  loadManuel();
+
+  /* initialize wind labels */
   windLayers.forEach(w => {
     const s = document.getElementById(w.v);
     const lbl = document.getElementById(w.v + '_label');
     if (s && lbl) lbl.innerText = s.value + ' km/h';
   });
 
-  // expose update and map for debugging
+  /* expose update and map for debugging */
   window._glide_update = update;
   window._glide_map = map;
-}); 
+}); // fin DOMContentLoaded
+
 /* ============================================================
-   MODE VOL – MODULE COMPLET
+   MODE VOL – module
    ============================================================ */
 
-let volObjects = [];
-let volGpsWatchId = null;
-let volAutoCenter = true;
-
 function initVolMode() {
-  // Ne rien faire si déjà initialisé
   if (_volInitialized) return;
   _volInitialized = true;
 
-  // Vérifier que terrainsAll est prêt
   if (typeof terrainsAll === 'undefined' || !Array.isArray(terrainsAll)) {
     console.warn('initVolMode: terrainsAll non disponible, initialisation différée.');
     return;
@@ -698,7 +673,6 @@ function initVolMode() {
     return;
   }
 
-  // remplir la liste des terrains si vide
   if (volRefSelect && terrainsAll.length && volRefSelect.children.length === 0) {
     terrainsAll.forEach(t => {
       const opt = document.createElement("option");
@@ -708,12 +682,10 @@ function initVolMode() {
     });
   }
 
-  // afficher / masquer panel
   btnVolMenu.addEventListener('click', () => {
     volPanel.style.display = (volPanel.style.display === 'none' || volPanel.style.display === '') ? 'block' : 'none';
   });
 
-  // recentrage
   btnRecenter?.addEventListener('click', () => {
     volAutoCenter = true;
     if (window._glide_plane_pos && window._glide_map) {
@@ -721,7 +693,6 @@ function initVolMode() {
     }
   });
 
-  // sliders affichent leur valeur et déclenchent update
   volFinesse?.addEventListener('input', () => {
     document.getElementById('volFinesseVal').innerText = volFinesse.value;
     updateVolCircle();
@@ -737,15 +708,12 @@ function initVolMode() {
 
   [volMarge, volAltMode, volRefSelect, volGpsEnabled, volAltManual].forEach(el => el?.addEventListener('change', updateVolCircle));
 
-  // rendre le panel déplaçable (assure-toi que makeDraggable existe)
   try { makeDraggable(volPanel); } catch (e) { console.warn('makeDraggable absent', e); }
 
-  // démarrer GPS si nécessaire
   startVolGps();
-
-  // affichage initial
   updateVolCircle();
 }
+
 function startVolGps() {
   if (!navigator.geolocation) {
     console.warn("Géolocalisation non supportée");
@@ -776,7 +744,6 @@ function startVolGps() {
     }
   );
 
-  // désactive recentrage auto si utilisateur déplace la carte
   window._glide_map.on('dragstart', () => {
     volAutoCenter = false;
   });
@@ -823,7 +790,6 @@ function clearVolObjects() {
 
 function updateVolCircle() {
   if (!window._glide_map) return;
-
   clearVolObjects();
 
   const pos = window._glide_plane_pos ?? { lat: 43.8, lon: 0.1 };
@@ -836,23 +802,17 @@ function updateVolCircle() {
 
   const d = computeGlideDistance(h, finesse, fb, seuil, marge);
 
-  // cercle planeur
   const circle = L.circle([pos.lat, pos.lon], {
     radius: d,
     color: '#00aaff',
     weight: 2,
     fill: false
   }).addTo(window._glide_map);
-
   volObjects.push(circle);
 
-  // afficher rayon
   const radiusDisplay = document.getElementById('volRadiusDisplay');
-  if (radiusDisplay) {
-    radiusDisplay.innerText = `Distance franchissable : ${Math.round(d / 1000)} km`;
-  }
+  if (radiusDisplay) radiusDisplay.innerText = `Distance franchissable : ${Math.round(d / 1000)} km`;
 
-  // cercles terrains
   terrainsAll.forEach(t => {
     const hTerrain = h - (t.alt - 0);
     const dT = computeGlideDistance(hTerrain, finesse, fb, seuil, marge);
@@ -867,3 +827,5 @@ function updateVolCircle() {
     }
   });
 }
+
+/* End of file */
