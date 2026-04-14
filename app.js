@@ -174,6 +174,51 @@ const osmLayer = L.tileLayer(
   { maxZoom: 19, attribution: "© OpenStreetMap" }
 ).addTo(map);
 
+// --- OSM layer already créé plus haut
+// const osmLayer = L.tileLayer(...).addTo(map);
+
+// Récupérer le slider (et restaurer valeur si présente)
+const opacityOSM = document.getElementById('opacityOSM');
+if (opacityOSM) {
+  // restaurer préférence si existante
+  try {
+    const saved = localStorage.getItem('glide_opacity_osm');
+    if (saved !== null) opacityOSM.value = Math.max(0, Math.min(100, parseInt(saved, 10)));
+  } catch (e) { /* ignore localStorage errors */ }
+
+  // appliquer la valeur initiale
+  const applyOsmOpacity = (v) => {
+    const val = (typeof v === 'string') ? parseInt(v, 10) : v;
+    const opacity = Math.max(0, Math.min(100, val)) / 100;
+    if (typeof osmLayer !== 'undefined' && osmLayer && osmLayer.setOpacity) {
+      osmLayer.setOpacity(opacity);
+    } else {
+      console.warn('osmLayer non défini au moment de setOpacity');
+    }
+  };
+
+  applyOsmOpacity(opacityOSM.value);
+
+  // debounce simple pour éviter trop d'appels lors du drag
+  let osmDebounceTimer = null;
+  opacityOSM.addEventListener('input', (e) => {
+    const v = e.target.value;
+    // visuel immédiat mais throttlé
+    if (osmDebounceTimer) clearTimeout(osmDebounceTimer);
+    osmDebounceTimer = setTimeout(() => {
+      applyOsmOpacity(v);
+      try { localStorage.setItem('glide_opacity_osm', String(v)); } catch(e){}
+    }, 80);
+  });
+
+  // aussi appliquer sur change pour compatibilité clavier
+  opacityOSM.addEventListener('change', (e) => {
+    applyOsmOpacity(e.target.value);
+    try { localStorage.setItem('glide_opacity_osm', String(e.target.value)); } catch(e){}
+  });
+}
+
+
 // OpenAIP Aviation (overlay)
 const openAIPLayer = L.tileLayer(
   `https://api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y}.png?apiKey=${API_KEY}`,
