@@ -165,6 +165,17 @@ if (filter4Letters) {
 const map = L.map('map', { preferCanvas: true, tap: true }).setView([43.8, 0.1], 9);
 window._glide_map = map;
 
+// icône piste stylisée (réutiliser pour tous les marqueurs)
+const airfieldIcon = L.icon({
+  iconUrl: 'icons/airfield-runway.svg',
+  iconRetinaUrl: 'icons/airfield-runway@2x.svg', // optionnel
+  iconSize: [28, 28],
+  iconAnchor: [14, 14],
+  popupAnchor: [0, -16],
+  className: 'airfield-marker'
+});
+
+
 // --- LAYER SYSTEM OSM + OpenAIP Aviation ---
 const API_KEY = "e21af8d83997e96b1f6e68551e8c2a78";
 
