@@ -48,10 +48,16 @@
 <div id="layerToggleBtn">🗺️ Carte</div>
 
 <div id="layerPanel">
-  <label>
-    <input type="checkbox" id="toggleAIP">
-    Montrer Espaces Aériens
-  </label>
+ <label for="toggleAIP">
+  <input type="checkbox" id="toggleAIP">
+  Montrer Espaces Aériens
+</label>
+
+<label for="opacityOSM" style="display:block;margin-top:8px;">
+  Transparence carte OSM
+</label>
+<input id="opacityOSM" type="range" min="0" max="100" value="100" aria-label="Transparence carte OSM" />
+
 
   <label for="opacityAIP">Transparence</label>
   <input type="range" id="opacityAIP" min="0" max="100" value="100">
